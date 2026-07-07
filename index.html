@@ -1,0 +1,2497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pitch Legend — Soccer Career Simulator</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --panel2: #1c2330;
+    --border: #2d3748;
+    --green: #2ea44f;
+    --green-bright: #3fb950;
+    --gold: #e3b341;
+    --red: #f85149;
+    --blue: #58a6ff;
+    --text: #e6edf3;
+    --muted: #8b949e;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: radial-gradient(1200px 600px at 50% -100px, #14321f 0%, var(--bg) 60%);
+    color: var(--text);
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+  }
+  .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+  h1, h2, h3 { font-weight: 700; }
+  .hidden { display: none !important; }
+
+  /* ---------- Setup screen ---------- */
+  #setup-screen { text-align: center; padding-top: 40px; }
+  .logo { font-size: 46px; letter-spacing: 2px; margin-bottom: 6px; }
+  .logo span { color: var(--green-bright); }
+  .tagline { color: var(--muted); margin-bottom: 34px; font-size: 15px; }
+  .setup-card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+    padding: 30px; max-width: 460px; margin: 0 auto; text-align: left;
+  }
+  .setup-card label { display: block; color: var(--muted); font-size: 13px; margin: 16px 0 6px; text-transform: uppercase; letter-spacing: 1px; }
+  .setup-card input, .setup-card select {
+    width: 100%; padding: 11px 13px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--panel2); color: var(--text); font-size: 15px; outline: none;
+  }
+  .setup-card input:focus, .setup-card select:focus { border-color: var(--green); }
+  .pos-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .pos-btn {
+    padding: 12px 4px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel2);
+    color: var(--text); cursor: pointer; font-size: 14px; font-weight: 600; text-align: center;
+  }
+  .pos-btn small { display: block; color: var(--muted); font-weight: 400; font-size: 11px; margin-top: 3px; }
+  .pos-btn.selected { border-color: var(--green-bright); background: #16301f; }
+  .btn {
+    display: inline-block; padding: 12px 26px; border-radius: 8px; border: none; cursor: pointer;
+    background: var(--green); color: #fff; font-size: 15px; font-weight: 700; letter-spacing: .5px;
+  }
+  .btn:hover { background: var(--green-bright); }
+  .btn.secondary { background: var(--panel2); border: 1px solid var(--border); color: var(--text); font-weight: 600; }
+  .btn.secondary:hover { border-color: var(--muted); background: var(--panel2); }
+  .btn.gold { background: var(--gold); color: #1a1a1a; }
+  .btn.danger { background: transparent; border: 1px solid var(--red); color: var(--red); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn-row { display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap; }
+
+  /* ---------- Game layout ---------- */
+  #game-screen { display: grid; grid-template-columns: 300px 1fr; gap: 18px; align-items: start; }
+  @media (max-width: 820px) { #game-screen { grid-template-columns: 1fr; } }
+
+  .player-card {
+    background: linear-gradient(160deg, #1d2b3a 0%, var(--panel) 55%);
+    border: 1px solid var(--border); border-radius: 14px; padding: 20px; position: sticky; top: 16px;
+  }
+  .player-card .ovr {
+    font-size: 44px; font-weight: 800; color: var(--gold); line-height: 1;
+  }
+  .player-card .ovr small { font-size: 13px; color: var(--muted); font-weight: 600; display: block; letter-spacing: 2px; }
+  .pc-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+  .pc-name { font-size: 21px; font-weight: 800; }
+  .pc-sub { color: var(--muted); font-size: 13px; margin-bottom: 14px; }
+  .attr-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin: 7px 0; }
+  .attr-row .bar { flex: 1; height: 7px; background: #0b0f14; border-radius: 4px; margin: 0 10px; overflow: hidden; }
+  .attr-row .bar i { display: block; height: 100%; border-radius: 4px; background: var(--green-bright); }
+  .attr-row b { width: 26px; text-align: right; }
+  .attr-row span.lbl { width: 34px; color: var(--muted); }
+  .meter { margin-top: 14px; }
+  .meter .attr-row .bar i.energy { background: var(--blue); }
+  .meter .attr-row .bar i.form { background: var(--gold); }
+  .meter .attr-row .bar i.morale { background: #bc8cff; }
+  .money-line { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 14px; display: flex; justify-content: space-between; }
+  .money-line b { color: var(--green-bright); }
+
+  .main-panel { min-width: 0; }
+  .topbar {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;
+  }
+  .topbar .club { font-weight: 800; font-size: 17px; }
+  .topbar .club small { color: var(--muted); font-weight: 400; display: block; font-size: 12px; }
+  .topbar .season-info { text-align: right; font-size: 13px; color: var(--muted); }
+  .topbar .season-info b { color: var(--text); font-size: 15px; display: block; }
+
+  .tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+  .tab-btn {
+    padding: 9px 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel);
+    color: var(--muted); cursor: pointer; font-size: 13.5px; font-weight: 600;
+  }
+  .tab-btn.active { background: #16301f; border-color: var(--green); color: var(--text); }
+
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 14px; }
+  .panel h3 { margin-bottom: 12px; font-size: 16px; }
+  .panel h3 .sub { color: var(--muted); font-weight: 400; font-size: 13px; margin-left: 8px; }
+
+  .action-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .action-card {
+    background: var(--panel2); border: 1px solid var(--border); border-radius: 10px; padding: 14px;
+    cursor: pointer; text-align: center;
+  }
+  .action-card:hover { border-color: var(--green); }
+  .action-card.done { border-color: var(--green-bright); background: #16301f; }
+  .action-card .ico { font-size: 24px; }
+  .action-card .nm { font-weight: 700; font-size: 14px; margin: 6px 0 2px; }
+  .action-card .fx { color: var(--muted); font-size: 12px; }
+
+  .news-item { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; line-height: 1.45; }
+  .news-item:last-child { border-bottom: none; }
+  .news-item .wk { color: var(--muted); font-size: 12px; margin-right: 8px; }
+  .news-item.good { border-left: 3px solid var(--green-bright); padding-left: 10px; }
+  .news-item.bad { border-left: 3px solid var(--red); padding-left: 10px; }
+  .news-item.gold { border-left: 3px solid var(--gold); padding-left: 10px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th { text-align: left; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .5px; padding: 7px 8px; border-bottom: 1px solid var(--border); }
+  td { padding: 7px 8px; border-bottom: 1px solid #1f2733; }
+  tr.me td { background: #16301f; font-weight: 700; }
+  td.num, th.num { text-align: right; }
+
+  .stat-boxes { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
+  .stat-box { background: var(--panel2); border: 1px solid var(--border); border-radius: 10px; padding: 14px; text-align: center; }
+  .stat-box b { display: block; font-size: 24px; }
+  .stat-box span { color: var(--muted); font-size: 12px; }
+
+  /* Match modal */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(4, 8, 12, .82); display: flex;
+    align-items: center; justify-content: center; z-index: 50; padding: 16px;
+  }
+  .modal {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+    padding: 28px; max-width: 560px; width: 100%; max-height: 90vh; overflow-y: auto;
+  }
+  .scoreline { display: flex; justify-content: space-between; align-items: center; margin: 16px 0 20px; }
+  .scoreline .team { flex: 1; text-align: center; font-weight: 700; font-size: 15px; }
+  .scoreline .score { font-size: 40px; font-weight: 800; padding: 0 18px; white-space: nowrap; }
+  .match-events { font-size: 14px; line-height: 1.7; margin-bottom: 14px; }
+  .match-events .ev { padding: 3px 0; }
+  .rating-badge {
+    display: inline-block; padding: 4px 14px; border-radius: 20px; font-weight: 800; font-size: 18px;
+  }
+  .rating-badge.high { background: #16301f; color: var(--green-bright); border: 1px solid var(--green); }
+  .rating-badge.mid { background: #2d2a17; color: var(--gold); border: 1px solid var(--gold); }
+  .rating-badge.low { background: #301716; color: var(--red); border: 1px solid var(--red); }
+
+  .offer-card { background: var(--panel2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 10px; }
+  .offer-card .oc-club { font-weight: 800; font-size: 16px; }
+  .offer-card .oc-details { color: var(--muted); font-size: 13px; margin: 5px 0 12px; }
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 11px; font-weight: 700; background: var(--panel); border: 1px solid var(--border); color: var(--muted); margin-left: 6px; }
+  .badge.t1 { color: var(--gold); border-color: var(--gold); }
+  .badge.t2 { color: var(--blue); border-color: var(--blue); }
+
+  .trophy-list { display: flex; flex-wrap: wrap; gap: 8px; }
+  .trophy { background: var(--panel2); border: 1px solid var(--gold); color: var(--gold); border-radius: 8px; padding: 6px 12px; font-size: 13px; font-weight: 600; }
+
+  /* Mini-games & events */
+  .mg-wrap { text-align: center; }
+  .timing-track { position: relative; height: 28px; background: #0b0f14; border: 1px solid var(--border); border-radius: 14px; margin: 20px 0; overflow: hidden; }
+  .timing-zone { position: absolute; top: 0; bottom: 0; }
+  .timing-zone.good { background: #2d2a17; }
+  .timing-zone.perfect { background: #16301f; border-left: 1px solid var(--green); border-right: 1px solid var(--green); }
+  .timing-marker { position: absolute; top: -2px; bottom: -2px; width: 5px; background: #fff; border-radius: 3px; box-shadow: 0 0 10px #fff; left: 0; }
+  .goal-mouth { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: 1fr 1fr; gap: 6px; max-width: 360px; margin: 16px auto 4px; padding: 12px; background: linear-gradient(#12202e, #0b0f14); border: 3px solid #ffffff33; border-bottom: none; border-radius: 10px 10px 0 0; }
+  .goal-zone { height: 54px; border: 1px dashed #ffffff2e; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--muted); text-align: center; }
+  .goal-zone:hover { background: #16301f; border-color: var(--green); color: var(--text); }
+  .event-choice { display: block; width: 100%; text-align: left; margin-top: 10px; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--panel2); color: var(--text); cursor: pointer; font-size: 14px; font-family: inherit; }
+  .event-choice:hover { border-color: var(--green); }
+  .event-choice small { display: block; color: var(--muted); margin-top: 3px; }
+  .mg-result { font-size: 20px; font-weight: 800; margin: 14px 0; }
+  .boost-line { color: #ff9636; font-size: 12px; margin-top: 7px; font-weight: 700; }
+
+  /* Shop */
+  .shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 12px; }
+  .shop-card { background: var(--panel2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; }
+  .shop-card .ico { font-size: 26px; }
+  .shop-card .nm { font-weight: 800; font-size: 15px; margin: 6px 0 2px; }
+  .shop-card .owned { color: var(--muted); font-size: 12px; margin-bottom: 10px; }
+  .shop-card .owned b { color: var(--gold); }
+  .shop-card .next { font-size: 13px; line-height: 1.5; flex: 1; margin-bottom: 12px; }
+  .shop-card .next span { color: var(--muted); }
+  .shop-card .maxed { color: var(--gold); font-weight: 700; display: flex; align-items: center; }
+  .shop-card .btn { padding: 9px 14px; font-size: 13.5px; }
+
+  /* Stock market */
+  .stock-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 7px; background: var(--panel2); flex-wrap: wrap; }
+  .stock-row .st-info { flex: 1; min-width: 190px; font-size: 14px; }
+  .stock-row .st-info small { display: block; color: var(--muted); margin-top: 3px; }
+  .stock-row .st-btns { display: flex; gap: 5px; }
+  .stock-row .st-btns .btn { padding: 6px 10px; font-size: 12px; }
+
+  /* Transfer market */
+  .tm-league { margin: 18px 0 8px; font-size: 14px; color: var(--gold); font-weight: 800; }
+  .tm-league:first-child { margin-top: 0; }
+  .transfer-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 9px 12px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 7px; background: var(--panel2); }
+  .transfer-row .tr-club { font-weight: 700; font-size: 14px; }
+  .transfer-row .tr-req { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; font-weight: 400; }
+  .transfer-row .tr-req.ok { color: var(--green-bright); }
+  .transfer-row .btn { padding: 7px 14px; font-size: 12.5px; white-space: nowrap; }
+  .transfer-row.current { border-color: var(--green); background: #16301f; }
+
+  #retire-screen { text-align: center; padding-top: 30px; }
+  .legacy-title { font-size: 34px; color: var(--gold); margin: 10px 0; }
+  .fade-muted { color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ============ AUTH ============ -->
+  <div id="auth-screen" class="hidden" style="text-align:center;padding-top:40px">
+    <h1 class="logo">⚽ PITCH <span>LEGEND</span></h1>
+    <p class="tagline">Log in to manage your careers and climb the global leaderboard.</p>
+    <div class="setup-card">
+      <label>Username</label>
+      <input id="auth-user" type="text" maxlength="16" placeholder="3–16 letters, numbers, _">
+      <label>Password</label>
+      <input id="auth-pass" type="password" maxlength="32" placeholder="At least 4 characters">
+      <div id="auth-error" style="color:var(--red);margin-top:12px;font-size:13px;min-height:18px"></div>
+      <div class="btn-row" style="margin-top:10px">
+        <button class="btn" id="btn-login" style="flex:1">Log In</button>
+        <button class="btn secondary" id="btn-register" style="flex:1">Create Account</button>
+      </div>
+      <small style="display:block;margin-top:14px;color:var(--muted);line-height:1.5">Accounts are stored in this browser. Your trophy totals are shared to the global leaderboard.</small>
+    </div>
+  </div>
+
+  <!-- ============ CAREER MENU ============ -->
+  <div id="menu-screen" class="hidden" style="text-align:center;padding-top:30px">
+    <h1 class="logo">⚽ PITCH <span>LEGEND</span></h1>
+    <div class="setup-card" style="max-width:560px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="text-align:left"><b id="menu-user" style="font-size:18px">—</b><br>
+          <span style="color:var(--gold);font-size:13px">🏆 <span id="menu-trophies">0</span> career trophies</span></div>
+        <button class="btn danger" id="btn-logout" style="padding:8px 14px;font-size:12px">Log Out</button>
+      </div>
+      <label>Your careers (max 5)</label>
+      <div id="save-list" style="margin-top:8px"></div>
+      <div class="btn-row">
+        <button class="btn" id="btn-newcareer" style="flex:1">+ New Career</button>
+        <button class="btn gold" id="btn-board" style="flex:1">🌍 Leaderboard</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ LEADERBOARD ============ -->
+  <div id="board-screen" class="hidden" style="padding-top:30px">
+    <h1 class="logo" style="text-align:center;font-size:32px">🌍 GLOBAL <span>LEADERBOARD</span></h1>
+    <p class="tagline" style="text-align:center">Top 100 players by total trophies across all their careers.</p>
+    <div class="panel" style="max-width:640px;margin:0 auto">
+      <div id="board-note" style="color:var(--gold);font-size:13px;margin-bottom:10px"></div>
+      <table>
+        <thead><tr><th>#</th><th>Player</th><th class="num">🏆 Trophies</th></tr></thead>
+        <tbody id="board-body"></tbody>
+      </table>
+      <div class="btn-row">
+        <button class="btn secondary" id="btn-board-back">← Back</button>
+        <button class="btn" id="btn-board-refresh">↻ Refresh</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SETUP ============ -->
+  <div id="setup-screen" class="hidden">
+    <h1 class="logo">⚽ PITCH <span>LEGEND</span></h1>
+    <p class="tagline">Take a 16-year-old prospect from the lower leagues to footballing immortality.</p>
+    <div class="setup-card">
+      <label>Player name</label>
+      <input id="inp-name" type="text" maxlength="24" placeholder="e.g. Leo Fafico" value="">
+      <label>Nationality</label>
+      <select id="inp-nation">
+        <option>Argentina</option><option>Brazil</option><option>England</option><option>France</option>
+        <option>Germany</option><option>Italy</option><option>Japan</option><option selected>Mexico</option>
+        <option>Netherlands</option><option>Nigeria</option><option>Portugal</option><option>Spain</option>
+        <option>USA</option><option>Uruguay</option>
+      </select>
+      <label>Position</label>
+      <div class="pos-grid" id="pos-grid">
+        <div class="pos-btn" data-pos="GK">GK<small>Goalkeeper</small></div>
+        <div class="pos-btn" data-pos="DEF">DEF<small>Defender</small></div>
+        <div class="pos-btn" data-pos="MID">MID<small>Midfielder</small></div>
+        <div class="pos-btn selected" data-pos="FWD">FWD<small>Forward</small></div>
+      </div>
+      <label>Starting stage</label>
+      <div class="pos-grid" id="stage-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="pos-btn" data-stage="ms">🏫 Middle<br>School<small>Age 13 · longest runway</small></div>
+        <div class="pos-btn selected" data-stage="hs">🎒 High<br>School<small>Age 15 · the classic</small></div>
+        <div class="pos-btn" data-stage="college">🎓 College<small>Age 18 · debt included</small></div>
+      </div>
+      <label>School team</label>
+      <select id="inp-club"></select>
+      <small style="display:block;margin-top:6px;color:var(--muted)">At 18 you choose: go pro straight from high school (×1.2 training growth until 21, but you'll barely play) — or take a college scholarship (starter minutes + ×1.35 growth, but $25K tuition a year puts you straight into debt).</small>
+      <div class="btn-row">
+        <button class="btn" id="btn-start" style="flex:1">Start Career</button>
+        <button class="btn secondary" id="btn-setup-back">← Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ GAME ============ -->
+  <div id="game-screen" class="hidden">
+    <!-- Sidebar player card -->
+    <div class="player-card">
+      <div class="pc-head">
+        <div>
+          <div class="pc-name" id="pc-name">—</div>
+          <div class="pc-sub" id="pc-sub">—</div>
+        </div>
+        <div class="ovr"><span id="pc-ovr">—</span><small>OVR</small></div>
+      </div>
+      <div id="pc-attrs"></div>
+      <div class="meter">
+        <div class="attr-row"><span class="lbl">NRG</span><div class="bar"><i class="energy" id="bar-energy"></i></div><b id="val-energy">—</b></div>
+        <div class="attr-row"><span class="lbl">FRM</span><div class="bar"><i class="form" id="bar-form"></i></div><b id="val-form">—</b></div>
+        <div class="attr-row"><span class="lbl">MRL</span><div class="bar"><i class="morale" id="bar-morale"></i></div><b id="val-morale">—</b></div>
+      </div>
+      <div id="pc-boosts"></div>
+      <div class="money-line"><span>Wage <b id="pc-wage">—</b>/wk</span><span>Bank <b id="pc-money">—</b></span></div>
+      <div class="money-line" style="border:none;padding-top:4px"><span class="fade-muted">Reputation</span><b id="pc-rep" style="color:var(--gold)">—</b></div>
+    </div>
+
+    <!-- Main -->
+    <div class="main-panel">
+      <div class="topbar">
+        <div class="club" id="tb-club"><span id="tb-club-label">—</span><small id="tb-league">—</small></div>
+        <div class="season-info"><b id="tb-season">—</b><span id="tb-week">—</span></div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="tab-week">This Week</button>
+        <button class="tab-btn" data-tab="tab-table">League Table</button>
+        <button class="tab-btn" data-tab="tab-stats">My Stats</button>
+        <button class="tab-btn" data-tab="tab-shop">Shop</button>
+        <button class="tab-btn" data-tab="tab-transfers">Transfers</button>
+        <button class="tab-btn" data-tab="tab-history">Career</button>
+      </div>
+
+      <!-- THIS WEEK -->
+      <div id="tab-week" class="tab-page">
+        <div class="panel">
+          <h3>Weekly Activity <span class="sub" id="act-hint">Pick one activity, then play your match</span></h3>
+          <div class="action-grid" id="action-grid"></div>
+        </div>
+        <div class="panel">
+          <h3>Next Match</h3>
+          <div id="next-match-info" style="font-size:15px;margin-bottom:14px;"></div>
+          <button class="btn" id="btn-play">▶ &nbsp;Play Match</button>
+          <button class="btn secondary hidden" id="btn-endseason">Finish Season →</button>
+        </div>
+        <div class="panel">
+          <h3>News Feed</h3>
+          <div id="news-feed"></div>
+        </div>
+      </div>
+
+      <!-- TABLE -->
+      <div id="tab-table" class="tab-page hidden">
+        <div class="panel">
+          <h3 id="table-title">League Table</h3>
+          <table>
+            <thead><tr><th>#</th><th>Club</th><th class="num">P</th><th class="num">W</th><th class="num">D</th><th class="num">L</th><th class="num">GD</th><th class="num">Pts</th></tr></thead>
+            <tbody id="league-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- STATS -->
+      <div id="tab-stats" class="tab-page hidden">
+        <div class="panel">
+          <h3>This Season</h3>
+          <div class="stat-boxes" id="season-stat-boxes"></div>
+        </div>
+        <div class="panel">
+          <h3>Career Totals</h3>
+          <div class="stat-boxes" id="career-stat-boxes"></div>
+        </div>
+        <div class="panel">
+          <h3>Trophy Cabinet</h3>
+          <div class="trophy-list" id="trophy-list"><span class="fade-muted">Nothing yet. Go win something.</span></div>
+        </div>
+      </div>
+
+      <!-- SHOP -->
+      <div id="tab-shop" class="tab-page hidden">
+        <div class="panel">
+          <h3>Player Shop <span class="sub">Invest your fortune — bank: <b id="shop-money" style="color:var(--green-bright)">—</b></span></h3>
+          <div class="shop-grid" id="shop-grid"></div>
+        </div>
+        <div class="panel">
+          <h3>👔 Coaching Staff <span class="sub">Coaches multiply training gains for their stat — salary paid every week. Miss a payment and they walk.</span></h3>
+          <div class="shop-grid" id="coach-grid"></div>
+        </div>
+        <div class="panel">
+          <h3>📈 Fafico Stock Exchange <span class="sub">Prices move every matchday. Invest wisely — or gamble on MoonShot.</span></h3>
+          <div style="font-size:13.5px;margin-bottom:12px">Portfolio value: <b id="pf-value" style="color:var(--green-bright)">$0</b> · <span id="pf-profit"></span></div>
+          <div id="stock-list"></div>
+        </div>
+      </div>
+
+      <!-- TRANSFERS -->
+      <div id="tab-transfers" class="tab-page hidden">
+        <div class="panel">
+          <h3>Transfer Market <span class="sub">Your reputation: <b id="tm-rep" style="color:var(--gold)">—</b> · clubs unlock as it grows · one transfer per season</span></h3>
+          <div id="transfer-list"></div>
+        </div>
+      </div>
+
+      <!-- HISTORY -->
+      <div id="tab-history" class="tab-page hidden">
+        <div class="panel">
+          <h3>Season by Season</h3>
+          <table>
+            <thead><tr><th>Season</th><th>Club</th><th class="num">Age</th><th class="num">Apps</th><th class="num">Goals</th><th class="num">Assists</th><th class="num">Avg</th><th class="num">Pos</th></tr></thead>
+            <tbody id="history-body"><tr><td colspan="8" class="fade-muted">Your first season is underway.</td></tr></tbody>
+          </table>
+        </div>
+        <div class="panel">
+          <h3>Options</h3>
+          <div class="btn-row" style="margin-top:0">
+            <button class="btn secondary" id="btn-save">💾 Save Game</button>
+            <button class="btn secondary" id="btn-newgame">⬅ Save & Exit to Menu</button>
+            <button class="btn danger" id="btn-retire-now">Retire Now</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ RETIREMENT ============ -->
+  <div id="retire-screen" class="hidden">
+    <h1 class="logo">🏆 CAREER <span>OVER</span></h1>
+    <div class="legacy-title" id="legacy-title">—</div>
+    <p class="fade-muted" id="legacy-sub" style="margin-bottom:24px">—</p>
+    <div class="panel" style="max-width:640px;margin:0 auto 14px;text-align:left">
+      <h3>Final Career Numbers</h3>
+      <div class="stat-boxes" id="final-stat-boxes"></div>
+    </div>
+    <div class="panel" style="max-width:640px;margin:0 auto 14px;text-align:left">
+      <h3>Trophies & Honours</h3>
+      <div class="trophy-list" id="final-trophies"></div>
+    </div>
+    <button class="btn" id="btn-restart">Start a New Career</button>
+  </div>
+</div>
+
+<!-- Match / event modal -->
+<div class="overlay hidden" id="overlay">
+  <div class="modal" id="modal-content"></div>
+</div>
+
+<script>
+"use strict";
+// ============================== DATA ==============================
+const SAVE_KEY = "pitchLegendSave_v1";
+const POSITIONS = { GK:"Goalkeeper", DEF:"Defender", MID:"Midfielder", FWD:"Forward" };
+const ATTR_NAMES = { pac:"PAC", sho:"SHO", pas:"PAS", dri:"DRI", def:"DEF", phy:"PHY" };
+
+// 5 tiers. Tier 5 = where you start. Tier 1 = elite Europe.
+const LEAGUES = [
+  { tier:1, name:"Continental Super League", strength:[82,92], wageMult:60 },
+  { tier:2, name:"National First Division",  strength:[74,84], wageMult:18 },
+  { tier:3, name:"National Second Division", strength:[66,76], wageMult:6 },
+  { tier:4, name:"Regional Championship",    strength:[58,68], wageMult:2.2 },
+  { tier:5, name:"Amateur District League",  strength:[48,58], wageMult:1 },
+  // tiers 6-8 are the school system — not reachable via transfers
+  { tier:6, name:"National College League",        strength:[46,56], wageMult:1 },
+  { tier:7, name:"State High School League",       strength:[36,46], wageMult:1 },
+  { tier:8, name:"Middle School District League",  strength:[28,38], wageMult:1 },
+];
+const CLUB_NAMES = {
+  1:["Real Madrera","FC Bavaria","Paris Étoile","Manchester Crown","Juvenal FC","Città Milano","Atlético Costa","Ajax Oranje","Lisboa Águias","Chelsford Blues","Borussia Westfalen","Internazionale Nord"],
+  2:["Sevilla Sur","Olympique Azur","Leeds Union","Napoli Vesuvio","Frankfurt Adler","Porto Dragões","Villarroja CF","Athletic Norte","Roma Lupa","Brighton Gulls","Leverkusen Werk","Marseille Port"],
+  3:["Union Cordoba","FC Sankt Pauli","Ipswich Town Hall","Granada Alhambra","Metz Lorraine","Cadiz Bahía","Hull Tigers","Parma Ducale","Bochum Ruhr","Sporting Braga Norte","Almería Sol","Nantes Canaris"],
+  4:["Rio Verde FC","Deportivo Cactus","Puebla Angels","Toluca Devils","San Luis Royals","Oaxaca Warriors","Chivas del Valle","Monterrey Steel","Tijuana Border","Querétaro Roosters","León Emeralds","Pachuca Miners"],
+  5:["Barrio United","Los Tigres del Sur","CD Esperanza","Atlético Callejero","Rayo Chiquito","Deportivo La Loma","Club Estrella","Halcones FC","La Cantera SC","Unión Vecinal","Real Potrero","Ferro Viejo"],
+  6:["State University Wolves","Coastal College Sharks","Tech Institute Circuits","Mountain U Climbers","Capital University Eagles","Bayside College Waves","Prairie State Bulls","Ironbridge Poly Hammers"],
+  7:["Central High Cougars","Eastwood Eagles","St. Mateo Saints","Northside Titans","Palm Valley Vipers","Riverside Rockets","Old Mill Mustangs","Harbor High Herons"],
+  8:["Maple Grove Middle","Cedar Park Colts","Río Verde Juniors","Lakeside Otters","Sunnyhill Cubs","Fox Hollow Foxes","Stonebrook Bears","Willow Creek Wolves"],
+};
+const NPC_FIRST = ["Marco","Jonas","Diego","Kwame","Yuto","Erik","Pablo","Liam","Sergei","Matheus","Ousmane","Tomás","Ivan","Ricardo","Emil","Andrés"];
+const NPC_LAST  = ["Silva","Berg","Ramírez","Okafor","Tanaka","Larsen","Duarte","Walker","Petrov","Costa","Traoré","Vidal","Moreno","Klein","Rossi","Vargas"];
+
+// ============================== STATE ==============================
+let G = null; // full game state
+
+const rnd = (a,b) => a + Math.random() * (b - a);
+const irnd = (a,b) => Math.floor(rnd(a, b + 1));
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const money = n => {
+  const sign = n < 0 ? "-" : "";
+  n = Math.abs(n);
+  return sign + "$" + (n >= 1e6 ? (n/1e6).toFixed(2) + "M" : n >= 1e3 ? Math.round(n/1e3) + "K" : Math.round(n));
+};
+
+// procedural team crest: colors + pattern are derived from the club's name
+const CREST_PALETTE = ["#c0392b","#2980b9","#27ae60","#8e44ad","#f39c12","#16a085","#d35400","#2c3e50","#e74c3c","#3498db","#e67e22","#1abc9c","#9b59b6","#f1c40f","#34495e","#a93226"];
+function crest(name, size = 18) {
+  let h = 0; for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  const c1 = CREST_PALETTE[h % CREST_PALETTE.length];
+  let c2 = CREST_PALETTE[((h >> 5) + 3) % CREST_PALETTE.length];
+  if (c2 === c1) c2 = "#ecf0f1";
+  const style = (h >> 3) % 4;
+  const initials = name.split(/\s+/).map(w => w[0]).join("").slice(0, 2).toUpperCase();
+  const shield = "M12 1 L23 5 V14 C23 21 18 25.5 12 27 C6 25.5 1 21 1 14 V5 Z";
+  const id = "cp" + (h % 1000000);
+  let deco = "";
+  if (style === 1) deco = `<rect x="12" y="0" width="12" height="28" fill="${c2}" clip-path="url(#${id})"/>`;
+  else if (style === 2) deco = `<g clip-path="url(#${id})" fill="${c2}"><rect x="4" y="0" width="4" height="28"/><rect x="12" y="0" width="4" height="28"/><rect x="20" y="0" width="4" height="28"/></g>`;
+  else if (style === 3) deco = `<path d="M0 6 L18 28 L26 28 L4 0 Z" fill="${c2}" clip-path="url(#${id})"/>`;
+  return `<svg width="${size}" height="${Math.round(size * 28 / 24)}" viewBox="0 0 24 28" style="vertical-align:-3px">
+    <defs><clipPath id="${id}"><path d="${shield}"/></clipPath></defs>
+    <path d="${shield}" fill="${c1}"/>${deco}
+    <path d="${shield}" fill="none" stroke="#00000066" stroke-width="1.5"/>
+    <text x="12" y="17.5" text-anchor="middle" font-size="9.5" font-weight="800" fill="#fff" stroke="#000000aa" stroke-width="2" style="paint-order:stroke" font-family="system-ui,sans-serif">${initials}</text>
+  </svg>`;
+}
+
+// attribute value including active temporary boosts
+function effAttr(p, k) {
+  let v = p.attrs[k];
+  (p.tempBoosts || []).forEach(b => { if (b.attr === k) v += b.amt; });
+  return clamp(v, 1, 99);
+}
+
+function overall(p) {
+  let w;
+  switch (p.pos) {
+    case "GK":  w = { pac:.05, sho:.02, pas:.13, dri:.05, def:.45, phy:.30 }; break;
+    case "DEF": w = { pac:.15, sho:.03, pas:.14, dri:.08, def:.38, phy:.22 }; break;
+    case "MID": w = { pac:.14, sho:.16, pas:.30, dri:.20, def:.10, phy:.10 }; break;
+    default:    w = { pac:.22, sho:.32, pas:.12, dri:.22, def:.02, phy:.10 }; // FWD
+  }
+  let o = 0; for (const k in w) o += effAttr(p, k) * w[k];
+  return Math.round(o);
+}
+
+function addBoost(attr, amt, games, label) {
+  const p = G.player;
+  p.tempBoosts = p.tempBoosts || [];
+  p.tempBoosts.push({ attr, amt, games, fresh: true });
+  addNews(`🔥 ${label}! +${amt} ${ATTR_NAMES[attr]} for the next ${games} game${games > 1 ? "s" : ""}.`, "gold");
+}
+const HERO_ATTR = { GK:"def", DEF:"def", MID:"pas", FWD:"pac" };
+
+const STAGE_CFG = {
+  ms:      { tier:8, age:13, lo:30, hi:42, wage:10 },
+  hs:      { tier:7, age:15, lo:36, hi:48, wage:20 },
+  college: { tier:6, age:18, lo:42, hi:55, wage:120 },
+};
+
+function newPlayer(name, nation, pos, stage) {
+  const cfg = STAGE_CFG[stage] || STAGE_CFG.hs;
+  const base = () => irnd(cfg.lo, cfg.hi);
+  const attrs = { pac:base(), sho:base(), pas:base(), dri:base(), def:base(), phy:irnd(cfg.lo - 4, cfg.hi - 7) };
+  // small positional head start
+  if (pos === "FWD") { attrs.sho += 8; attrs.pac += 5; }
+  if (pos === "MID") { attrs.pas += 8; attrs.dri += 5; }
+  if (pos === "DEF") { attrs.def += 10; attrs.phy += 4; }
+  if (pos === "GK")  { attrs.def += 12; attrs.phy += 6; }
+  return {
+    name, nation, pos, age: cfg.age,
+    startStage: stage, path: null,  // path becomes "hs-pro" or "college" at graduation
+    attrs,
+    potential: irnd(84, 97),        // hidden ceiling
+    energy: 100, form: 50, morale: 70,
+    money: 500, wage: cfg.wage,
+    reputation: 5,                  // 0..100
+    seasonStats: freshSeasonStats(),
+    careerStats: { apps:0, goals:0, assists:0, cleanSheets:0, motm:0, ratingsSum:0, seasons:0 },
+    trophies: [],
+    history: [],
+    gearLevel: {},   // shop purchases: category -> tier owned
+    tempBoosts: [],  // { attr, amt, games, fresh } hot-streak boosts from mini-games
+    portfolio: {},   // stock holdings: id -> { shares, cost }
+    coaches: {},     // hired coaches: attr -> tier (1-3)
+  };
+}
+const freshSeasonStats = () => ({ apps:0, goals:0, assists:0, cleanSheets:0, motm:0, ratingsSum:0 });
+
+function genLeague(tier) {
+  const L = LEAGUES.find(l => l.tier === tier);
+  const clubs = CLUB_NAMES[tier].map(n => ({
+    name: n,
+    strength: Math.round(rnd(L.strength[0], L.strength[1])),
+    pts:0, w:0, d:0, l:0, gf:0, ga:0,
+  }));
+  return clubs;
+}
+
+function newGame(name, nation, pos, stage, clubName) {
+  const player = newPlayer(name, nation, pos, stage);
+  const tier = (STAGE_CFG[stage] || STAGE_CFG.hs).tier;
+  const clubs = genLeague(tier);
+  const myClub = clubs.some(c => c.name === clubName) ? clubName : clubs[irnd(0, clubs.length - 1)].name;
+  if (stage === "college") { player.path = "college"; player.money -= 25000; } // year-one tuition
+  G = {
+    player, tier, clubName: myClub, clubs,
+    season: 1, year: 2026, week: 1,
+    totalRounds: (clubs.length - 1) * 2, // 22 rounds
+    trainedThisWeek: false, lastTraining: null,
+    news: [],
+    topScorerNPC: { name: npcName(), goals: 0 },
+    eventCooldowns: {}, weekCount: 0,
+    transferredThisSeason: false,
+    scoutInterest: [],
+    stocks: initStocks(),
+    retired: false,
+  };
+  addNews(`Welcome to ${myClub}! Coach says: "Show me you belong here, kid."`, "good");
+  if (stage === "college") addNews(`🎓 Tuition bill arrives: $25K. Welcome to student debt, ${player.name}.`, "bad");
+  addNews(`${player.name} (${player.age}) joins ${myClub} — ${money(player.wage)}/week ${tier >= 7 ? "allowance" : tier === 6 ? "stipend" : "wage"}.`);
+}
+
+const npcName = () => pick(NPC_FIRST) + " " + pick(NPC_LAST);
+
+function myClubObj() { return G.clubs.find(c => c.name === G.clubName); }
+function leagueInfo() { return LEAGUES.find(l => l.tier === G.tier); }
+
+function addNews(text, kind) {
+  G.news.unshift({ week: `S${G.season} W${G.week}`, text, kind: kind || "" });
+  if (G.news.length > 40) G.news.pop();
+}
+
+// ============================== TRAINING ==============================
+const TRAININGS = [
+  { id:"pac", ico:"🏃", nm:"Sprints",    fx:"+Pace",      attr:"pac", cost:22 },
+  { id:"sho", ico:"🎯", nm:"Finishing",  fx:"+Shooting",  attr:"sho", cost:22 },
+  { id:"pas", ico:"🧠", nm:"Playmaking", fx:"+Passing",   attr:"pas", cost:22 },
+  { id:"dri", ico:"✨", nm:"Ball Skills",fx:"+Dribbling", attr:"dri", cost:22 },
+  { id:"def", ico:"🛡️", nm:"Defending",  fx:"+Defending", attr:"def", cost:22 },
+  { id:"phy", ico:"💪", nm:"Gym",        fx:"+Physical",  attr:"phy", cost:22 },
+  { id:"rest",ico:"🛌", nm:"Rest",       fx:"+40 Energy", attr:null,  cost:0  },
+];
+
+// stat nudge helpers (used by events, mini-games, matches)
+function mor(n) { G.player.morale = clamp(G.player.morale + n, 0, 100); }
+function nrg(n) { G.player.energy = clamp(G.player.energy + n, 0, 100); }
+function frm(n) { G.player.form = clamp(G.player.form + n, 0, 100); }
+function rep(n) { G.player.reputation = clamp(G.player.reputation + n, 0, 100); }
+function weightedPick(ws) {
+  const total = ws.reduce((a, b) => a + b, 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < ws.length; i++) { r -= ws[i]; if (r <= 0) return i; }
+  return ws.length - 1;
+}
+
+// Generic timing-bar mini-game: stop the marker in the green zone.
+// Higher relevant stat = bigger sweet spot and slower marker.
+function timingMiniGame(cfg) {
+  const stat = cfg.stat;
+  const perfectW = clamp(6 + stat * 0.10, 6, 18);
+  const goodW = clamp(20 + stat * 0.22, 20, 46);
+  const speed = clamp(2.6 - stat * 0.012, 1.3, 2.6);
+  showModal(`<div class="mg-wrap"><h2>${cfg.title}</h2>
+    <p class="fade-muted" style="margin:10px 0">${cfg.desc}</p>
+    <div class="timing-track">
+      <div class="timing-zone good" style="left:${50 - goodW/2}%;width:${goodW}%"></div>
+      <div class="timing-zone perfect" style="left:${50 - perfectW/2}%;width:${perfectW}%"></div>
+      <div class="timing-marker" id="mg-marker"></div>
+    </div>
+    <div style="text-align:center"><button class="btn" id="mg-stop">${cfg.btn}</button></div></div>`);
+  let pos = 0, dir = 1, raf;
+  const step = () => {
+    pos += dir * speed;
+    if (pos >= 100) { pos = 100; dir = -1; } else if (pos <= 0) { pos = 0; dir = 1; }
+    $("mg-marker").style.left = pos + "%";
+    raf = requestAnimationFrame(step);
+  };
+  raf = requestAnimationFrame(step);
+  $("mg-stop").onclick = () => {
+    cancelAnimationFrame(raf);
+    const d = Math.abs(pos - 50);
+    cfg.onGrade(d <= perfectW / 2 ? "perfect" : d <= goodW / 2 ? "good" : "miss", irnd(5, 88));
+  };
+}
+
+function doTraining(t) {
+  const p = G.player;
+  if (G.trainedThisWeek) return;
+  if (t.id === "rest") {
+    p.energy = clamp(p.energy + 40, 0, 100);
+    addNews("Recovery week: feeling fresh again.");
+    completeTraining(t);
+    return;
+  }
+  if (p.energy < t.cost) { flashModal("Too tired 😮‍💨", "<p>Not enough energy to train hard. Choose <b>Rest</b> this week instead.</p>"); return; }
+  p.energy -= t.cost;
+  // growth: young players grow fast, capped by potential, harder as attribute rises
+  const ovr = overall(p);
+  const ageFactor = p.age <= 21 ? 1.6 : p.age <= 25 ? 1.1 : p.age <= 29 ? 0.7 : 0.35;
+  const headroom = clamp((p.potential - ovr) / 20, 0.1, 1.5);
+  const attrRoom = clamp((99 - p.attrs[t.attr]) / 40, 0.1, 1.2);
+  // school & path development bonuses
+  const stageMult = G.tier >= 7 ? 1.25 : G.tier === 6 ? 1.35 : (p.path === "hs-pro" && p.age <= 21 ? 1.2 : 1);
+  const coachMult = p.coaches && p.coaches[t.attr] ? COACH_TIERS[p.coaches[t.attr] - 1].mult : 1;
+  const baseGain = rnd(0.6, 1.6) * ageFactor * headroom * attrRoom * stageMult * coachMult;
+  if (Math.random() < 0.4) { coachChallenge(t, baseGain); return; }
+  applyTrainingGain(t, baseGain, 1);
+  completeTraining(t);
+}
+function applyTrainingGain(t, gain, mult) {
+  const p = G.player;
+  let g = gain * mult;
+  if (mult === 1 && Math.random() < 0.08) { g *= 2.2; addNews(`Breakthrough session! ${t.nm} training really clicked.`, "good"); }
+  p.attrs[t.attr] = clamp(p.attrs[t.attr] + g, 1, 99);
+  return g;
+}
+function completeTraining(t) {
+  G.trainedThisWeek = true;
+  G.lastTraining = t.id;
+  render();
+  saveGame();
+}
+function coachChallenge(t, baseGain) {
+  timingMiniGame({
+    title: `${t.ico} Coach's Challenge: ${t.nm}`,
+    desc: "The coach sets up a precision drill. Nail the green zone for double gains!",
+    btn: "⚡ GO",
+    stat: G.player.attrs[t.attr],
+    onGrade(grade) {
+      let head, sub, mult;
+      if (grade === "perfect") { mult = 2.0; mor(4); addBoost(t.attr, 3, 2, "Training buzz"); head = "💥 Perfect drill!"; sub = "The coach is speechless. Double training gains!"; }
+      else if (grade === "good") { mult = 1.3; head = "👍 Solid work"; sub = "Clean execution — bonus gains earned."; }
+      else { mult = 0.55; mor(-2); head = "😬 Sloppy"; sub = "You shanked it. The drill fizzles out."; }
+      const g = applyTrainingGain(t, baseGain, mult);
+      showModal(`<div class="mg-wrap"><h2>${head}</h2><p class="fade-muted" style="margin:12px 0">${sub}</p>
+        <div class="mg-result" style="color:var(--green-bright)">+${g.toFixed(1)} ${ATTR_NAMES[t.attr]}</div>
+        <button class="btn" id="mg-continue">Continue</button></div>`);
+      $("mg-continue").onclick = () => { closeModal(); completeTraining(t); };
+    }
+  });
+}
+
+// ============================== RANDOM EVENTS ==============================
+function pokerStake(p) { return Math.min(p.money, Math.max(100, p.wage * 3)); }
+
+const EVENTS = [
+  { id:"fan", w:8, cd:6, title:"🧒 A Young Fan", text:p=>`A kid in a ${G.clubName} shirt waits outside training just to meet ${p.name}. "You're my favourite player!"`, choices:[
+    { label:"Sign the shirt & take a photo", sub:"+8 Morale", apply(p){ mor(8); return ["Made a young fan's day outside training. Feels good.", "good"]; } },
+  ]},
+  { id:"nightout", w:9, cd:5, title:"🎉 Team Night Out", text:()=>"The squad is heading out to celebrate. The captain insists you come.", choices:[
+    { label:"Go out with the lads", sub:"+9 Morale, −14 Energy, small scandal risk", apply(){ mor(9); nrg(-14); if (Math.random() < 0.18) { rep(-2); return ["Photos of the night out hit social media. The gaffer is not amused.", "bad"]; } return ["Great night out — team spirit is flying.", "good"]; } },
+    { label:"Stay home and recover", sub:"+8 Energy, −4 Morale", apply(){ nrg(8); mor(-4); return ["Skipped the night out. The lads called you 'grandpa' at training."]; } },
+  ]},
+  { id:"interview", w:8, cd:7, title:"🎙️ Post-Training Interview", text:()=>"A TV crew grabs you after training. The reporter asks about your ambitions.", choices:[
+    { label:"Stay humble", sub:"+4 Morale, +1 Rep", apply(){ mor(4); rep(1); return ["Your humble interview goes down well with the fans.", "good"]; } },
+    { label:"\"I'll be the best in the world\"", sub:"+3 Rep, but pressure can hurt form", apply(){ rep(3); if (Math.random() < 0.4) { frm(-8); return ["Your bold interview makes headlines — now everyone expects magic.", "bad"]; } mor(5); return ["Your confidence electrifies the fanbase!", "gold"]; } },
+  ]},
+  { id:"sponsor", w:6, cd:16, cond:p=>p.reputation>=20, title:"👟 Sponsorship Offer", text:p=>`A boot brand offers ${p.name} an endorsement deal worth ${money(Math.round(300*p.reputation))}.`, choices:[
+    { label:"Sign the deal", sub:p=>"+"+money(Math.round(300*p.reputation)), apply(p){ const amt = Math.round(300*p.reputation); p.money += amt; return [`Signed a boot sponsorship worth ${money(amt)}!`, "gold"]; } },
+    { label:"Hold out for bigger brands", sub:"+2 Morale", apply(){ mor(2); return ["Turned down the boot deal. Betting on yourself."]; } },
+  ]},
+  { id:"poker", w:6, cd:8, cond:p=>p.money>=500, title:"🃏 Poker Night", text:p=>`The dressing-room poker game is on. Buy-in: ${money(pokerStake(p))}.`, choices:[
+    { label:"Take a seat", sub:"50/50 — double or nothing", apply(p){ const s = pokerStake(p); if (Math.random() < 0.5) { p.money += s; mor(6); return [`Cleaned out the poker table — won ${money(s)}!`, "good"]; } p.money -= s; mor(-5); return [`Lost ${money(s)} at poker. The keeper had a flush.`, "bad"]; } },
+    { label:"Sit this one out", sub:"No risk", apply(){ return ["Skipped poker night and got an early sleep."]; } },
+  ]},
+  { id:"extracoach", w:9, cd:5, title:"📋 Extra Session", text:()=>"The coach offers to stay late for one-on-one work.", choices:[
+    { label:"Stay late", sub:"+Random attribute, −12 Energy", apply(p){ const k = pick(Object.keys(ATTR_NAMES)); p.attrs[k] = clamp(p.attrs[k] + rnd(0.5, 1.2), 1, 99); nrg(-12); return [`Extra session with the coach — ${ATTR_NAMES[k]} improved.`, "good"]; } },
+    { label:"Head home", sub:"+4 Energy", apply(){ nrg(4); return ["Went home early to rest instead of extra training."]; } },
+  ]},
+  { id:"family", w:7, cd:9, title:"🏠 Family Visit", text:p=>`Your family travels from ${p.nation} to watch you play this week.`, choices:[
+    { label:"Spend the day with them", sub:"+10 Morale, +5 Energy", apply(){ mor(10); nrg(5); return ["A day with family — batteries fully recharged.", "good"]; } },
+  ]},
+  { id:"flu", w:5, cd:12, title:"🤒 Flu Outbreak", text:()=>"Half the squad is down with the flu... and now you're feeling feverish too.", choices:[
+    { label:"Tough it out", sub:"−20 Energy, −8 Form", apply(){ nrg(-20); frm(-8); return ["Playing through the flu this week. Rough.", "bad"]; } },
+  ]},
+  { id:"charity", w:6, cd:12, title:"❤️ Charity Match", text:p=>`A children's hospital asks you to headline a charity event. They suggest donating a week's wage (${money(p.wage)}).`, choices:[
+    { label:"Donate & attend", sub:"−1 week's wage, +2 Rep, +7 Morale", apply(p){ p.money = Math.max(0, p.money - p.wage); rep(2); mor(7); return ["Your charity appearance makes the local news. Hero stuff.", "gold"]; } },
+    { label:"Politely decline", sub:"−2 Morale", apply(){ mor(-2); return ["Skipped the charity event this time."]; } },
+  ]},
+  { id:"callup", w:9, cd:10, cond:p=>p.reputation>=45, title:"🌍 International Call-Up!", text:p=>`${p.nation} have called ${p.name} up for a friendly this week!`, choices:[
+    { label:"Report for national duty", sub:"+3 Rep, +10 Morale, −15 Energy", apply(p){ rep(3); mor(10); nrg(-15); if (p.pos !== "GK" && p.pos !== "DEF" && Math.random() < 0.5) { rep(1); return [`⚽ Scored on international duty for ${p.nation}! The whole country knows your name.`, "gold"]; } return [`Won a cap for ${p.nation} in a friendly. Unforgettable.`, "gold"]; } },
+  ]},
+  { id:"boots", w:4, cd:18, title:"🧪 Prototype Boots", text:()=>"A kit engineer offers you experimental boots, custom-tuned to your game.", choices:[
+    { label:"Speed soles", sub:"+1 Pace", apply(p){ p.attrs.pac = clamp(p.attrs.pac + 1, 1, 99); return ["The new speed soles feel amazing — Pace up!", "good"]; } },
+    { label:"Precision strike plate", sub:"+1 Shooting", apply(p){ p.attrs.sho = clamp(p.attrs.sho + 1, 1, 99); return ["The precision plate is dialled in — Shooting up!", "good"]; } },
+  ]},
+  { id:"rumor", w:6, cd:9, cond:p=>p.reputation>=30, title:"📰 Transfer Rumours", text:p=>`The back pages link ${p.name} with a big-money move. Reporters swarm training.`, choices:[
+    { label:"Embrace the hype", sub:"+2 Rep, risk of losing focus", apply(){ rep(2); if (Math.random() < 0.35) { frm(-7); return ["The transfer noise is getting in your head a little.", "bad"]; } return ["You feed the rumours with a wink to the cameras.", "gold"]; } },
+    { label:"\"I'm focused on my club\"", sub:"+5 Morale", apply(){ mor(5); return ["You shut down the transfer talk like a pro."]; } },
+  ]},
+  { id:"hairdryer", w:7, cd:8, cond:p=>p.form<38, title:"🌪️ The Hairdryer Treatment", text:()=>"The manager tears into you in front of the whole squad: \"I need MORE from you!\"", choices:[
+    { label:"Prove him wrong", sub:"+12 Form, −4 Morale", apply(){ frm(12); mor(-4); return ["Fired up after the manager's rant — training like a beast.", "good"]; } },
+    { label:"Sulk about it", sub:"−8 Morale", apply(){ mor(-8); return ["The manager's words sting. Confidence wobbling.", "bad"]; } },
+  ]},
+  { id:"viral", w:5, cd:10, cond:p=>p.form>=75, title:"📱 Going Viral", text:p=>`A clip of ${p.name}'s recent skills hits 2 million views overnight.`, choices:[
+    { label:"Repost it 😎", sub:"+2 Rep, +5 Morale", apply(){ rep(2); mor(5); return ["Your skills compilation is everywhere. New followers by the minute.", "gold"]; } },
+  ]},
+];
+
+function rollEvent() {
+  if (Math.random() > 0.35) return null;
+  const pool = EVENTS.filter(e => (!e.cond || e.cond(G.player)) && (G.eventCooldowns[e.id] || 0) <= G.weekCount);
+  if (!pool.length) return null;
+  const ev = pool[weightedPick(pool.map(e => e.w))];
+  G.eventCooldowns[ev.id] = G.weekCount + (ev.cd || 6);
+  return ev;
+}
+
+function showEventModal(ev, next) {
+  const T = v => typeof v === "function" ? v(G.player) : (v || "");
+  showModal(`<h2>${ev.title}</h2><p style="margin:12px 0;line-height:1.6">${T(ev.text)}</p>` +
+    ev.choices.map((c, i) => `<button class="event-choice" data-ch="${i}"><b>${T(c.label)}</b>${c.sub ? `<small>${T(c.sub)}</small>` : ""}</button>`).join(""));
+  document.querySelectorAll("[data-ch]").forEach(b => b.onclick = () => {
+    const out = ev.choices[+b.dataset.ch].apply(G.player);
+    if (out) addNews(out[0], out[1] || "");
+    closeModal(); render(); saveGame();
+    if (next) next();
+  });
+}
+
+// ============================== MATCH SIM ==============================
+function poissonish(exp) {
+  // cheap goal-count generator around expectation
+  let g = 0;
+  for (let i = 0; i < 6; i++) if (Math.random() < exp / 6) g++;
+  return g;
+}
+
+// ============================== SHOP ==============================
+const SHOP = [
+  { cat:"house", nm:"Housing", ico:"🏠", tiers:[
+    { nm:"Studio Apartment",     cost:5000,    fx:"+3 Energy every week", val:3 },
+    { nm:"City Condo",           cost:60000,   fx:"+6 Energy every week", val:6 },
+    { nm:"Luxury Villa",         cost:400000,  fx:"+10 Energy every week", val:10 },
+    { nm:"Private Estate & Spa", cost:1500000, fx:"+15 Energy every week", val:15 },
+  ]},
+  { cat:"pac", nm:"Speed Training", ico:"🏃", attr:"pac", tiers:[
+    { nm:"Treadmill",         cost:6000,   fx:"+2 Pace permanently", val:2 },
+    { nm:"Sprint Lab",        cost:80000,  fx:"+4 Pace permanently", val:4 },
+    { nm:"Altitude Chamber",  cost:450000, fx:"+7 Pace permanently", val:7 },
+  ]},
+  { cat:"sho", nm:"Finishing Gear", ico:"🎯", attr:"sho", tiers:[
+    { nm:"Backyard Goal",      cost:6000,   fx:"+2 Shooting permanently", val:2 },
+    { nm:"Shooting Machine",   cost:80000,  fx:"+4 Shooting permanently", val:4 },
+    { nm:"Finishing Academy",  cost:450000, fx:"+7 Shooting permanently", val:7 },
+  ]},
+  { cat:"pas", nm:"Vision Training", ico:"🧠", attr:"pas", tiers:[
+    { nm:"Rebound Wall",         cost:6000,   fx:"+2 Passing permanently", val:2 },
+    { nm:"VR Vision Trainer",    cost:80000,  fx:"+4 Passing permanently", val:4 },
+    { nm:"Elite Playmaker Coach",cost:450000, fx:"+7 Passing permanently", val:7 },
+  ]},
+  { cat:"dri", nm:"Skills Equipment", ico:"✨", attr:"dri", tiers:[
+    { nm:"Pro Cone Set",         cost:6000,   fx:"+2 Dribbling permanently", val:2 },
+    { nm:"Private Futsal Court", cost:80000,  fx:"+4 Dribbling permanently", val:4 },
+    { nm:"Skills Guru",          cost:450000, fx:"+7 Dribbling permanently", val:7 },
+  ]},
+  { cat:"def", nm:"Defensive Training", ico:"🛡️", attr:"def", tiers:[
+    { nm:"Tackle Dummies",        cost:6000,   fx:"+2 Defending permanently", val:2 },
+    { nm:"Video Analysis Suite",  cost:80000,  fx:"+4 Defending permanently", val:4 },
+    { nm:"Defending Masterclass", cost:450000, fx:"+7 Defending permanently", val:7 },
+  ]},
+  { cat:"phy", nm:"Fitness Gear", ico:"💪", attr:"phy", tiers:[
+    { nm:"Home Gym",                cost:6000,   fx:"+2 Physical permanently", val:2 },
+    { nm:"Personal Trainer & Chef", cost:80000,  fx:"+4 Physical permanently", val:4 },
+    { nm:"Sports Science Team",     cost:450000, fx:"+7 Physical permanently", val:7 },
+  ]},
+  { cat:"psych", nm:"Sports Psychologist", ico:"🧘", tiers:[
+    { nm:"Sports Psychologist", cost:120000, fx:"+4 Morale every week", val:4 },
+  ]},
+  { cat:"physio", nm:"Personal Physio", ico:"🩺", tiers:[
+    { nm:"Personal Physio", cost:200000, fx:"Injury risk cut in half", val:1 },
+  ]},
+  { cat:"jet", nm:"Private Jet", ico:"✈️", tiers:[
+    { nm:"Private Jet", cost:1000000, fx:"+4 Energy & +2 Morale every week", val:1 },
+  ]},
+];
+
+// ============================== COACHING STAFF ==============================
+// Personal coaches multiply training gains for one stat. Salary is paid every week.
+const COACH_TIERS = [
+  { nm:"Junior Coach", mult:1.25, cost:1000 },
+  { nm:"Pro Coach",    mult:1.5,  cost:4000 },
+  { nm:"Elite Coach",  mult:2.0,  cost:10000 },
+];
+
+function hireCoach(attr, lvl) {
+  const p = G.player;
+  p.coaches = p.coaches || {};
+  if (lvl === 0) {
+    delete p.coaches[attr];
+    addNews(`👔 ${ATTR_NAMES[attr]} coach released.`);
+  } else {
+    const ct = COACH_TIERS[lvl - 1];
+    if (p.money < ct.cost) return;
+    p.money -= ct.cost; // first week's wages up front
+    p.coaches[attr] = lvl;
+    addNews(`👔 Hired a ${ct.nm} for ${ATTR_NAMES[attr]}: ×${ct.mult} training gains (${money(ct.cost)}/week).`, "good");
+  }
+  render(); saveGame();
+}
+
+// ============================== STOCK MARKET ==============================
+const STOCK_DEFS = [
+  { id:"safebank", nm:"SafeBank Savings",    ico:"🏦", base:100, vol:0.015, drift:0.004 },
+  { id:"goalmart", nm:"GoalMart Retail",     ico:"🛒", base:45,  vol:0.04,  drift:0.003 },
+  { id:"bootlace", nm:"Bootlace Industries", ico:"🥾", base:70,  vol:0.05,  drift:0.004 },
+  { id:"sweatco",  nm:"SweatCo Sportswear",  ico:"👕", base:120, vol:0.08,  drift:0.005 },
+  { id:"turftech", nm:"TurfTech Stadiums",   ico:"🌱", base:210, vol:0.10,  drift:0.006 },
+  { id:"kickr",    nm:"Kickr Social",        ico:"📱", base:80,  vol:0.16,  drift:0.007 },
+  { id:"moonshot", nm:"MoonShot Energy",     ico:"🚀", base:30,  vol:0.28,  drift:0.008 },
+];
+
+function initStocks() {
+  return STOCK_DEFS.map(d => {
+    let price = d.base * rnd(0.8, 1.2);
+    const hist = [price];
+    for (let i = 0; i < 11; i++) { // pre-seed some chart history
+      price = Math.max(0.5, price * (1 + d.drift + rnd(-d.vol, d.vol)));
+      hist.push(price);
+    }
+    return { id: d.id, nm: d.nm, ico: d.ico, vol: d.vol, drift: d.drift, price, hist };
+  });
+}
+
+function tickStocks() {
+  (G.stocks || []).forEach(s => {
+    let change = s.drift + rnd(-s.vol, s.vol);
+    if (Math.random() < 0.06) { // market event: surge or crash
+      const spike = rnd(s.vol * 2.5, s.vol * 5) * (Math.random() < 0.5 ? 1 : -1);
+      change += spike;
+      if (Math.abs(spike) > 0.12) {
+        addNews(`${spike > 0 ? "📈" : "📉"} ${s.nm} ${spike > 0 ? "surges" : "crashes"} ${Math.round(Math.abs(spike) * 100)}% ${spike > 0
+          ? pick(["after a viral ad campaign!", "on record earnings!", "after landing a huge sponsorship!"])
+          : pick(["after a scandal!", "on dreadful earnings!", "as the CEO resigns mid-interview!"])}`, spike > 0 ? "good" : "bad");
+      }
+    }
+    s.price = Math.max(0.5, s.price * (1 + change));
+    s.hist.push(s.price);
+    if (s.hist.length > 24) s.hist.shift();
+  });
+}
+
+function buyStock(id, qty) {
+  const p = G.player;
+  const s = G.stocks.find(x => x.id === id);
+  const cost = s.price * qty;
+  if (!s || p.money < cost) return;
+  p.money -= cost;
+  const h = p.portfolio[id] = p.portfolio[id] || { shares: 0, cost: 0 };
+  h.shares += qty;
+  h.cost += cost;
+  render(); saveGame();
+}
+
+function sellStock(id, qty) {
+  const p = G.player;
+  const s = G.stocks.find(x => x.id === id);
+  const h = p.portfolio[id];
+  if (!s || !h || !h.shares) return;
+  qty = Math.min(qty, h.shares);
+  const proceeds = s.price * qty;
+  p.money += proceeds;
+  h.cost *= (h.shares - qty) / h.shares;
+  h.shares -= qty;
+  if (!h.shares) delete p.portfolio[id];
+  render(); saveGame();
+}
+
+function spark(hist, w = 90, h = 26) {
+  if (!hist || hist.length < 2) return "";
+  const min = Math.min(...hist), max = Math.max(...hist), span = max - min || 1;
+  const pts = hist.map((v, i) => `${(i / (hist.length - 1) * w).toFixed(1)},${(h - 2 - (v - min) / span * (h - 4)).toFixed(1)}`).join(" ");
+  const up = hist[hist.length - 1] >= hist[0];
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><polyline points="${pts}" fill="none" stroke="${up ? "var(--green-bright)" : "var(--red)"}" stroke-width="1.5"/></svg>`;
+}
+
+// ============================== TRANSFER MARKET ==============================
+// Reputation needed to join a club. Earlier in each tier's list = more prestigious.
+function repReq(tier, idx) {
+  const base   = { 1:70,   2:45,  3:25,  4:10,  5:0   }[tier];
+  const spread = { 1:2.73, 2:1.6, 3:1.5, 4:1.2, 5:0.5 }[tier];
+  return Math.min(100, base + Math.round((11 - idx) * spread));
+}
+
+function confirmTransfer(tier, clubName) {
+  const p = G.player;
+  const L = LEAGUES.find(l => l.tier === tier);
+  const newWage = Math.round((200 + overall(p) * 14) * L.wageMult / 10) * 10;
+  showModal(`<h2>✈️ Join ${clubName}?</h2>
+    <p style="margin:14px 0;line-height:1.7">${L.name} (Tier ${tier}) · Estimated wage: <b style="color:var(--green-bright)">${money(newWage)}/week</b><br>
+    <span class="fade-muted">You can only transfer once per season. If the squad is much stronger than you, expect the bench.</span></p>
+    <div class="btn-row">
+      <button class="btn" id="tj-yes">Sign for ${clubName}</button>
+      <button class="btn secondary" id="tj-no">Stay put</button>
+    </div>`);
+  $("tj-yes").onclick = () => transferNow(tier, clubName);
+  $("tj-no").onclick = closeModal;
+}
+
+function transferNow(tier, clubName) {
+  const p = G.player;
+  const r = roundsPlayed();
+  const L = LEAGUES.find(l => l.tier === tier);
+  G.tier = tier;
+  G.clubs = genLeague(tier);
+  G.clubName = clubName;
+  G.totalRounds = (G.clubs.length - 1) * 2;
+  // simulate the rounds already played this season so the new league table is consistent
+  const me = myClubObj();
+  const others = G.clubs.filter(c => c.name !== clubName);
+  for (let i = 0; i < Math.min(r, G.totalRounds); i++) {
+    const opp = others[i % others.length];
+    const d = me.strength - opp.strength;
+    applyResult(me, opp, poissonish(clamp(1.35 + d * 0.07, .15, 4)), poissonish(clamp(1.35 - d * 0.07, .15, 4)));
+    simulateOtherFixtures(me, opp);
+  }
+  p.wage = Math.round((200 + overall(p) * 14) * L.wageMult / 10) * 10;
+  G.transferredThisSeason = true;
+  mor(8);
+  addNews(`✈️ TRANSFER! ${p.name} joins ${clubName} (${L.name}) on ${money(p.wage)}/week.`, "gold");
+  closeModal(); render(); saveGame();
+}
+
+function buyItem(catId) {
+  const p = G.player;
+  const cat = SHOP.find(c => c.cat === catId);
+  const lvl = (p.gearLevel || {})[catId] || 0;
+  const t = cat.tiers[lvl];
+  if (!t || p.money < t.cost) return;
+  p.money -= t.cost;
+  p.gearLevel[catId] = lvl + 1;
+  if (cat.attr) {
+    p.attrs[cat.attr] = clamp(p.attrs[cat.attr] + t.val, 1, 99);
+    addNews(`🛒 Bought ${t.nm} for ${money(t.cost)}: +${t.val} ${ATTR_NAMES[cat.attr]} permanently!`, "good");
+  } else {
+    addNews(`🛒 Bought ${t.nm} for ${money(t.cost)}: ${t.fx}.`, "good");
+  }
+  render(); saveGame();
+}
+
+let MD = null; // pending matchday context (opponent, minutes) between mini-game and match resolution
+
+function startMatchday() {
+  if (!nextOpponent()) return;
+  G.weekCount = (G.weekCount || 0) + 1;
+  const ev = rollEvent();
+  if (ev) { showEventModal(ev, beginMatch); return; }
+  beginMatch();
+}
+
+function beginMatch() {
+  const p = G.player;
+  const me = myClubObj();
+  const opp = nextOpponent();
+  if (!opp) { render(); saveGame(); return; }
+
+  // --- squad selection ---
+  const ovr = overall(p);
+  let gap = ovr + p.form * 0.08 - me.strength; // form helps selection
+  if (p.path === "hs-pro" && p.age <= 20) gap -= 7; // raw prospect: coaches don't trust you yet
+  let minutes;
+  if (G.tier === 6) minutes = Math.random() < 0.9 ? 90 : irnd(60, 85); // college recruits start
+  else if (gap >= -4) minutes = 90;
+  else if (gap >= -10) minutes = Math.random() < 0.75 ? 90 : irnd(20, 45);
+  else minutes = Math.random() < 0.35 ? irnd(10, 30) : 0;
+  if (p.energy < 25 && minutes === 90) minutes = irnd(45, 70); // knackered players get subbed
+
+  MD = { me, opp, minutes };
+  if (minutes >= 45 && Math.random() < 0.42) { runBigMoment(); return; }
+  finishMatch(null);
+}
+
+// ---------- big-moment mini-games ----------
+function runBigMoment() {
+  const pos = G.player.pos;
+  let pool;
+  if (pos === "GK") pool = [gkPenaltyMoment, crossClaimMoment, crossClaimMoment];
+  else if (pos === "DEF") pool = [tackleMoment, tackleMoment, headerMoment, penaltyMoment, crossClaimMoment];
+  else if (pos === "MID") pool = [freekickMoment, penaltyMoment, breakawayMoment, tackleMoment, volleyMoment, dribbleRunMoment];
+  else pool = [penaltyMoment, freekickMoment, breakawayMoment, headerMoment, volleyMoment, dribbleRunMoment];
+  pick(pool)();
+}
+
+function momentResultScreen(headline, detail, res) {
+  showModal(`<div class="mg-wrap"><h2>${headline}</h2><p class="fade-muted" style="margin:12px 0">${detail}</p>
+    <button class="btn" id="mg-continue">Back to the match →</button></div>`);
+  $("mg-continue").onclick = () => finishMatch(res);
+}
+
+const PEN_ZONES = [
+  { nm:"↖ Top Left", miss:.30, save:.40 }, { nm:"⬆ Top Centre", miss:.24, save:.34 }, { nm:"↗ Top Right", miss:.30, save:.40 },
+  { nm:"↙ Bottom Left", miss:.08, save:.60 }, { nm:"🥄 Panenka", miss:.10, save:.85, panenka:true }, { nm:"↘ Bottom Right", miss:.08, save:.60 },
+];
+function penaltyMoment() {
+  const p = G.player;
+  showModal(`<div class="mg-wrap"><h2>⚽ PENALTY to ${G.clubName}!</h2>
+    <p class="fade-muted" style="margin:10px 0">${p.name} steps up... pick your spot. Corners score more but risk missing; the Panenka is pure glory or pure shame.</p>
+    <div class="goal-mouth">${PEN_ZONES.map((z, i) => `<div class="goal-zone" data-pen="${i}">${z.nm}</div>`).join("")}</div></div>`);
+  document.querySelectorAll("[data-pen]").forEach(el => el.onclick = () => {
+    const zi = +el.dataset.pen, z = PEN_ZONES[zi];
+    const keeper = weightedPick([1.4, .5, 1.4, 1.9, .6, 1.9]);
+    const min = irnd(8, 88);
+    const missC = clamp(z.miss - effAttr(p, "sho") * 0.0015, .02, .5);
+    if (Math.random() < missC) {
+      mor(-8);
+      momentResultScreen("❌ MISSED!", "You went for too much. The fans groan...",
+        { goals:0, concede:0, ratingDelta:-0.7, line:`❌ ${min}' — ${p.name} blazes the penalty ${z.panenka ? "straight into the keeper's arms" : "wide"}!` });
+    } else if (zi === keeper && Math.random() < z.save) {
+      mor(-6);
+      momentResultScreen("🧤 SAVED!", "The keeper guessed right. Unlucky.",
+        { goals:0, concede:0, ratingDelta:-0.5, line:`🧤 ${min}' — penalty saved! The keeper read ${p.name}'s mind.` });
+    } else {
+      mor(z.panenka ? 7 : 4);
+      addBoost("sho", z.panenka ? 8 : 6, 2, "Penalty hero");
+      momentResultScreen(z.panenka ? "🥄 PANENKA! GOAL!" : "⚽ GOAL!",
+        z.panenka ? "Absolute disrespect. The crowd loses its mind!" : "Cool as you like from the spot.",
+        { goals:1, concede:0, ratingDelta:z.panenka ? 1.4 : 1.1, line:`⚽ ${min}' — GOAL! ${p.name} ${z.panenka ? "dinks an outrageous Panenka down the middle" : "buries the penalty, " + z.nm.replace(/^\S+ /, "").toLowerCase()}!` });
+    }
+  });
+}
+
+function freekickMoment() {
+  const p = G.player;
+  timingMiniGame({
+    title: "🎯 Free kick, dangerous range!",
+    desc: "Stop the marker in the green zone to find the top corner.",
+    btn: "🦵 STRIKE",
+    stat: effAttr(p, "sho"),
+    onGrade(grade, min) {
+      if (grade === "perfect") {
+        mor(6);
+        addBoost("sho", 6, 2, "Free-kick screamer");
+        momentResultScreen("🚀 TOP BINS!", "An unstoppable strike. Pure class.",
+          { goals:1, concede:0, ratingDelta:1.3, line:`🚀 ${min}' — ${p.name} whips the free kick into the top corner!` });
+      } else if (grade === "good") {
+        if (Math.random() < 0.35 + effAttr(p, "sho") * 0.004) {
+          addBoost("sho", 4, 2, "Set-piece confidence");
+          momentResultScreen("⚽ GOAL!", "Not the cleanest hit, but they all count!",
+            { goals:1, concede:0, ratingDelta:1.0, line:`⚽ ${min}' — ${p.name}'s free kick squeezes past the keeper!` });
+        } else {
+          momentResultScreen("🧤 Tipped over", "So close! Great save by the keeper.",
+            { goals:0, concede:0, ratingDelta:0.2, line:`🧤 ${min}' — ${p.name}'s free kick is tipped over the bar.` });
+        }
+      } else {
+        mor(-3);
+        momentResultScreen("🎈 Row Z", "You leaned back. It's still rising...",
+          { goals:0, concede:0, ratingDelta:-0.3, line:`🎈 ${min}' — ${p.name} sends the free kick into row Z.` });
+      }
+    }
+  });
+}
+
+function tackleMoment() {
+  const p = G.player;
+  timingMiniGame({
+    title: "🚨 Striker through on goal!",
+    desc: "You're the last man. Time the sliding tackle perfectly!",
+    btn: "🛡️ SLIDE",
+    stat: effAttr(p, "def"),
+    onGrade(grade, min) {
+      if (grade === "perfect") {
+        mor(5);
+        addBoost("def", 6, 2, "Defensive masterclass");
+        momentResultScreen("🛡️ WHAT A TACKLE!", "Clean as a whistle. The crowd roars.",
+          { goals:0, concede:0, ratingDelta:1.0, line:`🛡️ ${min}' — ${p.name} wins it with a perfectly timed last-man tackle!` });
+      } else if (grade === "good") {
+        momentResultScreen("💨 Corner conceded", "Scrappy, but the danger is gone.",
+          { goals:0, concede:0, ratingDelta:0.3, line:`💨 ${min}' — ${p.name} does just enough, ball out for a corner.` });
+      } else {
+        mor(-6);
+        momentResultScreen("💔 BEATEN!", "You slid past him. Goal conceded.",
+          { goals:0, concede:1, ratingDelta:-0.9, line:`💔 ${min}' — ${p.name} mistimes the tackle and the striker scores.` });
+      }
+    }
+  });
+}
+
+function gkPenaltyMoment() {
+  const p = G.player;
+  showModal(`<div class="mg-wrap"><h2>🧤 PENALTY against ${G.clubName}!</h2>
+    <p class="fade-muted" style="margin:10px 0">Their striker steps up. Pick your dive, ${p.name}.</p>
+    <div class="btn-row" style="justify-content:center">
+      <button class="btn secondary" data-dive="0">↖ Dive Left</button>
+      <button class="btn secondary" data-dive="1">🧍 Stand Tall</button>
+      <button class="btn secondary" data-dive="2">↗ Dive Right</button>
+    </div></div>`);
+  document.querySelectorAll("[data-dive]").forEach(el => el.onclick = () => {
+    const shot = weightedPick([2, 1, 2]);
+    const min = irnd(8, 88);
+    if (+el.dataset.dive === shot && Math.random() < 0.45 + effAttr(p, "def") * 0.004) {
+      mor(8);
+      addBoost("def", 6, 2, "Penalty-save hero");
+      momentResultScreen("🧤 SAVED!!", "You're a wall! The stadium erupts.",
+        { goals:0, concede:0, ratingDelta:1.4, line:`🧤 ${min}' — PENALTY SAVED! ${p.name} guesses right and parries it away!` });
+    } else {
+      momentResultScreen("⚽ Beaten", +el.dataset.dive === shot ? "You guessed right but it was too well placed." : "Sent the wrong way. Nothing you could do.",
+        { goals:0, concede:1, ratingDelta:-0.3, line:`⚽ ${min}' — penalty converted past ${p.name}.` });
+    }
+  });
+}
+
+function breakawayMoment() {
+  const p = G.player;
+  const opts = [
+    { nm:"🎯 Slot it near post", sub:"Safe finish (Shooting)", pr: 0.40 + effAttr(p, "sho") * 0.004, rating: 1.0, style:"a clinical near-post finish", boost:"sho" },
+    { nm:"🥄 Chip the keeper", sub:"High risk, all style (Dribbling)", pr: 0.20 + effAttr(p, "dri") * 0.005, rating: 1.4, style:"an outrageous chip", flair:true, boost:"dri" },
+    { nm:"💨 Round the keeper", sub:"Balanced (Pace + Dribbling)", pr: 0.30 + (effAttr(p, "pac") + effAttr(p, "dri")) * 0.0025, rating: 1.15, style:"rounding the keeper coolly", boost:"pac" },
+  ];
+  showModal(`<div class="mg-wrap"><h2>💨 One-on-one with the keeper!</h2>
+    <p class="fade-muted" style="margin:10px 0">${p.name} is clean through... what's the finish?</p>
+    ${opts.map((o, i) => `<button class="event-choice" data-bw="${i}"><b>${o.nm}</b><small>${o.sub} — ${Math.round(clamp(o.pr, 0, .95) * 100)}% chance</small></button>`).join("")}</div>`);
+  document.querySelectorAll("[data-bw]").forEach(el => el.onclick = () => {
+    const o = opts[+el.dataset.bw];
+    const min = irnd(5, 88);
+    if (Math.random() < o.pr) {
+      mor(o.flair ? 7 : 4);
+      addBoost(o.boost, 6, 2, "Clutch finisher");
+      momentResultScreen(o.flair ? "🥄 FILTHY! GOAL!" : "⚽ GOAL!", o.flair ? "That's going viral tonight." : "Ice in the veins.",
+        { goals:1, concede:0, ratingDelta:o.rating, line:`⚽ ${min}' — GOAL! ${p.name} finishes the breakaway with ${o.style}!` });
+    } else {
+      mor(-4);
+      momentResultScreen("😤 Chance gone!", o.flair ? "The chip floats gently into the keeper's arms. Embarrassing." : "The keeper stands tall and wins the duel.",
+        { goals:0, concede:0, ratingDelta:-0.4, line:`😤 ${min}' — ${p.name} fluffs the one-on-one chance.` });
+    }
+  });
+}
+
+// BitLife-style scenario moment: pick an option, live with the outcome.
+function bitMoment(cfg) {
+  showModal(`<div class="mg-wrap"><h2>${cfg.title}</h2>
+    <p style="margin:12px 0;font-size:15px;line-height:1.6">${cfg.desc}</p>
+    ${cfg.options.map((o, i) => `<button class="event-choice" data-bm="${i}"><b>${o.label}</b><small>${o.sub} — ${Math.round(o.pr * 100)}% chance</small></button>`).join("")}</div>`);
+  document.querySelectorAll("[data-bm]").forEach(el => el.onclick = () => {
+    const o = cfg.options[+el.dataset.bm];
+    const min = irnd(5, 90);
+    const ok = Math.random() < o.pr;
+    const r = ok ? o.win : o.lose;
+    mor(r.mor || (ok ? 4 : -4));
+    if (ok && o.boost) addBoost(o.boost, 5, 2, r.boostLabel || "Match-winning moment");
+    momentResultScreen(r.head, r.sub, { goals: r.goals || 0, assists: r.assists || 0, concede: r.concede || 0, ratingDelta: r.rating, line: r.line.replace("{m}", min) });
+  });
+}
+
+function headerMoment() {
+  const p = G.player;
+  bitMoment({
+    title: "🎯 Corner swings in!",
+    desc: `The delivery is perfect and ${p.name} has lost the marker at the far post...`,
+    options: [
+      { label:"🔨 Thunder header", sub:`Uses PHY (${Math.round(effAttr(p,"phy"))})`, pr: clamp(0.30 + effAttr(p,"phy") * 0.005, .1, .9), boost:"phy",
+        win: { head:"💥 BULLET HEADER! GOAL!", sub:"You nearly broke the net with that one.", goals:1, rating:1.1, line:`💥 {m}' — ${p.name} powers a header into the roof of the net!` },
+        lose:{ head:"😩 Over the bar!", sub:"All power, no placement.", rating:-0.3, line:`😩 {m}' — ${p.name}'s free header sails over.` } },
+      { label:"🎯 Glancing header", sub:`Uses SHO (${Math.round(effAttr(p,"sho"))})`, pr: clamp(0.34 + effAttr(p,"sho") * 0.0045, .1, .9), boost:"sho",
+        win: { head:"⚽ PLACED TO PERFECTION!", sub:"Kissed into the corner. The keeper never moved.", goals:1, rating:1.1, line:`⚽ {m}' — ${p.name} glances a header into the far corner!` },
+        lose:{ head:"🧤 Straight at the keeper", sub:"Too gentle. Easy catch.", rating:-0.2, line:`🧤 {m}' — ${p.name}'s header is comfortably held.` } },
+      { label:"✨ Chest down & volley", sub:`Uses DRI+SHO (${Math.round((effAttr(p,"dri")+effAttr(p,"sho"))/2)})`, pr: clamp(0.22 + (effAttr(p,"dri")+effAttr(p,"sho")) * 0.0026, .1, .85), boost:"dri",
+        win: { head:"🤯 OH MY WORD!", sub:"Chest, swivel, volley — goal of the season contender!", goals:1, rating:1.5, mor:7, line:`🤯 {m}' — ${p.name} chests it down and volleys home an absolute worldie!` },
+        lose:{ head:"🎪 Air shot!", sub:"You swung, you missed, the crowd laughed.", rating:-0.5, mor:-6, line:`🎪 {m}' — ${p.name} fresh-airs the volley completely.` } },
+    ]
+  });
+}
+
+function volleyMoment() {
+  const p = G.player;
+  bitMoment({
+    title: "⏱️ 88th minute — the ball drops to you!",
+    desc: `Scores level. A clearance falls out of the sky on the edge of the box. The stadium holds its breath...`,
+    options: [
+      { label:"🚀 First-time screamer", sub:`Uses SHO (${Math.round(effAttr(p,"sho"))})`, pr: clamp(0.20 + effAttr(p,"sho") * 0.0045, .1, .8), boost:"sho",
+        win: { head:"🚀 SCENES! ABSOLUTE SCENES!", sub:"A last-minute rocket into the top bins. Bedlam.", goals:1, rating:1.6, mor:8, line:`🚀 {m}' — ${p.name} smashes a late volley into the top corner! SCENES!` },
+        lose:{ head:"🎈 Row Z", sub:"It's still climbing as it clears the stand.", rating:-0.4, line:`🎈 {m}' — ${p.name} blazes the big late chance over.` } },
+      { label:"🧊 Take a touch, place it", sub:`Uses DRI+SHO (${Math.round((effAttr(p,"dri")+effAttr(p,"sho"))/2)})`, pr: clamp(0.30 + (effAttr(p,"dri")+effAttr(p,"sho")) * 0.0028, .1, .85), boost:"sho",
+        win: { head:"⚽ ICE COLD!", sub:"Touch. Look up. Pass it into the net.", goals:1, rating:1.2, line:`⚽ {m}' — ${p.name} calmly slots the late chance home!` },
+        lose:{ head:"🚫 Blocked!", sub:"The extra touch let a defender slide in.", rating:-0.3, line:`🚫 {m}' — ${p.name}'s late effort is blocked at the last instant.` } },
+      { label:"🤝 Square it to the striker", sub:`Uses PAS (${Math.round(effAttr(p,"pas"))})`, pr: clamp(0.38 + effAttr(p,"pas") * 0.0045, .1, .9), boost:"pas",
+        win: { head:"🅰️ SELFLESS! ASSIST!", sub:"Your teammate taps it in and points straight at you.", assists:1, rating:0.9, line:`🅰️ {m}' — ${p.name} unselfishly squares for a tap-in!` },
+        lose:{ head:"😤 Cut out!", sub:"The pass is read. Chance gone.", rating:-0.3, line:`😤 {m}' — ${p.name}'s square ball is intercepted.` } },
+    ]
+  });
+}
+
+function dribbleRunMoment() {
+  const p = G.player;
+  bitMoment({
+    title: "💫 Space opens up on halfway!",
+    desc: `${p.name} collects the ball and the crowd rises — three defenders between you and the goal...`,
+    options: [
+      { label:"🌀 The full mazy run", sub:`Uses DRI (${Math.round(effAttr(p,"dri"))})`, pr: clamp(0.18 + effAttr(p,"dri") * 0.0048, .08, .8), boost:"dri",
+        win: { head:"🐐 MARADONA WHO?!", sub:"Past one, two, THREE — and finished! Iconic.", goals:1, rating:1.7, mor:9, line:`🐐 {m}' — ${p.name} slaloms through three defenders and scores a legendary solo goal!` },
+        lose:{ head:"🛑 Crowded out", sub:"The third defender finally snuffs it out.", rating:-0.2, line:`🛑 {m}' — ${p.name}'s mazy run ends in a crunching challenge.` } },
+      { label:"⚡ Beat one man, shoot early", sub:`Uses DRI+SHO (${Math.round((effAttr(p,"dri")+effAttr(p,"sho"))/2)})`, pr: clamp(0.28 + (effAttr(p,"dri")+effAttr(p,"sho")) * 0.0028, .1, .85), boost:"sho",
+        win: { head:"⚽ BANG!", sub:"Skip past one and arrow it low into the corner.", goals:1, rating:1.2, line:`⚽ {m}' — ${p.name} skips a challenge and fires low into the corner!` },
+        lose:{ head:"🧤 Saved!", sub:"Struck well, but the keeper was equal to it.", rating:0.1, line:`🧤 {m}' — ${p.name}'s driven effort is beaten away.` } },
+      { label:"👁️ Draw them in, release the winger", sub:`Uses PAS (${Math.round(effAttr(p,"pas"))})`, pr: clamp(0.36 + effAttr(p,"pas") * 0.0045, .1, .9), boost:"pas",
+        win: { head:"🅰️ SURGEON'S PASS!", sub:"Three defenders drawn, winger in, goal. Chef's kiss.", assists:1, rating:1.0, line:`🅰️ {m}' — ${p.name} draws the defence and slips in the winger. Assist!` },
+        lose:{ head:"😕 Overcooked", sub:"The through-ball runs long to the keeper.", rating:-0.2, line:`😕 {m}' — ${p.name}'s slide-rule pass has too much on it.` } },
+    ]
+  });
+}
+
+function crossClaimMoment() {
+  const p = G.player;
+  bitMoment({
+    title: "🧤 Dangerous cross under your bar!",
+    desc: `A wicked in-swinger, strikers lurking, your defenders ball-watching. Your call, ${p.name}...`,
+    options: [
+      { label:"👊 Punch through the crowd", sub:`Uses PHY (${Math.round(effAttr(p,"phy"))})`, pr: clamp(0.36 + effAttr(p,"phy") * 0.0045, .1, .9), boost:"phy",
+        win: { head:"👊 CLEARED!", sub:"You erupted through the bodies and hammered it away.", rating:0.8, line:`👊 {m}' — ${p.name} punches clear through a forest of players.` },
+        lose:{ head:"💔 Punched... to a striker", sub:"Weak punch. Falls kindly. Bundled in.", concede:1, rating:-0.9, mor:-6, line:`💔 {m}' — ${p.name}'s punch falls to a striker who scores.` } },
+      { label:"🧲 Catch it at the highest point", sub:`Uses DEF (${Math.round(effAttr(p,"def"))})`, pr: clamp(0.28 + effAttr(p,"def") * 0.005, .1, .88), boost:"def",
+        win: { head:"🧲 CLAIMED! LIKE VELCRO!", sub:"Plucked from the sky above everyone. Commanding.", rating:1.2, mor:6, line:`🧲 {m}' — ${p.name} rises above the chaos and claims the cross clean!` },
+        lose:{ head:"🫳 DROPPED IT!", sub:"It squirms loose... and in. Nightmare.", concede:1, rating:-1.1, mor:-8, line:`🫳 {m}' — ${p.name} spills the cross and it's bundled home.` } },
+      { label:"🧍 Stay on your line", sub:"The safe option", pr: 0.75,
+        win: { head:"😮‍💨 Header wide", sub:"You stayed put and the header flashed wide. Phew.", rating:0.2, line:`😮‍💨 {m}' — the header from the cross drifts just wide of ${p.name}'s post.` },
+        lose:{ head:"⚽ Free header, goal", sub:"Nobody attacked it. The striker did.", concede:1, rating:-0.7, line:`⚽ {m}' — an unchallenged header from the cross beats ${p.name}.` } },
+    ]
+  });
+}
+
+// ---------- match resolution ----------
+function finishMatch(moment) {
+  const p = G.player;
+  const { me, opp, minutes } = MD;
+  MD = null;
+  const ovr = overall(p);
+  const teamStr = me.strength;
+
+  // --- team result ---
+  const diff = (teamStr + (minutes > 0 ? (ovr - teamStr) * 0.25 : 0)) - opp.strength;
+  const expMe = clamp(1.35 + diff * 0.07, 0.15, 4.2);
+  const expOpp = clamp(1.35 - diff * 0.07, 0.15, 4.2);
+  let gMe = poissonish(expMe), gOpp = poissonish(expOpp);
+
+  // --- player contributions ---
+  const events = [];
+  let goals = 0, assists = 0, saves = 0;
+  const eff = (ovr / 100) * (0.55 + 0.45 * p.energy / 100) * (0.75 + 0.5 * p.form / 100) * (0.8 + 0.4 * p.morale / 100) * (minutes / 90);
+  if (minutes > 0) {
+    const gProb = { GK:0, DEF:0.06, MID:0.22, FWD:0.55 }[p.pos] * eff * 1.9;
+    const aProb = { GK:0.01, DEF:0.10, MID:0.42, FWD:0.28 }[p.pos] * eff * 1.9;
+    for (let i = 0; i < gMe; i++) {
+      if (Math.random() < gProb) { goals++; events.push(`⚽ ${irnd(2,90)}' — GOAL! ${p.name} scores!`); }
+      else if (Math.random() < aProb) { assists++; events.push(`🅰️ ${irnd(2,90)}' — Assist by ${p.name}.`); }
+    }
+    if (p.pos === "GK") {
+      saves = irnd(1, 3) + Math.round(eff * 5);
+      const stopped = Math.min(gOpp, Math.random() < eff ? irnd(0, 2) : 0);
+      gOpp -= stopped;
+      if (stopped > 0) events.push(`🧤 ${p.name} makes ${stopped} incredible save${stopped>1?"s":""}!`);
+    }
+  }
+  // --- fold in the big-moment mini-game result ---
+  const simGoals = goals;
+  let momentDelta = 0;
+  if (moment) {
+    goals += moment.goals;
+    assists += moment.assists || 0;
+    gMe += moment.goals + (moment.assists || 0); // an assist means a teammate scored
+    gOpp += moment.concede;
+    momentDelta = moment.ratingDelta;
+    events.push(moment.line);
+  }
+  events.sort();
+
+  // --- rating ---
+  let rating = 0;
+  if (minutes > 0) {
+    rating = 5.6 + (ovr - opp.strength) * 0.03 + rnd(-0.9, 0.9);
+    rating += simGoals * 1.1 + assists * 0.7 + momentDelta;
+    if (p.pos === "GK" || p.pos === "DEF") rating += gOpp === 0 ? 1.0 : -0.15 * gOpp;
+    if (p.pos === "GK") rating += saves * 0.06;
+    rating *= minutes / 90 > 0.6 ? 1 : 0.92;
+    rating = clamp(rating, 3, 10);
+  }
+
+  // --- apply result to table ---
+  applyResult(me, opp, gMe, gOpp);
+  simulateOtherFixtures(me, opp);
+
+  // --- update player ---
+  const motm = rating >= 8.6 && minutes >= 60;
+  if (minutes > 0) {
+    p.seasonStats.apps++; p.seasonStats.goals += goals; p.seasonStats.assists += assists;
+    p.seasonStats.ratingsSum += rating;
+    if ((p.pos === "GK" || p.pos === "DEF") && gOpp === 0) p.seasonStats.cleanSheets++;
+    if (motm) p.seasonStats.motm++;
+    p.energy = clamp(p.energy - (minutes / 90) * 26 - 4, 0, 100);
+    p.form = clamp(p.form + (rating - 6.4) * 7, 0, 100);
+    p.reputation = clamp(p.reputation + (rating - 6.8) * 0.25 + goals * 0.35 + (motm ? 0.6 : 0) + (6 - G.tier) * 0.02, 0, 100);
+    p.morale = clamp(p.morale + (rating - 6.5) * 2 + (gMe > gOpp ? 2 : gMe < gOpp ? -2 : 0) + (60 - p.morale) * 0.05, 0, 100);
+  } else {
+    p.energy = clamp(p.energy + 12, 0, 100);
+    p.form = clamp(p.form - 4, 0, 100);
+    p.morale = clamp(p.morale - 3, 0, 100);
+    events.push(`🪑 Left on the bench for the full match.`);
+  }
+  p.money += p.wage;
+  if (goals >= 2) p.money += 400 * G.season; // brace bonus
+  // coach salaries are paid weekly — miss a payment and they walk
+  for (const k of Object.keys(p.coaches || {})) {
+    const ct = COACH_TIERS[p.coaches[k] - 1];
+    if (p.money >= ct.cost) p.money -= ct.cost;
+    else { delete p.coaches[k]; addNews(`👔 Couldn't pay the ${ATTR_NAMES[k]} coach's ${money(ct.cost)} weekly wage — they walked.`, "bad"); }
+  }
+  tickStocks();
+
+  // owned gear perks kick in during the week
+  const lvl = p.gearLevel || {};
+  if (lvl.house) p.energy = clamp(p.energy + SHOP.find(c => c.cat === "house").tiers[lvl.house - 1].val, 0, 100);
+  if (lvl.psych) p.morale = clamp(p.morale + 4, 0, 100);
+  if (lvl.jet) { p.energy = clamp(p.energy + 4, 0, 100); p.morale = clamp(p.morale + 2, 0, 100); }
+
+  // temporary boosts tick down (boosts earned this match start counting next game)
+  p.tempBoosts = (p.tempBoosts || []).filter(b => { if (b.fresh) { delete b.fresh; return true; } return --b.games > 0; });
+
+  // NPC top scorer race
+  G.topScorerNPC.goals += Math.random() < 0.62 ? irnd(0, 2) : 0;
+
+  // injury chance when exhausted (a personal physio halves the risk)
+  if (minutes > 0 && p.energy < 15 && Math.random() < (lvl.physio ? 0.14 : 0.28)) {
+    const out = irnd(1, 3);
+    p.form = clamp(p.form - 20, 0, 100);
+    p.energy = clamp(p.energy + 25 * out, 0, 100);
+    for (let i = 0; i < out; i++) skipRound();
+    addNews(`🚑 Injured while exhausted! Out for ${out} match${out>1?"es":""}. Manage your energy!`, "bad");
+    events.push(`🚑 ${p.name} limps off — injured (${out} match${out>1?"es":""} out).`);
+  }
+
+  // news
+  const res = gMe > gOpp ? "W" : gMe === gOpp ? "D" : "L";
+  addNews(`${me.name} ${gMe}–${gOpp} ${opp.name} — ${minutes > 0 ? `${p.name}: ${rating.toFixed(1)} rating` + (goals ? `, ${goals}⚽` : "") + (assists ? `, ${assists}🅰️` : "") : "did not play"}${motm ? " · MOTM ⭐" : ""}`,
+    motm ? "gold" : res === "W" ? "good" : res === "L" ? "bad" : "");
+
+  // scouts take notice of big performances (pros only — schools aren't in the market)
+  if (G.tier <= 5 && minutes > 0 && (rating >= 7.8 || motm)) {
+    const chance = clamp((rating - 7.4) * 0.35, 0.15, 0.65);
+    if (Math.random() < chance) {
+      const targetTier = Math.random() < 0.7 ? Math.max(1, G.tier - 1) : G.tier;
+      const club = pick(CLUB_NAMES[targetTier].filter(n => n !== G.clubName));
+      G.scoutInterest = (G.scoutInterest || []).filter(s => s.club !== club);
+      G.scoutInterest.push({ club, tier: targetTier, until: G.weekCount + 5 });
+      addNews(`👀 ${club} scouts were in the stands — they love what they see! Join them from the Transfer Market within 5 matchdays, no reputation needed.`, "gold");
+    }
+  }
+
+  G.week++;
+  G.trainedThisWeek = false;
+  G.lastTraining = null;
+
+  showMatchModal(me, opp, gMe, gOpp, events, minutes, rating, motm);
+  saveGame();
+}
+
+function nextOpponent() {
+  // rotate through other clubs; round r plays club at deterministic index
+  const others = G.clubs.filter(c => c.name !== G.clubName);
+  const r = roundsPlayed();
+  if (r >= G.totalRounds) return null;
+  return others[r % others.length];
+}
+function roundsPlayed() { const me = myClubObj(); return me.w + me.d + me.l; }
+
+function applyResult(a, b, ga, gb) {
+  a.gf += ga; a.ga += gb; b.gf += gb; b.ga += ga;
+  if (ga > gb) { a.w++; a.pts += 3; b.l++; }
+  else if (ga < gb) { b.w++; b.pts += 3; a.l++; }
+  else { a.d++; b.d++; a.pts++; b.pts++; }
+}
+
+function simulateOtherFixtures(exceptA, exceptB) {
+  const rest = G.clubs.filter(c => c !== exceptA && c !== exceptB);
+  // shuffle & pair
+  for (let i = rest.length - 1; i > 0; i--) { const j = irnd(0, i); [rest[i], rest[j]] = [rest[j], rest[i]]; }
+  for (let i = 0; i + 1 < rest.length; i += 2) {
+    const A = rest[i], B = rest[i+1];
+    const d = A.strength - B.strength;
+    const ga = poissonish(clamp(1.35 + d * 0.07, 0.15, 4)), gb = poissonish(clamp(1.35 - d * 0.07, 0.15, 4));
+    applyResult(A, B, ga, gb);
+  }
+}
+
+function skipRound() { // used for injuries: team plays without you
+  const me = myClubObj();
+  const opp = nextOpponent();
+  if (!opp) return;
+  const d = me.strength - opp.strength;
+  applyResult(me, opp, poissonish(clamp(1.35 + d*0.07,.15,4)), poissonish(clamp(1.35 - d*0.07,.15,4)));
+  simulateOtherFixtures(me, opp);
+  G.topScorerNPC.goals += Math.random() < 0.62 ? irnd(0, 2) : 0;
+  tickStocks();
+  G.week++;
+}
+
+// ============================== SEASON END ==============================
+function sortedTable() {
+  return [...G.clubs].sort((a,b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.gf - a.gf);
+}
+
+function endSeason() {
+  const p = G.player;
+  const table = sortedTable();
+  const myPos = table.findIndex(c => c.name === G.clubName) + 1;
+  const s = p.seasonStats;
+  const avg = s.apps ? s.ratingsSum / s.apps : 0;
+
+  // accumulate career
+  p.careerStats.apps += s.apps; p.careerStats.goals += s.goals; p.careerStats.assists += s.assists;
+  p.careerStats.cleanSheets += s.cleanSheets; p.careerStats.motm += s.motm; p.careerStats.ratingsSum += s.ratingsSum;
+  p.careerStats.seasons++;
+  p.history.push({ season: G.season, year: G.year, club: G.clubName, tier: G.tier, age: p.age,
+    apps: s.apps, goals: s.goals, assists: s.assists, avg: avg, pos: myPos });
+
+  const headlines = [];
+  // trophies & awards
+  if (myPos === 1) {
+    p.trophies.push(`🏆 ${leagueInfo().name} Champion (S${G.season})`);
+    p.reputation = clamp(p.reputation + 6, 0, 100);
+    p.money += 2000 * (6 - G.tier) * (6 - G.tier);
+    headlines.push(`🏆 CHAMPIONS! ${G.clubName} win the ${leagueInfo().name}!`);
+  }
+  if (s.goals > G.topScorerNPC.goals && s.goals >= 10) {
+    p.trophies.push(`👟 Golden Boot — ${s.goals} goals (S${G.season})`);
+    p.reputation = clamp(p.reputation + 4, 0, 100);
+    headlines.push(`👟 Golden Boot! ${s.goals} goals beats ${G.topScorerNPC.name}'s ${G.topScorerNPC.goals}.`);
+  }
+  if (avg >= 7.6 && s.apps >= G.totalRounds * 0.6) {
+    p.trophies.push(`⭐ Team of the Season (S${G.season})`);
+    p.reputation = clamp(p.reputation + 3, 0, 100);
+    headlines.push(`⭐ Named in the Team of the Season with a ${avg.toFixed(2)} average.`);
+  }
+  if (G.tier === 1 && avg >= 8.0 && (s.goals + s.assists >= 25 || (p.pos !== "FWD" && avg >= 8.2))) {
+    p.trophies.push(`🌟 World Player of the Year (S${G.season})`);
+    p.reputation = 100;
+    headlines.push(`🌟 ${p.name} is crowned WORLD PLAYER OF THE YEAR!`);
+  }
+
+  // cup finals happen after the league wraps up, then the season is finalized
+  runContinentalCup(headlines, () => runWorldCup(headlines, () => finalizeSeason(headlines, myPos, avg)));
+}
+
+function finalizeSeason(headlines, myPos, avg) {
+  const p = G.player;
+
+  // aging & decline
+  p.age++;
+  if (p.age >= 30) {
+    const decay = (p.age - 28) * rnd(0.5, 1.1);
+    p.attrs.pac = clamp(p.attrs.pac - decay, 1, 99);
+    p.attrs.phy = clamp(p.attrs.phy - decay * 0.8, 1, 99);
+    if (p.age >= 33) { p.attrs.dri = clamp(p.attrs.dri - decay * 0.5, 1, 99); p.attrs.sho = clamp(p.attrs.sho - decay * 0.3, 1, 99); }
+    headlines.push(`📉 Age ${p.age}: the legs slow down a little...`);
+  }
+
+  // school stages skip pro contract offers and follow the education path instead
+  if (G.tier >= 6) {
+    G.pendingOffers = null;
+    submitScore();
+    showSchoolSeasonModal(headlines, myPos, avg);
+    return;
+  }
+
+  // transfer offers
+  const offers = generateOffers(myPos, avg);
+
+  // forced retirement
+  if (p.age >= 40) G.pendingRetire = true;
+
+  G.pendingOffers = offers;
+  showSeasonModal(headlines, myPos, avg, offers);
+  submitScore(); // trophies may have changed — update the global board
+}
+
+// ============================== SCHOOL PATH ==============================
+function showSchoolSeasonModal(headlines, myPos, avg) {
+  const s = G.player.seasonStats;
+  showModal(`<h2>Season ${G.season} Review — ${G.year}</h2>
+    <div style="margin:12px 0;font-size:14px;line-height:1.6">
+      <div>Final position: <b>${myPos}${["st","nd","rd"][myPos-1] || "th"}</b> in the ${leagueInfo().name}</div>
+      <div>Your season: <b>${s.apps}</b> apps · <b>${s.goals}</b> goals · <b>${s.assists}</b> assists · <b>${avg ? avg.toFixed(2) : "—"}</b> avg rating</div>
+    </div>
+    ${headlines.length ? `<div style="margin:12px 0">${headlines.map(h => `<div class="news-item gold">${h}</div>`).join("")}</div>` : ""}
+    <div style="text-align:center;margin-top:16px"><button class="btn" id="school-next">Continue →</button></div>`);
+  $("school-next").onclick = stageProgress;
+}
+
+function stageProgress() {
+  const p = G.player;
+  if (G.tier === 8) { // middle school
+    if (p.age >= 15) showAdvanceToHS();
+    else { addNews("Another year of middle school ball. Keep grinding, kid."); startNewSeason(G.clubName, 8); }
+  } else if (G.tier === 7) { // high school
+    if (p.age >= 18) showGraduation();
+    else { addNews("Back for another high school season."); startNewSeason(G.clubName, 7); }
+  } else { // college
+    showCollegeDecision();
+  }
+}
+
+function showAdvanceToHS() {
+  const p = G.player;
+  const team = pick(CLUB_NAMES[7]);
+  showModal(`<h2>🎒 Off to High School!</h2>
+    <p style="margin:14px 0;line-height:1.7">${p.name} is 15 — middle school is done. You enroll and make the squad at ${crest(team, 17)} <b>${team}</b>. Bigger pitch, bigger rivals, bigger dreams.</p>
+    <div style="text-align:center"><button class="btn" id="hs-go">Start high school ball</button></div>`);
+  $("hs-go").onclick = () => {
+    p.wage = 20;
+    addNews(`🎒 ${p.name} moves up to ${team} in the ${LEAGUES.find(l => l.tier === 7).name}.`, "good");
+    startNewSeason(team, 7);
+  };
+}
+
+function showGraduation() {
+  const p = G.player;
+  const ovr = overall(p);
+  const proClub = pick(CLUB_NAMES[5]);
+  const proWage = Math.round((200 + ovr * 14) / 10) * 10;
+  const collegeTeam = pick(CLUB_NAMES[6]);
+  showModal(`<h2>🎓 Graduation Day — Decision Time</h2>
+    <p style="margin:12px 0;line-height:1.7">${p.name} is 18. Scouts and college recruiters are both calling. This choice shapes everything:</p>
+    <button class="event-choice" id="grad-pro"><b>⚽ Turn pro with ${crest(proClub, 16)} ${proClub}</b>
+      <small>Tier 5 · ${money(proWage)}/week · thrown in the deep end: ×1.2 training growth until 21, but coaches won't trust you — expect barely any minutes at first.</small></button>
+    <button class="event-choice" id="grad-college"><b>🎓 Scholarship at ${crest(collegeTeam, 16)} ${collegeTeam}</b>
+      <small>College league · guaranteed starter minutes + ×1.35 training growth — but tuition is $25K a year. You go straight into debt.</small></button>`);
+  $("grad-pro").onclick = () => {
+    p.path = "hs-pro";
+    p.wage = proWage;
+    addNews(`⚽ ${p.name} skips college and turns PRO with ${proClub}! Bold. Now earn those minutes.`, "gold");
+    startNewSeason(proClub, 5);
+  };
+  $("grad-college").onclick = () => {
+    p.path = "college";
+    p.money -= 25000;
+    p.wage = 120;
+    addNews(`🎓 ${p.name} commits to ${collegeTeam}! Starter minutes guaranteed... and a $25K tuition bill. Ouch.`, "gold");
+    startNewSeason(collegeTeam, 6);
+  };
+}
+
+function showCollegeDecision() {
+  const p = G.player;
+  const ovr = overall(p);
+  const forced = p.age >= 22;
+  const proClub = pick(CLUB_NAMES[5]);
+  const proWage = Math.round((200 + ovr * 14) / 10) * 10;
+  const star = ovr >= 62;
+  const starClub = star ? pick(CLUB_NAMES[4]) : null;
+  const starWage = Math.round((200 + ovr * 14) * 2.2 / 10) * 10;
+  showModal(`<h2>🎓 College Season Over${forced ? " — Final Year!" : ""}</h2>
+    <p style="margin:12px 0;line-height:1.7">${forced ? `You're 22 — eligibility is up. Time to turn pro.` : `Stay in school or chase the pro dream?`}${p.money < 0 ? ` Your student debt stands at <b style="color:var(--red)">${money(p.money)}</b>.` : ""}</p>
+    <button class="event-choice" id="col-pro"><b>⚽ Declare for the pros — ${crest(proClub, 16)} ${proClub}</b>
+      <small>Tier 5 · ${money(proWage)}/week · time to start paying off that debt.</small></button>
+    ${star ? `<button class="event-choice" id="col-star"><b>🌟 College star! ${crest(starClub, 16)} ${starClub} want you</b>
+      <small>Tier 4 · ${money(starWage)}/week · your college form skipped you a whole division!</small></button>` : ""}
+    ${!forced ? `<button class="event-choice" id="col-stay"><b>📚 Stay another year</b>
+      <small>Keep the starter minutes and ×1.35 growth — another $25K of tuition debt.</small></button>` : ""}`);
+  $("col-pro").onclick = () => {
+    p.wage = proWage;
+    addNews(`⚽ ${p.name} declares for the pros and signs with ${proClub}!`, "gold");
+    startNewSeason(proClub, 5);
+  };
+  if (star) $("col-star").onclick = () => {
+    p.wage = starWage;
+    rep(3);
+    addNews(`🌟 College standout ${p.name} skips Tier 5 entirely — straight to ${starClub} in Tier 4!`, "gold");
+    startNewSeason(starClub, 4);
+  };
+  if (!forced) $("col-stay").onclick = () => {
+    p.money -= 25000;
+    addNews(`📚 One more year of college ball — and one more $25K tuition bill.`, "bad");
+    startNewSeason(G.clubName, 6);
+  };
+}
+
+// ============================== CUP FINALS ==============================
+const NATIONS_POOL = ["Argentina","Brazil","England","France","Germany","Italy","Japan","Mexico","Netherlands","Nigeria","Portugal","Spain","USA","Uruguay","Croatia","Belgium","Morocco","Colombia"];
+
+function runContinentalCup(headlines, next) {
+  if (G.tier > 2) { next(); return; }
+  const p = G.player, me = myClubObj(), ovr = overall(p);
+  const winChance = clamp(0.30 + (me.strength - 84) * 0.03 + ovr * 0.004, 0.15, 0.85);
+  const opps = CLUB_NAMES[1].filter(n => n !== G.clubName);
+  const lines = [];
+  let alive = true, exitRound = "";
+  for (const round of ["Round of 16", "Quarter-final", "Semi-final"]) {
+    const opp = opps.splice(irnd(0, opps.length - 1), 1)[0];
+    if (Math.random() < winChance) lines.push(`✅ ${round}: beat ${crest(opp, 15)} ${opp}`);
+    else { lines.push(`❌ ${round}: knocked out by ${crest(opp, 15)} ${opp}`); alive = false; exitRound = round; break; }
+  }
+  showModal(`<h2>🏆 Continental Champions Cup</h2>
+    <p class="fade-muted" style="margin:8px 0">Europe's elite knockout — your cup run this season:</p>
+    <div style="margin:14px 0;font-size:14px;line-height:2">${lines.map(l => `<div>${l}</div>`).join("")}</div>
+    ${alive ? `<p style="margin:12px 0"><b>YOU'RE IN THE FINAL!</b> One match for continental glory.</p>` : `<p class="fade-muted" style="margin:12px 0">The cup run ends at the ${exitRound}. Next year.</p>`}
+    <div style="text-align:center"><button class="btn" id="cup-next">${alive ? "⚔️ Play the Final" : "Continue"}</button></div>`);
+  $("cup-next").onclick = () => {
+    if (!alive) { addNews(`Continental Cup run over — out at the ${exitRound}.`); next(); return; }
+    finalShowdown({
+      title: "🏆 CONTINENTAL CUP FINAL",
+      opponent: pick(CLUB_NAMES[1].filter(n => n !== G.clubName)),
+      onResult(won) {
+        if (won) {
+          p.trophies.push(`🏆 Continental Champions Cup (S${G.season})`);
+          rep(8); mor(15); p.money += 250000;
+          addBoost(HERO_ATTR[p.pos], 14, 3, "Continental Cup hero");
+          headlines.push(`🏆 CHAMPIONS OF THE CONTINENT! ${G.clubName} lift the Champions Cup!`);
+          addNews(`🏆 ${p.name} wins the Continental Champions Cup!`, "gold");
+        } else {
+          rep(3); mor(-8);
+          headlines.push(`💔 So close — beaten in the Continental Cup final.`);
+          addNews(`💔 Lost the Continental Cup final. It stings.`, "bad");
+        }
+        next();
+      }
+    });
+  };
+}
+
+function runWorldCup(headlines, next) {
+  const p = G.player;
+  if (G.year % 4 !== 2 || p.reputation < 50 || G.tier > 5) { next(); return; }
+  const ovr = overall(p);
+  const winChance = clamp(0.35 + ovr * 0.003 + p.reputation * 0.002, 0.2, 0.85);
+  const opps = NATIONS_POOL.filter(n => n !== p.nation);
+  const lines = [];
+  let alive = true, exitRound = "";
+  for (const round of ["Group stage", "Round of 16", "Quarter-final", "Semi-final"]) {
+    const opp = opps.splice(irnd(0, opps.length - 1), 1)[0];
+    if (Math.random() < winChance) lines.push(`✅ ${round}: ${p.nation} beat ${crest(opp, 15)} ${opp}`);
+    else { lines.push(`❌ ${round}: eliminated by ${crest(opp, 15)} ${opp}`); alive = false; exitRound = round; break; }
+  }
+  showModal(`<h2>🌍 WORLD CUP ${G.year}</h2>
+    <p style="margin:10px 0">${p.nation} call ${p.name} up for the World Cup!</p>
+    <div style="margin:14px 0;font-size:14px;line-height:2">${lines.map(l => `<div>${l}</div>`).join("")}</div>
+    ${alive ? `<p style="margin:12px 0"><b>${p.nation.toUpperCase()} ARE IN THE WORLD CUP FINAL!</b> The whole planet is watching.</p>` : `<p class="fade-muted" style="margin:12px 0">The dream dies at the ${exitRound}. In four years, you go again.</p>`}
+    <div style="text-align:center"><button class="btn" id="wc-next">${alive ? "⚔️ Play the Final" : "Continue"}</button></div>`);
+  $("wc-next").onclick = () => {
+    if (!alive) { rep(2); addNews(`🌍 World Cup over — ${p.nation} out at the ${exitRound}.`); next(); return; }
+    finalShowdown({
+      title: `🌍 WORLD CUP FINAL ${G.year}`,
+      opponent: pick(NATIONS_POOL.filter(n => n !== p.nation)),
+      onResult(won) {
+        if (won) {
+          p.trophies.push(`🌍 World Cup Winner (${G.year})`);
+          rep(15); mor(25); p.money += 1000000;
+          addBoost(HERO_ATTR[p.pos], 20, 4, "World Cup hero");
+          headlines.push(`🌍 WORLD CHAMPION! ${p.name} wins the World Cup with ${p.nation}!`);
+          addNews(`🌍 ${p.name} IS A WORLD CHAMPION!`, "gold");
+        } else {
+          rep(6); mor(-10);
+          headlines.push(`💔 World Cup final heartbreak for ${p.nation}.`);
+          addNews(`💔 Lost the World Cup final with ${p.nation}.`, "bad");
+        }
+        next();
+      }
+    });
+  };
+}
+
+// The Final Showdown: 4 stat-driven moments decide the biggest match of your life.
+const SHOWDOWN_OUTFIELD = [
+  { text:"Their playmaker dances into your box with the ball glued to his feet...", opts:[
+    { label:"Time a crunching tackle", stat:"def" },
+    { label:"Use your body to muscle him off it", stat:"phy" } ] },
+  { text:"You're clean through — one defender between you and glory...", opts:[
+    { label:"Burst past him with raw pace", stat:"pac" },
+    { label:"Drop the shoulder and cut inside", stat:"dri" } ] },
+  { text:"Free kick, 25 yards out. The wall is set, the keeper's screaming...", opts:[
+    { label:"Curl it over the wall", stat:"sho" },
+    { label:"Clip a disguised pass to the runner", stat:"pas" } ] },
+  { text:"Counter-attack! It's 3-on-2 and the ball is at your feet...", opts:[
+    { label:"Thread the killer through-ball", stat:"pas" },
+    { label:"Go alone and shoot early", stat:"sho" } ] },
+  { text:"Corner swings in — bodies flying everywhere in the six-yard box...", opts:[
+    { label:"Rise highest and attack the ball", stat:"phy" },
+    { label:"Peel off for the volley on the edge", stat:"sho" } ] },
+  { text:"Minute 89. Legs burning. Their striker breaks toward your goal...", opts:[
+    { label:"Sprint 60 yards to make the recovery", stat:"pac" },
+    { label:"Read the pass and step in front", stat:"def" } ] },
+];
+const SHOWDOWN_GK = [
+  { text:"A thunderbolt arrows toward your top corner...", opts:[
+    { label:"Fling yourself full stretch", stat:"def" },
+    { label:"Explode off the line to narrow the angle", stat:"phy" } ] },
+  { text:"Corner comes in and their giant centre-back charges straight at you...", opts:[
+    { label:"Punch it clear through traffic", stat:"phy" },
+    { label:"Claim it clean above the crowd", stat:"def" } ] },
+  { text:"Their striker is one-on-one, bearing down on your goal...", opts:[
+    { label:"Rush out and spread yourself big", stat:"def" },
+    { label:"Hold your line and read the shot", stat:"phy" } ] },
+  { text:"Panicked backpass! Their forward hunts you down...", opts:[
+    { label:"Calmly pass around the press", stat:"pas" },
+    { label:"Launch it long off your laces", stat:"phy" } ] },
+  { text:"Injury time — you sprint up for your own team's last corner...", opts:[
+    { label:"Attack the cross like a striker", stat:"phy" },
+    { label:"Lurk for the loose-ball rebound", stat:"def" } ] },
+];
+
+function finalShowdown(cfg) {
+  const p = G.player;
+  const pool = [...(p.pos === "GK" ? SHOWDOWN_GK : SHOWDOWN_OUTFIELD)];
+  const moments = [];
+  for (let i = 0; i < 4; i++) moments.push(pool.splice(irnd(0, pool.length - 1), 1)[0]);
+  let idx = 0, wins = 0;
+  const pips = [];
+  const chanceFor = stat => clamp(0.30 + effAttr(p, stat) * 0.0062 + (p.morale - 50) * 0.001, 0.15, 0.95);
+
+  function showMoment() {
+    const m = moments[idx];
+    showModal(`<div class="mg-wrap"><h2>${cfg.title}</h2>
+      <p class="fade-muted" style="margin:6px 0">vs ${crest(cfg.opponent, 16)} ${cfg.opponent} · Moment ${idx + 1} of 4 &nbsp;${pips.join(" ")}</p>
+      <p style="margin:14px 0;font-size:15px;line-height:1.6">${m.text}</p>
+      ${m.opts.map((o, i) => `<button class="event-choice" data-sd="${i}"><b>${o.label}</b><small>Uses ${ATTR_NAMES[o.stat]} (${Math.round(effAttr(p, o.stat))}) — ${Math.round(chanceFor(o.stat) * 100)}% chance</small></button>`).join("")}</div>`);
+    document.querySelectorAll("[data-sd]").forEach(el => el.onclick = () => {
+      const o = m.opts[+el.dataset.sd];
+      const ok = Math.random() < chanceFor(o.stat);
+      pips.push(ok ? "🟢" : "🔴");
+      if (ok) wins++;
+      idx++;
+      showModal(`<div class="mg-wrap"><h2>${ok ? "✅ You pulled it off!" : "❌ It breaks down!"}</h2>
+        <p class="fade-muted" style="margin:12px 0">${ok ? pick(["The crowd erupts!", "Textbook. Absolutely textbook.", "They simply can't handle you today."]) : pick(["The chance slips away...", "Their fans roar. Momentum shifts.", "So close — but not this time."])}</p>
+        <div class="mg-result">${pips.join(" ")}</div>
+        <button class="btn" id="sd-next">${idx < 4 ? "Next moment →" : "Final whistle approaches..."}</button></div>`);
+      $("sd-next").onclick = () => { idx < 4 ? showMoment() : resolve(); };
+    });
+  }
+
+  function resolve() {
+    if (wins >= 3) return finish(true, "You dominated the biggest stage of them all.");
+    if (wins <= 1) return finish(false, "Outclassed on the day. The lessons will hurt — and help.");
+    // 2–2: everything rests on one deciding penalty
+    showModal(`<div class="mg-wrap"><h2>😱 IT ALL COMES DOWN TO ONE PENALTY</h2>
+      <p class="fade-muted" style="margin:10px 0">Score level at the death. ${p.name} grabs the ball. Pick your spot.</p>
+      <div class="goal-mouth">${PEN_ZONES.map((z, i) => `<div class="goal-zone" data-sdpen="${i}">${z.nm}</div>`).join("")}</div></div>`);
+    document.querySelectorAll("[data-sdpen]").forEach(el => el.onclick = () => {
+      const zi = +el.dataset.sdpen, z = PEN_ZONES[zi];
+      const keeper = weightedPick([1.4, .5, 1.4, 1.9, .6, 1.9]);
+      const kickStat = p.pos === "GK" ? effAttr(p, "pas") : effAttr(p, "sho");
+      const missC = clamp(z.miss - kickStat * 0.0015, .02, .5);
+      const scored = Math.random() >= missC && !(zi === keeper && Math.random() < z.save);
+      pips.push(scored ? "🟢" : "🔴");
+      finish(scored, scored ? (z.panenka ? "A PANENKA. IN A FINAL. Immortality achieved." : "Nerves of steel when it mattered most.") : "The keeper wins the duel. Heartbreak.");
+    });
+  }
+
+  function finish(won, sub) {
+    showModal(`<div class="mg-wrap"><h2>${won ? "🏆 YOU'VE WON IT ALL!" : "💔 DEFEAT IN THE FINAL"}</h2>
+      <p class="fade-muted" style="margin:12px 0">${sub}</p>
+      <div class="mg-result">${pips.join(" ")}</div>
+      <button class="btn${won ? " gold" : ""}" id="sd-done">Continue</button></div>`);
+    $("sd-done").onclick = () => cfg.onResult(won);
+  }
+
+  showMoment();
+}
+
+function generateOffers(myPos, avg) {
+  const p = G.player;
+  const ovr = overall(p);
+  const offers = [];
+  // which tiers would want you?
+  for (const L of LEAGUES) {
+    if (L.tier === G.tier || L.tier > 5) continue; // schools don't make contract offers
+    const targetStr = (L.strength[0] + L.strength[1]) / 2;
+    const appeal = ovr + p.reputation * 0.25 - targetStr;
+    let chance = clamp(0.5 + appeal * 0.06, 0, 0.9);
+    if (L.tier > G.tier) chance = ovr < targetStr - 5 ? 0.3 : 0.05; // lower league fallback
+    if (p.age >= 33 && L.tier < G.tier) chance *= 0.4;
+    if (Math.random() < chance && offers.length < 3) {
+      const clubName = pick(CLUB_NAMES[L.tier].filter(n => n !== G.clubName));
+      const wage = Math.round((200 + ovr * 14) * L.wageMult / 10) * 10;
+      offers.push({ tier: L.tier, league: L.name, club: clubName, wage });
+    }
+  }
+  // current club renewal (always available unless you were terrible)
+  const renewWage = Math.round(p.wage * (avg >= 7 ? 1.35 : avg >= 6 ? 1.1 : 0.95) / 10) * 10;
+  offers.unshift({ tier: G.tier, league: leagueInfo().name, club: G.clubName, wage: renewWage, renew: true });
+  return offers.sort((a,b) => a.tier - b.tier);
+}
+
+function acceptOffer(idx) {
+  const p = G.player;
+  const o = G.pendingOffers[idx];
+  const moved = !o.renew;
+  if (moved) {
+    addNews(`✈️ TRANSFER! ${p.name} joins ${o.club} (${o.league}) on ${money(o.wage)}/week.`, "gold");
+    G.tier = o.tier;
+    p.reputation = clamp(p.reputation + (G.tier <= 2 ? 3 : 1), 0, 100);
+  } else {
+    addNews(`🖊️ Contract renewed at ${o.club}: ${money(o.wage)}/week.`, "good");
+  }
+  p.wage = o.wage;
+  startNewSeason(o.club, o.tier);
+}
+
+function startNewSeason(clubName, tier) {
+  const p = G.player;
+  G.tier = tier;
+  G.clubs = genLeague(tier);
+  // make sure our club is in the league list
+  if (!G.clubs.some(c => c.name === clubName)) {
+    G.clubs[0] = { name: clubName, strength: Math.round((LEAGUES.find(l=>l.tier===tier).strength[0] + LEAGUES.find(l=>l.tier===tier).strength[1]) / 2), pts:0,w:0,d:0,l:0,gf:0,ga:0 };
+  }
+  G.clubName = clubName;
+  G.totalRounds = (G.clubs.length - 1) * 2;
+  G.season++; G.year++; G.week = 1;
+  p.seasonStats = freshSeasonStats();
+  p.energy = 100; p.form = 50; p.morale = 65;
+  G.trainedThisWeek = false; G.lastTraining = null;
+  G.topScorerNPC = { name: npcName(), goals: 0 };
+  G.pendingOffers = null;
+  G.transferredThisSeason = false;
+  for (let i = 0; i < 4; i++) tickStocks(); // the market keeps moving over the off-season
+  addNews(`— Season ${G.season} (${G.year}) kicks off with ${clubName} in the ${leagueInfo().name}. —`);
+  closeModal();
+  if (G.pendingRetire || p.age >= 40) { retire(true); return; }
+  render();
+  saveGame();
+}
+
+// ============================== RETIREMENT ==============================
+function legacyRank(p) {
+  const c = p.careerStats;
+  const avg = c.apps ? c.ratingsSum / c.apps : 0;
+  let score = c.goals * 1.2 + c.assists * 0.9 + c.cleanSheets * 1.4 + c.motm * 2 + p.trophies.length * 30 + avg * 12 + p.reputation * 1.6;
+  score += p.trophies.filter(t => t.includes("World Cup")).length * 80;      // world cups are legacy-defining
+  score += p.trophies.filter(t => t.includes("Continental")).length * 40;
+  if (score >= 700) return ["🐐 THE GREATEST OF ALL TIME", "Statues will be built. Children will wear your name."];
+  if (score >= 480) return ["🌟 World-Class Legend", "One of the finest players of your generation."];
+  if (score >= 300) return ["⭐ International Star", "A household name, feared by defenders everywhere."];
+  if (score >= 170) return ["✨ Solid Professional", "A respected career any kid would dream of."];
+  if (score >= 80)  return ["⚽ Journeyman", "You made a living doing what you love."];
+  return ["🥾 Sunday-League Hero", "Hey, at least the local pub named a sandwich after you."];
+}
+
+function retire(forced) {
+  const p = G.player;
+  G.retired = true;
+  // cash out the stock portfolio into the final fortune
+  for (const id in p.portfolio || {}) {
+    const s = (G.stocks || []).find(x => x.id === id);
+    if (s && p.portfolio[id].shares) p.money += Math.round(p.portfolio[id].shares * s.price);
+  }
+  p.portfolio = {};
+  const [title, sub] = legacyRank(p);
+  // bank this career's trophies into the account, then close the save slot
+  const accs = loadAccounts();
+  if (SESSION && accs[SESSION]) {
+    accs[SESSION].retiredTrophies = (accs[SESSION].retiredTrophies || 0) + p.trophies.length;
+    delete accs[SESSION].saves[G.slotId];
+    saveAccounts(accs);
+    submitScore();
+  }
+  showScreen("retire-screen");
+  document.getElementById("legacy-title").textContent = title;
+  document.getElementById("legacy-sub").textContent =
+    `${p.name} retires at ${p.age}${forced ? " (the body said no more)" : ""} after ${p.careerStats.seasons} season${p.careerStats.seasons===1?"":"s"}. ${sub}`;
+  const c = p.careerStats;
+  const avg = c.apps ? (c.ratingsSum / c.apps).toFixed(2) : "—";
+  document.getElementById("final-stat-boxes").innerHTML = statBoxes([
+    [c.apps, "Appearances"], [c.goals, "Goals"], [c.assists, "Assists"],
+    [c.motm, "MOTM Awards"], [c.cleanSheets, "Clean Sheets"], [avg, "Avg Rating"],
+    [money(p.money), "Fortune"], [Math.round(p.reputation), "Reputation"],
+  ]);
+  document.getElementById("final-trophies").innerHTML =
+    p.trophies.length ? p.trophies.map(t => `<span class="trophy">${t}</span>`).join("") : `<span class="fade-muted">No silverware — but plenty of stories.</span>`;
+  closeModal();
+}
+
+// ============================== UI RENDER ==============================
+const $ = id => document.getElementById(id);
+
+function statBoxes(pairs) {
+  return pairs.map(([v, l]) => `<div class="stat-box"><b>${v}</b><span>${l}</span></div>`).join("");
+}
+
+function render() {
+  if (!G || G.retired) return;
+  const p = G.player;
+  const ovr = overall(p);
+  // sidebar
+  $("pc-name").textContent = p.name;
+  $("pc-sub").textContent = `${POSITIONS[p.pos]} · ${p.nation} · Age ${p.age}`;
+  $("pc-ovr").textContent = ovr;
+  $("pc-attrs").innerHTML = Object.keys(ATTR_NAMES).map(k => {
+    const base = Math.round(p.attrs[k]);
+    const v = Math.round(effAttr(p, k));
+    const boosted = v > base;
+    const col = boosted ? "#ff9636" : v >= 80 ? "var(--gold)" : v >= 65 ? "var(--green-bright)" : "#4a6";
+    return `<div class="attr-row"><span class="lbl">${ATTR_NAMES[k]}</span><div class="bar"><i style="width:${v}%;background:${col}"></i></div><b${boosted ? ` style="color:#ff9636"` : ""}>${v}</b></div>`;
+  }).join("");
+  $("pc-boosts").innerHTML = (p.tempBoosts || []).map(b =>
+    `<div class="boost-line">🔥 +${b.amt} ${ATTR_NAMES[b.attr]} · ${b.games} game${b.games > 1 ? "s" : ""} left</div>`).join("");
+  $("bar-energy").style.width = p.energy + "%";
+  $("val-energy").textContent = Math.round(p.energy);
+  $("bar-form").style.width = p.form + "%";
+  $("val-form").textContent = Math.round(p.form);
+  $("bar-morale").style.width = p.morale + "%";
+  $("val-morale").textContent = Math.round(p.morale);
+  $("pc-wage").textContent = money(p.wage);
+  $("pc-money").textContent = money(p.money);
+  $("pc-money").style.color = p.money < 0 ? "var(--red)" : "";
+  $("pc-rep").textContent = Math.round(p.reputation) + " / 100";
+
+  // topbar
+  $("tb-club-label").innerHTML = crest(G.clubName, 20) + " " + G.clubName;
+  $("tb-league").textContent = leagueInfo().name + (G.tier <= 5 ? " (Tier " + G.tier + ")" : " · 🎓");
+  $("tb-season").textContent = `Season ${G.season} · ${G.year}`;
+  const r = roundsPlayed();
+  $("tb-week").textContent = r < G.totalRounds ? `Matchday ${r + 1} of ${G.totalRounds}` : "Season complete";
+
+  // actions
+  $("action-grid").innerHTML = TRAININGS.map(t =>
+    `<div class="action-card ${G.lastTraining === t.id ? "done" : ""}" data-train="${t.id}">
+      <div class="ico">${t.ico}</div><div class="nm">${t.nm}</div><div class="fx">${t.fx}${t.cost ? " · −" + t.cost + " NRG" : ""}${t.attr && p.coaches && p.coaches[t.attr] ? ` · 👔×${COACH_TIERS[p.coaches[t.attr]-1].mult}` : ""}</div>
+    </div>`).join("");
+  $("act-hint").textContent = G.trainedThisWeek ? "Activity done — time for the match!" : "Pick one activity, then play your match";
+  document.querySelectorAll("[data-train]").forEach(el => {
+    el.onclick = () => doTraining(TRAININGS.find(t => t.id === el.dataset.train));
+    if (G.trainedThisWeek && G.lastTraining !== el.dataset.train) el.style.opacity = .4;
+  });
+
+  // next match
+  const opp = nextOpponent();
+  const seasonOver = !opp;
+  const me = myClubObj();
+  if (opp) {
+    const fav = me.strength + (overall(p) - me.strength) * .25 > opp.strength;
+    $("next-match-info").innerHTML = `${crest(G.clubName, 18)} <b>${G.clubName}</b> <span class="fade-muted">(str ${me.strength})</span> vs ${crest(opp.name, 18)} <b>${opp.name}</b> <span class="fade-muted">(str ${opp.strength})</span> ${fav ? "— you're favourites." : "— tough one."}`;
+  } else {
+    $("next-match-info").innerHTML = `<span class="fade-muted">The season is over. Time to talk contracts...</span>`;
+  }
+  $("btn-play").classList.toggle("hidden", seasonOver);
+  $("btn-endseason").classList.toggle("hidden", !seasonOver);
+
+  // news
+  $("news-feed").innerHTML = G.news.map(n =>
+    `<div class="news-item ${n.kind}"><span class="wk">${n.week}</span>${n.text}</div>`).join("") || `<span class="fade-muted">No news yet.</span>`;
+
+  // table
+  $("table-title").textContent = leagueInfo().name;
+  $("league-table-body").innerHTML = sortedTable().map((c, i) =>
+    `<tr class="${c.name === G.clubName ? "me" : ""}"><td>${i+1}</td><td>${crest(c.name, 15)} ${c.name}</td><td class="num">${c.w+c.d+c.l}</td><td class="num">${c.w}</td><td class="num">${c.d}</td><td class="num">${c.l}</td><td class="num">${c.gf - c.ga}</td><td class="num">${c.pts}</td></tr>`).join("");
+
+  // stats
+  const s = p.seasonStats;
+  const avg = s.apps ? (s.ratingsSum / s.apps).toFixed(2) : "—";
+  $("season-stat-boxes").innerHTML = statBoxes([
+    [s.apps, "Apps"], [s.goals, "Goals"], [s.assists, "Assists"], [s.motm, "MOTM"],
+    [s.cleanSheets, "Clean Sheets"], [avg, "Avg Rating"], [G.topScorerNPC.goals, `Rival: ${G.topScorerNPC.name}`],
+  ]);
+  const c = p.careerStats;
+  const cavg = c.apps ? (c.ratingsSum / c.apps).toFixed(2) : "—";
+  $("career-stat-boxes").innerHTML = statBoxes([
+    [c.seasons, "Seasons"], [c.apps, "Apps"], [c.goals, "Goals"], [c.assists, "Assists"],
+    [c.motm, "MOTM"], [c.cleanSheets, "Clean Sheets"], [cavg, "Avg Rating"],
+  ]);
+  $("trophy-list").innerHTML = p.trophies.length
+    ? p.trophies.map(t => `<span class="trophy">${t}</span>`).join("")
+    : `<span class="fade-muted">Nothing yet. Go win something.</span>`;
+
+  // shop
+  $("shop-money").textContent = money(p.money);
+  $("shop-grid").innerHTML = SHOP.map(cat => {
+    const lvl = (p.gearLevel || {})[cat.cat] || 0;
+    const nextT = cat.tiers[lvl];
+    return `<div class="shop-card">
+      <div class="ico">${cat.ico}</div>
+      <div class="nm">${cat.nm}</div>
+      <div class="owned">Owned: ${lvl > 0 ? `<b>${cat.tiers[lvl - 1].nm}</b>` : "none"}</div>
+      ${nextT
+        ? `<div class="next"><b>${nextT.nm}</b><br><span>${nextT.fx}</span></div>
+           <button class="btn" data-shop="${cat.cat}" ${p.money < nextT.cost ? "disabled" : ""}>Buy — ${money(nextT.cost)}</button>`
+        : `<div class="next maxed">MAXED OUT ✨</div>`}
+    </div>`;
+  }).join("");
+  document.querySelectorAll("[data-shop]").forEach(el => el.onclick = () => buyItem(el.dataset.shop));
+
+  // coaching staff
+  $("coach-grid").innerHTML = Object.keys(ATTR_NAMES).map(k => {
+    const lvl = (p.coaches || {})[k] || 0;
+    const tr = TRAININGS.find(x => x.attr === k);
+    return `<div class="shop-card">
+      <div class="ico">${tr.ico}</div>
+      <div class="nm">${ATTR_NAMES[k]} Coach</div>
+      <div class="owned">${lvl ? `<b>${COACH_TIERS[lvl-1].nm}</b> · ×${COACH_TIERS[lvl-1].mult} gains · ${money(COACH_TIERS[lvl-1].cost)}/week` : "No coach hired"}</div>
+      <div class="next" style="display:flex;flex-direction:column;gap:6px">
+        ${COACH_TIERS.map((ct, i) => lvl === i + 1
+          ? `<button class="btn gold" disabled>✓ ${ct.nm} ×${ct.mult}</button>`
+          : `<button class="btn secondary" data-coach="${k}|${i+1}" ${p.money < ct.cost ? "disabled" : ""}>${ct.nm} ×${ct.mult} — ${money(ct.cost)}/wk</button>`).join("")}
+        ${lvl ? `<button class="btn danger" data-coach="${k}|0" style="padding:6px 10px;font-size:12px">✕ Fire coach</button>` : ""}
+      </div>
+    </div>`;
+  }).join("");
+  document.querySelectorAll("[data-coach]").forEach(el => el.onclick = () => {
+    const [k, l] = el.dataset.coach.split("|");
+    hireCoach(k, +l);
+  });
+
+  // stock exchange
+  const port = p.portfolio || {};
+  let pfValue = 0, pfCost = 0;
+  $("stock-list").innerHTML = (G.stocks || []).map(s => {
+    const h = port[s.id] || { shares: 0, cost: 0 };
+    const val = h.shares * s.price;
+    pfValue += val; pfCost += h.cost;
+    const prev = s.hist.length > 1 ? s.hist[s.hist.length - 2] : s.price;
+    const chg = (s.price - prev) / prev * 100;
+    const profit = val - h.cost;
+    return `<div class="stock-row">
+      <div class="st-info"><b>${s.ico} ${s.nm}</b>
+        <small>$${s.price.toFixed(2)} <span style="color:${chg >= 0 ? "var(--green-bright)" : "var(--red)"}">${chg >= 0 ? "▲" : "▼"}${Math.abs(chg).toFixed(1)}%</span>${h.shares ? ` · own ${h.shares} = ${money(val)} <span style="color:${profit >= 0 ? "var(--green-bright)" : "var(--red)"}">(${profit >= 0 ? "+" : "−"}${money(Math.abs(profit))})</span>` : ""}</small>
+      </div>
+      ${spark(s.hist)}
+      <div class="st-btns">
+        <button class="btn" data-buy="${s.id}|1" ${p.money < s.price ? "disabled" : ""}>Buy 1</button>
+        <button class="btn" data-buy="${s.id}|10" ${p.money < s.price * 10 ? "disabled" : ""}>×10</button>
+        <button class="btn secondary" data-sell="${s.id}|1" ${!h.shares ? "disabled" : ""}>Sell 1</button>
+        <button class="btn secondary" data-sell="${s.id}|all" ${!h.shares ? "disabled" : ""}>All</button>
+      </div></div>`;
+  }).join("");
+  $("pf-value").textContent = money(pfValue);
+  const pfP = pfValue - pfCost;
+  $("pf-profit").innerHTML = pfCost > 0
+    ? `unrealised: <b style="color:${pfP >= 0 ? "var(--green-bright)" : "var(--red)"}">${pfP >= 0 ? "+" : "−"}${money(Math.abs(pfP))}</b>`
+    : `<span class="fade-muted">no positions yet</span>`;
+  document.querySelectorAll("[data-buy]").forEach(el => el.onclick = () => { const [id, q] = el.dataset.buy.split("|"); buyStock(id, +q); });
+  document.querySelectorAll("[data-sell]").forEach(el => el.onclick = () => { const [id, q] = el.dataset.sell.split("|"); sellStock(id, q === "all" ? Infinity : +q); });
+
+  // transfer market
+  G.scoutInterest = (G.scoutInterest || []).filter(s => s.until > G.weekCount);
+  const myRep = Math.round(p.reputation);
+  const inSchool = G.tier > 5;
+  $("tm-rep").textContent = inSchool ? "🎓 in school — market locked until you turn pro" : myRep + " / 100";
+  $("transfer-list").innerHTML = LEAGUES.filter(L => L.tier <= 5).map(L => {
+    const rows = CLUB_NAMES[L.tier].map((n, i) => {
+      const req = repReq(L.tier, i);
+      const isCurrent = n === G.clubName;
+      const scout = (G.scoutInterest || []).find(s => s.club === n);
+      const unlocked = myRep >= req || !!scout;
+      const can = !isCurrent && unlocked && !G.transferredThisSeason && !inSchool;
+      return `<div class="transfer-row${isCurrent ? " current" : ""}">
+        <div class="tr-club">${crest(n, 16)} ${n}
+          <span class="tr-req ${unlocked ? "ok" : ""}">${L.name} · ${scout ? `🔥 SCOUTING YOU — rep waived, ${scout.until - G.weekCount} matchday${scout.until - G.weekCount > 1 ? "s" : ""} left` : unlocked ? "✓ Unlocked" : "🔒 Requires"} ${scout ? "" : "REP " + req}</span>
+        </div>
+        ${isCurrent
+          ? `<span class="badge t1">YOUR CLUB</span>`
+          : `<button class="btn${unlocked ? "" : " secondary"}" data-join="${L.tier}|${n}" ${can ? "" : "disabled"}>${unlocked ? (G.transferredThisSeason ? "Next season" : "Join") : "🔒 " + req}</button>`}
+      </div>`;
+    }).join("");
+    return `<div class="tm-league">Tier ${L.tier} — ${L.name}</div>${rows}`;
+  }).join("");
+  document.querySelectorAll("[data-join]").forEach(el => el.onclick = () => {
+    const [t, n] = el.dataset.join.split("|");
+    confirmTransfer(+t, n);
+  });
+
+  // history
+  $("history-body").innerHTML = p.history.length ? p.history.map(h =>
+    `<tr><td>S${h.season} (${h.year})</td><td>${h.club}<span class="badge ${h.tier<=1?"t1":h.tier<=2?"t2":""}">T${h.tier}</span></td><td class="num">${h.age}</td><td class="num">${h.apps}</td><td class="num">${h.goals}</td><td class="num">${h.assists}</td><td class="num">${h.avg.toFixed(2)}</td><td class="num">${h.pos}</td></tr>`).join("")
+    : `<tr><td colspan="8" class="fade-muted">Your first season is underway.</td></tr>`;
+
+  // retire button availability
+  $("btn-retire-now").disabled = p.age < 28;
+  $("btn-retire-now").textContent = p.age < 28 ? `Retire (age 28+)` : "Retire Now";
+}
+
+// ============================== MODALS ==============================
+function showModal(html) { $("modal-content").innerHTML = html; $("overlay").classList.remove("hidden"); }
+function closeModal() { $("overlay").classList.add("hidden"); }
+function flashModal(title, body) {
+  showModal(`<h2>${title}</h2><div style="margin:14px 0">${body}</div><button class="btn" onclick="closeModal()">OK</button>`);
+}
+
+function showMatchModal(me, opp, gMe, gOpp, events, minutes, rating, motm) {
+  const cls = rating >= 7.5 ? "high" : rating >= 6 ? "mid" : "low";
+  showModal(`
+    <h2 style="text-align:center">Full Time</h2>
+    <div class="scoreline">
+      <div class="team">${crest(me.name, 30)}<br>${me.name}</div>
+      <div class="score">${gMe} – ${gOpp}</div>
+      <div class="team">${crest(opp.name, 30)}<br>${opp.name}</div>
+    </div>
+    <div class="match-events">${events.length ? events.map(e => `<div class="ev">${e}</div>`).join("") : `<div class="ev fade-muted">A quiet afternoon — no highlights involving you.</div>`}</div>
+    <div style="text-align:center;margin-bottom:18px">
+      ${minutes > 0
+        ? `<div style="margin-bottom:8px" class="fade-muted">${minutes} minutes played ${motm ? "· ⭐ MAN OF THE MATCH" : ""}</div><span class="rating-badge ${cls}">${rating.toFixed(1)}</span>`
+        : `<span class="fade-muted">You didn't get off the bench. Train harder — raise that overall.</span>`}
+    </div>
+    <div style="text-align:center"><button class="btn" onclick="closeModal();render()">Continue</button></div>
+  `);
+}
+
+function showSeasonModal(headlines, myPos, avg, offers) {
+  const p = G.player;
+  const s = p.seasonStats;
+  const offerHtml = offers.map((o, i) => `
+    <div class="offer-card">
+      <div class="oc-club">${o.renew ? "🖊️ " : "✈️ "}${crest(o.club, 17)} ${o.renew ? "Stay at " : ""}${o.club}<span class="badge ${o.tier<=1?"t1":o.tier<=2?"t2":""}">Tier ${o.tier}</span></div>
+      <div class="oc-details">${o.league} · Wage: <b style="color:var(--green-bright)">${money(o.wage)}/week</b>${o.renew ? " (contract renewal)" : ""}</div>
+      <button class="btn" style="padding:8px 18px;font-size:13px" onclick="acceptOffer(${i})">${o.renew ? "Renew" : "Sign"}</button>
+    </div>`).join("");
+  showModal(`
+    <h2>Season ${G.season} Review — ${G.year}</h2>
+    <div style="margin:12px 0;font-size:14px;line-height:1.6">
+      <div>Final position: <b>${myPos}${["st","nd","rd"][myPos-1] || "th"}</b> in the ${leagueInfo().name}</div>
+      <div>Your season: <b>${s.apps}</b> apps · <b>${s.goals}</b> goals · <b>${s.assists}</b> assists · <b>${avg ? avg.toFixed(2) : "—"}</b> avg rating</div>
+    </div>
+    ${headlines.length ? `<div style="margin:12px 0">${headlines.map(h => `<div class="news-item gold">${h}</div>`).join("")}</div>` : ""}
+    <h3 style="margin:18px 0 10px">Contract Offers</h3>
+    ${offerHtml}
+    ${p.age >= 28 ? `<div style="text-align:center;margin-top:14px"><button class="btn danger" onclick="retire(false)">…or hang up the boots 🥾</button></div>` : ""}
+  `);
+}
+
+// ============================== ACCOUNTS & SAVES ==============================
+const ACC_KEY = "plAccounts_v1";
+const SES_KEY = "plSession_v1";
+const BOARD_KEY = "pitchlegend_board_e8b2507c";
+const BOARD_READ = "https://textdb.online/" + BOARD_KEY;
+const BOARD_WRITE = "https://textdb.online/update";
+let SESSION = null; // lowercase username of logged-in account
+
+const SCREENS = ["auth-screen", "menu-screen", "board-screen", "setup-screen", "game-screen", "retire-screen"];
+function showScreen(id) { SCREENS.forEach(s => $(s).classList.toggle("hidden", s !== id)); }
+
+function loadAccounts() { try { return JSON.parse(localStorage.getItem(ACC_KEY)) || {}; } catch { return {}; } }
+function saveAccounts(accs) { localStorage.setItem(ACC_KEY, JSON.stringify(accs)); }
+function currentAccount() { return SESSION ? loadAccounts()[SESSION] : null; }
+
+async function hashPass(user, pass) {
+  const data = new TextEncoder().encode(user.toLowerCase() + "::" + pass + "::pitchlegend");
+  if (window.crypto && crypto.subtle) {
+    const buf = await crypto.subtle.digest("SHA-256", data);
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+  }
+  let h = 5381; for (const b of data) h = ((h * 33) ^ b) >>> 0; // fallback for non-secure contexts
+  return "x" + h.toString(16);
+}
+
+function migrateState(g) {
+  if (g.player.morale === undefined) g.player.morale = 70;
+  if (!g.eventCooldowns) g.eventCooldowns = {};
+  if (!g.weekCount) g.weekCount = 0;
+  if (!g.player.gearLevel) g.player.gearLevel = {};
+  if (!g.player.tempBoosts) g.player.tempBoosts = [];
+  if (g.transferredThisSeason === undefined) g.transferredThisSeason = false;
+  if (!g.scoutInterest) g.scoutInterest = [];
+  if (!g.stocks) g.stocks = initStocks();
+  if (!g.player.portfolio) g.player.portfolio = {};
+  if (!g.player.coaches) g.player.coaches = {};
+  return g;
+}
+
+function saveGame() {
+  if (!G || G.retired || !SESSION) return;
+  const accs = loadAccounts();
+  const acc = accs[SESSION];
+  if (!acc) return;
+  acc.saves[G.slotId] = G;
+  saveAccounts(accs);
+}
+
+function accountTrophyTotal(acc) {
+  let t = acc.retiredTrophies || 0;
+  for (const id in acc.saves) { try { t += (acc.saves[id].player.trophies || []).length; } catch {} }
+  return t;
+}
+
+async function registerAccount() {
+  const user = $("auth-user").value.trim();
+  const pass = $("auth-pass").value;
+  const err = $("auth-error");
+  if (!/^[A-Za-z0-9_]{3,16}$/.test(user)) { err.textContent = "Username must be 3–16 letters, numbers or underscores."; return; }
+  if (pass.length < 4) { err.textContent = "Password must be at least 4 characters."; return; }
+  const accs = loadAccounts();
+  const key = user.toLowerCase();
+  if (accs[key]) { err.textContent = "That username is taken (on this browser)."; return; }
+  accs[key] = { username: user, passHash: await hashPass(user, pass), saves: {}, retiredTrophies: 0, created: Date.now() };
+  importLegacySave(accs[key]);
+  saveAccounts(accs);
+  SESSION = key;
+  localStorage.setItem(SES_KEY, key);
+  submitScore();
+  showMenu();
+}
+
+async function loginAccount() {
+  const user = $("auth-user").value.trim();
+  const pass = $("auth-pass").value;
+  const err = $("auth-error");
+  const accs = loadAccounts();
+  const key = user.toLowerCase();
+  const acc = accs[key];
+  if (!acc) { err.textContent = "No account with that username on this browser. Create one!"; return; }
+  if (acc.passHash !== await hashPass(user, pass)) { err.textContent = "Wrong password."; return; }
+  if (importLegacySave(acc)) saveAccounts(accs);
+  SESSION = key;
+  localStorage.setItem(SES_KEY, key);
+  submitScore();
+  showMenu();
+}
+
+function importLegacySave(acc) { // adopt a pre-account save into this account
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw || Object.keys(acc.saves).length) return false;
+    const g = migrateState(JSON.parse(raw));
+    g.slotId = "s" + Date.now();
+    acc.saves[g.slotId] = g;
+    localStorage.removeItem(SAVE_KEY);
+    return true;
+  } catch { return false; }
+}
+
+function logout() {
+  SESSION = null;
+  localStorage.removeItem(SES_KEY);
+  $("auth-pass").value = "";
+  $("auth-error").textContent = "";
+  showScreen("auth-screen");
+}
+
+function showMenu() {
+  const acc = currentAccount();
+  if (!acc) { showScreen("auth-screen"); return; }
+  $("menu-user").textContent = acc.username;
+  $("menu-trophies").textContent = accountTrophyTotal(acc);
+  const ids = Object.keys(acc.saves);
+  $("save-list").innerHTML = ids.length ? ids.map(id => {
+    const s = acc.saves[id];
+    return `<div class="transfer-row">
+      <div class="tr-club" style="text-align:left">${s.player.name} — ${crest(s.clubName, 15)} ${s.clubName}
+        <span class="tr-req">Season ${s.season} · Age ${s.player.age} · ${POSITIONS[s.player.pos]} · 🏆 ${(s.player.trophies || []).length}</span>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn" data-load="${id}" style="padding:7px 14px;font-size:12.5px">Play</button>
+        <button class="btn danger" data-del="${id}" style="padding:7px 10px;font-size:12.5px">✕</button>
+      </div></div>`;
+  }).join("") : `<p class="fade-muted" style="margin:12px 0;text-align:left">No careers yet — start your first!</p>`;
+  $("btn-newcareer").style.display = ids.length >= 5 ? "none" : "";
+  document.querySelectorAll("[data-load]").forEach(b => b.onclick = () => loadSlot(b.dataset.load));
+  document.querySelectorAll("[data-del]").forEach(b => b.onclick = () => deleteSlot(b.dataset.del));
+  showScreen("menu-screen");
+}
+
+function loadSlot(id) {
+  const acc = currentAccount();
+  if (!acc || !acc.saves[id]) return;
+  G = migrateState(JSON.parse(JSON.stringify(acc.saves[id])));
+  G.slotId = id;
+  showScreen("game-screen");
+  render();
+}
+
+function deleteSlot(id) {
+  const acc = currentAccount();
+  const s = acc.saves[id];
+  showModal(`<h2>Delete ${s.player.name}'s career?</h2><p style="margin:14px 0">This career and its ${(s.player.trophies || []).length} trophies will be gone forever.</p>
+    <div class="btn-row"><button class="btn danger" id="del-yes">Delete it</button>
+    <button class="btn secondary" onclick="closeModal()">Cancel</button></div>`);
+  $("del-yes").onclick = () => {
+    const accs = loadAccounts();
+    delete accs[SESSION].saves[id];
+    saveAccounts(accs);
+    submitScore();
+    closeModal();
+    showMenu();
+  };
+}
+
+// ============================== GLOBAL LEADERBOARD ==============================
+async function fetchBoard() {
+  const res = await fetch(BOARD_READ, { cache: "no-store" });
+  const txt = await res.text();
+  try { return JSON.parse(txt).players || {}; } catch { return {}; }
+}
+
+async function submitScore() {
+  const acc = currentAccount();
+  if (!acc) return;
+  const entry = { u: acc.username, t: accountTrophyTotal(acc), ts: Date.now() };
+  try {
+    const players = await fetchBoard();
+    const key = acc.username.toLowerCase();
+    if (players[key] && players[key].t === entry.t) return; // nothing new to report
+    players[key] = entry;
+    const keys = Object.keys(players);
+    if (keys.length > 100) { // keep the store lean: only the top 100 survive
+      keys.sort((a, b) => (players[b].t || 0) - (players[a].t || 0)).slice(100).forEach(k => delete players[k]);
+    }
+    await fetch(BOARD_WRITE, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ key: BOARD_KEY, value: JSON.stringify({ players }) }),
+    }).catch(() => {});
+  } catch { /* offline — the local board still works */ }
+}
+
+async function openBoard() {
+  showScreen("board-screen");
+  $("board-body").innerHTML = `<tr><td colspan="3" class="fade-muted">Loading global standings…</td></tr>`;
+  $("board-note").textContent = "";
+  let players = {};
+  try {
+    players = await fetchBoard();
+  } catch {
+    $("board-note").textContent = "⚠️ Couldn't reach the global server — showing players on this device only.";
+  }
+  const accs = loadAccounts(); // merge local accounts so the board works offline too
+  for (const k in accs) {
+    const t = accountTrophyTotal(accs[k]);
+    if (!players[k] || (players[k].t || 0) < t) players[k] = { u: accs[k].username, t };
+  }
+  const rows = Object.values(players).sort((a, b) => (b.t || 0) - (a.t || 0)).slice(0, 100);
+  const medal = i => i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : (i + 1);
+  $("board-body").innerHTML = rows.length ? rows.map((r, i) =>
+    `<tr class="${SESSION && r.u.toLowerCase() === SESSION ? "me" : ""}"><td>${medal(i)}</td><td>${String(r.u).slice(0, 20)}</td><td class="num">${r.t || 0}</td></tr>`).join("")
+    : `<tr><td colspan="3" class="fade-muted">Nobody has won a trophy yet. Be the first!</td></tr>`;
+}
+
+// ============================== WIRING ==============================
+let selectedPos = "FWD";
+document.querySelectorAll(".pos-btn").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".pos-btn").forEach(x => x.classList.remove("selected"));
+  b.classList.add("selected");
+  selectedPos = b.dataset.pos;
+});
+
+// starting stage & school team pickers
+let selectedStage = "hs";
+function fillSchoolSelect() {
+  $("inp-club").innerHTML = CLUB_NAMES[STAGE_CFG[selectedStage].tier].map(n => `<option>${n}</option>`).join("");
+}
+document.querySelectorAll("#stage-grid .pos-btn").forEach(b => b.onclick = () => {
+  document.querySelectorAll("#stage-grid .pos-btn").forEach(x => x.classList.remove("selected"));
+  b.classList.add("selected");
+  selectedStage = b.dataset.stage;
+  fillSchoolSelect();
+});
+fillSchoolSelect();
+
+$("btn-start").onclick = () => {
+  const name = $("inp-name").value.trim() || "Alex Doe";
+  newGame(name, $("inp-nation").value, selectedPos, selectedStage, $("inp-club").value);
+  G.slotId = "s" + Date.now();
+  showScreen("game-screen");
+  render();
+  saveGame();
+};
+$("btn-setup-back").onclick = showMenu;
+
+// auth / menu / leaderboard
+$("btn-login").onclick = loginAccount;
+$("btn-register").onclick = registerAccount;
+$("auth-pass").addEventListener("keydown", e => { if (e.key === "Enter") loginAccount(); });
+$("btn-logout").onclick = logout;
+$("btn-newcareer").onclick = () => showScreen("setup-screen");
+$("btn-board").onclick = openBoard;
+$("btn-board-back").onclick = showMenu;
+$("btn-board-refresh").onclick = openBoard;
+
+$("btn-play").onclick = () => {
+  if (nextOpponent()) startMatchday();
+};
+$("btn-endseason").onclick = endSeason;
+
+document.querySelectorAll(".tab-btn").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".tab-btn").forEach(x => x.classList.remove("active"));
+  document.querySelectorAll(".tab-page").forEach(x => x.classList.add("hidden"));
+  b.classList.add("active");
+  $(b.dataset.tab).classList.remove("hidden");
+});
+
+$("btn-save").onclick = () => { saveGame(); flashModal("Saved 💾", "<p>Your career is safe in this browser.</p>"); };
+$("btn-retire-now").onclick = () => {
+  showModal(`<h2>Retire now?</h2><p style="margin:14px 0">This ends ${G.player.name}'s career permanently.</p>
+    <div class="btn-row"><button class="btn danger" onclick="retire(false)">Yes, retire</button>
+    <button class="btn secondary" onclick="closeModal()">Keep playing</button></div>`);
+};
+$("btn-newgame").onclick = () => { saveGame(); showMenu(); };
+$("btn-restart").onclick = () => showMenu();
+
+// boot: restore session or ask for login
+SESSION = localStorage.getItem(SES_KEY);
+if (SESSION && loadAccounts()[SESSION]) showMenu();
+else { SESSION = null; showScreen("auth-screen"); }
+</script>
+</body>
+</html>
