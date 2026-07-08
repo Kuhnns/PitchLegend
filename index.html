@@ -440,7 +440,9 @@
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <input class="st-amt" id="casino-bet" type="number" min="10" placeholder="$ bet" style="width:110px">
             <button class="btn" id="btn-flip">🪙 Coin Flip (2×)</button>
-            <button class="btn gold" id="btn-slots">🎰 Spin the Slots</button>
+            <button class="btn gold" id="btn-slots">🎰 Slots</button>
+            <button class="btn" id="btn-bj">🃏 Blackjack</button>
+            <button class="btn" id="btn-poker">🎴 Video Poker</button>
           </div>
           <div id="casino-result" style="margin-top:12px;font-size:15px;min-height:22px"></div>
         </div>
@@ -1158,6 +1160,150 @@ function casinoBet(game) {
   render(); saveGame();
 }
 
+// ---------- card games ----------
+const CARD_RANKS = ["2","3","4","5","6","7","8","9","10","J","Q","K","A"];
+function newDeck() {
+  const d = [];
+  for (const s of ["♠","♥","♦","♣"]) for (let r = 0; r < 13; r++) d.push({ r, s });
+  for (let i = d.length - 1; i > 0; i--) { const j = irnd(0, i); [d[i], d[j]] = [d[j], d[i]]; }
+  return d;
+}
+function cardHTML(c, hidden) {
+  return `<span style="display:inline-block;min-width:36px;padding:7px 5px;margin:2px;border-radius:6px;background:${hidden ? "linear-gradient(#345,#123)" : "#f5f5f0"};color:${hidden ? "#89a" : (c.s === "♥" || c.s === "♦" ? "#c0392b" : "#222")};font-weight:800;text-align:center;font-size:15px">${hidden ? "?" : CARD_RANKS[c.r] + c.s}</span>`;
+}
+function casinoStake() {
+  const bet = Math.floor(parseFloat($("casino-bet").value));
+  const out = $("casino-result");
+  if (!bet || bet < 10) { out.innerHTML = `<span class="fade-muted">Minimum bet is $10.</span>`; return null; }
+  if (bet > G.player.money) { out.innerHTML = `<span style="color:var(--red)">You don't have ${money(bet)} to bet.</span>`; return null; }
+  return bet;
+}
+
+// Blackjack — dealer rules tighten with difficulty; the house keeps ties on Hard
+const BJ_RULES = {
+  easy:   { bjPay: 2.6, pushWins: false, dealerStand: 17 },
+  normal: { bjPay: 2.5, pushWins: false, dealerStand: 17 },
+  hard:   { bjPay: 2.2, pushWins: true,  dealerStand: 18 },
+};
+let BJ = null;
+function bjValue(hand) {
+  let v = 0, aces = 0;
+  for (const c of hand) { if (c.r === 12) { v += 11; aces++; } else if (c.r >= 8) v += 10; else v += c.r + 2; }
+  while (v > 21 && aces) { v -= 10; aces--; }
+  return v;
+}
+function startBlackjack() {
+  const bet = casinoStake(); if (!bet) return;
+  const p = G.player;
+  p.money -= bet;
+  const deck = newDeck();
+  BJ = { deck, bet, player: [deck.pop(), deck.pop()], dealer: [deck.pop(), deck.pop()], done: false, win: 0, msg: "" };
+  if (bjValue(BJ.player) === 21) { // natural blackjack pays extra
+    const ret = Math.round(bet * BJ_RULES[G.difficulty || "normal"].bjPay);
+    p.money += ret;
+    BJ.done = true; BJ.win = 1; BJ.msg = `BLACKJACK! +${money(ret - bet)}`;
+    saveGame(); bjRender(true); return;
+  }
+  saveGame(); bjRender(false);
+}
+function bjEnd() {
+  const p = G.player;
+  const rules = BJ_RULES[G.difficulty || "normal"];
+  const pv = bjValue(BJ.player);
+  if (pv <= 21) while (bjValue(BJ.dealer) < rules.dealerStand) BJ.dealer.push(BJ.deck.pop());
+  const dv = bjValue(BJ.dealer);
+  BJ.done = true;
+  if (pv > 21) { BJ.win = -1; BJ.msg = `BUST with ${pv}. −${money(BJ.bet)}`; }
+  else if (dv > 21 || pv > dv) { p.money += BJ.bet * 2; BJ.win = 1; BJ.msg = `You win ${pv} vs ${dv > 21 ? "bust" : dv}! +${money(BJ.bet)}`; }
+  else if (pv === dv && !rules.pushWins) { p.money += BJ.bet; BJ.win = 0; BJ.msg = "Push — bet returned."; }
+  else { BJ.win = -1; BJ.msg = pv === dv ? `Push... but on Hard the house keeps ties. −${money(BJ.bet)}` : `Dealer has ${dv}. −${money(BJ.bet)}`; }
+  saveGame(); bjRender(true);
+}
+function bjRender(reveal) {
+  const val = bjValue(BJ.player), dval = bjValue(BJ.dealer);
+  showModal(`<div class="mg-wrap"><h2>🃏 Blackjack — ${money(BJ.bet)}</h2>
+    <p class="fade-muted" style="margin:8px 0 4px">Dealer${reveal ? ` — ${dval}${dval > 21 ? " (bust)" : ""}` : ""}</p>
+    <div>${BJ.dealer.map((c, i) => cardHTML(c, !reveal && i === 1)).join("")}</div>
+    <p class="fade-muted" style="margin:8px 0 4px">You — ${val}</p>
+    <div>${BJ.player.map(c => cardHTML(c)).join("")}</div>
+    ${BJ.done
+      ? `<div class="mg-result" style="color:${BJ.win > 0 ? "var(--green-bright)" : BJ.win === 0 ? "var(--gold)" : "var(--red)"}">${BJ.msg}</div>
+         <button class="btn" id="bj-again">Play again</button> <button class="btn secondary" id="bj-done">Done</button>`
+      : `<div class="btn-row" style="justify-content:center"><button class="btn" id="bj-hit">🃏 Hit</button><button class="btn gold" id="bj-stand">✋ Stand</button></div>`}
+  </div>`);
+  if (!BJ.done) {
+    $("bj-hit").onclick = () => { BJ.player.push(BJ.deck.pop()); bjValue(BJ.player) > 21 ? bjEnd() : bjRender(false); };
+    $("bj-stand").onclick = bjEnd;
+  } else {
+    $("bj-again").onclick = () => { closeModal(); render(); startBlackjack(); };
+    $("bj-done").onclick = () => { closeModal(); render(); };
+  }
+}
+
+// Video Poker (Jacks or Better, one draw) — payouts shrink with difficulty
+const VP_PAY = {
+  easy:   { royal:300, sflush:60, quads:30, full:10, flush:7, straight:5, trips:3.5, twopair:2.5, jacks:1.5, none:0 },
+  normal: { royal:250, sflush:50, quads:25, full:9,  flush:6, straight:4, trips:3,   twopair:2,   jacks:1,   none:0 },
+  hard:   { royal:150, sflush:30, quads:15, full:6,  flush:4, straight:3, trips:2,   twopair:1.5, jacks:0,   none:0 },
+};
+let VP = null;
+function evalPoker(hand) {
+  const counts = {};
+  hand.forEach(c => counts[c.r] = (counts[c.r] || 0) + 1);
+  const shape = Object.values(counts).sort((a, b) => b - a);
+  const flush = hand.every(c => c.s === hand[0].s);
+  const rs = hand.map(c => c.r).sort((a, b) => a - b);
+  let straight = rs.every((v, i) => i === 0 || v === rs[i - 1] + 1);
+  if (!straight && rs[0] === 0 && rs[1] === 1 && rs[2] === 2 && rs[3] === 3 && rs[4] === 12) straight = true; // wheel
+  if (flush && straight && rs[0] === 8) return ["ROYAL FLUSH", "royal"];
+  if (flush && straight) return ["Straight Flush", "sflush"];
+  if (shape[0] === 4) return ["Four of a Kind", "quads"];
+  if (shape[0] === 3 && shape[1] === 2) return ["Full House", "full"];
+  if (flush) return ["Flush", "flush"];
+  if (straight) return ["Straight", "straight"];
+  if (shape[0] === 3) return ["Three of a Kind", "trips"];
+  if (shape[0] === 2 && shape[1] === 2) return ["Two Pair", "twopair"];
+  if (shape[0] === 2) {
+    const pr = +Object.keys(counts).find(k => counts[k] === 2);
+    if (pr >= 9) return [`Pair of ${CARD_RANKS[pr]}s`, "jacks"];
+  }
+  return ["Nothing", "none"];
+}
+function startPoker() {
+  const bet = casinoStake(); if (!bet) return;
+  G.player.money -= bet;
+  const deck = newDeck();
+  VP = { deck, bet, hand: [deck.pop(), deck.pop(), deck.pop(), deck.pop(), deck.pop()], held: [false, false, false, false, false], drawn: false, win: 0, msg: "" };
+  saveGame(); vpRender();
+}
+function vpRender() {
+  showModal(`<div class="mg-wrap"><h2>🎴 Video Poker — ${money(VP.bet)}</h2>
+    <p class="fade-muted" style="margin:8px 0">${VP.drawn ? "Final hand" : "Tap cards to HOLD, then draw once. Pair of Jacks or better pays."}</p>
+    <div>${VP.hand.map((c, i) => `<span data-vp="${i}" style="cursor:${VP.drawn ? "default" : "pointer"};display:inline-block;text-align:center">${cardHTML(c)}<br><small style="font-weight:800;color:${VP.held[i] ? "var(--gold)" : "transparent"}">HOLD</small></span>`).join("")}</div>
+    ${VP.drawn
+      ? `<div class="mg-result" style="color:${VP.win > 0 ? "var(--green-bright)" : VP.win === 0 ? "var(--gold)" : "var(--red)"}">${VP.msg}</div>
+         <button class="btn" id="vp-again">Play again</button> <button class="btn secondary" id="vp-done">Done</button>`
+      : `<div class="btn-row" style="justify-content:center"><button class="btn gold" id="vp-draw">🎴 Draw</button></div>`}
+  </div>`);
+  if (!VP.drawn) {
+    document.querySelectorAll("[data-vp]").forEach(el => el.onclick = () => { VP.held[+el.dataset.vp] = !VP.held[+el.dataset.vp]; vpRender(); });
+    $("vp-draw").onclick = () => {
+      for (let i = 0; i < 5; i++) if (!VP.held[i]) VP.hand[i] = VP.deck.pop();
+      const [nm, key] = evalPoker(VP.hand);
+      const ret = Math.round(VP.bet * VP_PAY[G.difficulty || "normal"][key]);
+      G.player.money += ret;
+      VP.win = ret - VP.bet;
+      VP.msg = `${nm} — ${VP.win > 0 ? "+" + money(VP.win) : VP.win === 0 ? "push" : "−" + money(-VP.win)}`;
+      if (key === "royal") addNews(`🎴 ROYAL FLUSH! ${G.player.name} wins ${money(ret)} at the casino!`, "gold");
+      VP.drawn = true;
+      saveGame(); vpRender();
+    };
+  } else {
+    $("vp-again").onclick = () => { closeModal(); render(); startPoker(); };
+    $("vp-done").onclick = () => { closeModal(); render(); };
+  }
+}
+
 // ============================== STOCK MARKET ==============================
 const STOCK_DEFS = [
   { id:"safebank", nm:"SafeBank Savings",    ico:"🏦", base:100, vol:0.015, drift:0.004 },
@@ -1266,7 +1412,7 @@ function clubObjectives(tier, idx) {
     const need = Math.max(1, Math.round((prestige / 40) * dm));
     const key = isDef ? "Team of the Season" : "Golden Boot";
     const have = p.trophies.filter(t => t.includes(key)).length;
-    objs.push({ label: `Win ${need}× ${key}`, have, done: have >= need });
+    objs.push({ label: `Win ${need}× ${key}${key === "Golden Boot" ? " (only awarded in Tier 1–2)" : ""}`, have, done: have >= need });
   }
   if (prestige >= 70) {
     let lvl = prestige >= 90 ? 1 : 0;
@@ -1888,7 +2034,7 @@ function endSeason() {
     p.money += Math.round(2000 * (6 - G.tier) * (6 - G.tier) * diff().moneyMult);
     headlines.push(`🏆 CHAMPIONS! ${G.clubName} win the ${leagueInfo().name}!`);
   }
-  if (s.goals > G.topScorerNPC.goals && s.goals >= diff().bootMin) {
+  if (G.tier <= 2 && s.goals > G.topScorerNPC.goals && s.goals >= diff().bootMin) { // official Golden Boots only exist in Tiers 1-2
     p.trophies.push(`👟 Golden Boot — ${s.goals} goals (S${G.season})`);
     p.reputation = clamp(p.reputation + 4, 0, 100);
     headlines.push(`👟 Golden Boot! ${s.goals} goals beats ${G.topScorerNPC.name}'s ${G.topScorerNPC.goals}.`);
@@ -2992,6 +3138,8 @@ $("btn-retire-now").onclick = () => {
 };
 $("btn-flip").onclick = () => casinoBet("flip");
 $("btn-slots").onclick = () => casinoBet("slots");
+$("btn-bj").onclick = startBlackjack;
+$("btn-poker").onclick = startPoker;
 
 // character studio
 let draftAvatar = randomAvatar();
