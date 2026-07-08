@@ -188,6 +188,13 @@
   .boost-line { color: #ff9636; font-size: 12px; margin-top: 7px; font-weight: 700; }
   .debuff-line { color: var(--red); font-size: 12px; margin-top: 7px; font-weight: 700; }
 
+  /* Character studio */
+  .cz-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
+  .cz-row .cz-nm { width: 92px; text-align: left; color: var(--muted); font-size: 13px; }
+  .cz-row .cz-val { flex: 1; text-align: center; font-weight: 700; font-size: 13px; }
+  .cz-btn { width: 36px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel2); color: var(--text); cursor: pointer; font-size: 13px; }
+  .cz-btn:hover { border-color: var(--green); }
+
   /* Shop */
   .shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 12px; }
   .shop-card { background: var(--panel2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; }
@@ -317,6 +324,11 @@
       <label>School team</label>
       <select id="inp-club"></select>
       <small style="display:block;margin-top:6px;color:var(--muted)">At 18 you choose: go pro straight from high school (×1.2 training growth until 21, but you'll barely play) — or take a college scholarship (starter minutes + ×1.35 growth, but $25K tuition a year puts you straight into debt).</small>
+      <label>Your look</label>
+      <div style="display:flex;align-items:center;gap:16px;margin-top:4px">
+        <span id="setup-avatar"></span>
+        <button class="btn secondary" id="btn-customize" type="button">🎨 Customize Character</button>
+      </div>
       <div class="btn-row">
         <button class="btn" id="btn-start" style="flex:1">Start Career</button>
         <button class="btn secondary" id="btn-setup-back">← Menu</button>
@@ -329,7 +341,8 @@
     <!-- Sidebar player card -->
     <div class="player-card">
       <div class="pc-head">
-        <div>
+        <div id="pc-avatar" style="margin-right:10px"></div>
+        <div style="flex:1">
           <div class="pc-name" id="pc-name">—</div>
           <div class="pc-sub" id="pc-sub">—</div>
         </div>
@@ -454,6 +467,7 @@
           <h3>Options</h3>
           <div class="btn-row" style="margin-top:0">
             <button class="btn secondary" id="btn-save">💾 Save Game</button>
+            <button class="btn secondary" id="btn-character">🎨 Character Studio</button>
             <button class="btn secondary" id="btn-newgame">⬅ Save & Exit to Menu</button>
             <button class="btn danger" id="btn-retire-now">Retire Now</button>
           </div>
@@ -490,6 +504,23 @@
 const SAVE_KEY = "pitchLegendSave_v1";
 const POSITIONS = { GK:"Goalkeeper", DEF:"Defender", MID:"Midfielder", FWD:"Forward" };
 const ATTR_NAMES = { pac:"PAC", sho:"SHO", pas:"PAS", dri:"DRI", def:"DEF", phy:"PHY" };
+const ATTR_FULL   = { pac:"Pace", sho:"Shooting", pas:"Passing", dri:"Dribbling", def:"Defending", phy:"Physical" };
+// goalkeepers use their own stat set (same engine slots, keeper labels & drills)
+const GK_ATTR_NAMES = { pac:"SPD", sho:"KCK", pas:"HND", dri:"POS", def:"DIV", phy:"RFX" };
+const GK_ATTR_FULL  = { pac:"Speed", sho:"Kick Power", pas:"Ball Handling", dri:"Positioning", def:"Diving", phy:"Reflexes" };
+const GK_TRAIN = {
+  pac:{ ico:"🏃", nm:"Footwork",         fx:"+Speed" },
+  sho:{ ico:"🦵", nm:"Kicking Drills",   fx:"+Kick Power" },
+  pas:{ ico:"🧤", nm:"Handling",         fx:"+Ball Handling" },
+  dri:{ ico:"📐", nm:"Positioning",      fx:"+Positioning" },
+  def:{ ico:"🤸", nm:"Diving Practice",  fx:"+Diving" },
+  phy:{ ico:"⚡", nm:"Reflex Training",  fx:"+Reflexes" },
+};
+const GK_SHOP_NM = { pac:"Footwork Gear", sho:"Kicking Gear", pas:"Handling Gear", dri:"Positioning Gear", def:"Diving Gear", phy:"Reflex Gear" };
+function isGK() { return !!(G && G.player && G.player.pos === "GK"); }
+function attrName(k) { return isGK() ? GK_ATTR_NAMES[k] : ATTR_NAMES[k]; }
+function attrFull(k) { return isGK() ? GK_ATTR_FULL[k] : ATTR_FULL[k]; }
+function trainDisp(t) { return (isGK() && t.attr) ? { ...t, ...GK_TRAIN[t.attr] } : t; }
 
 // 5 tiers. Tier 5 = where you start. Tier 1 = elite Europe.
 const LEAGUES = [
@@ -518,9 +549,9 @@ const NPC_LAST  = ["Silva","Berg","Ramírez","Okafor","Tanaka","Larsen","Duarte"
 
 // ============================== DIFFICULTY ==============================
 const DIFFS = {
-  easy:   { nm:"Easy",   moneyMult:1.6, repMult:1.5,  gainMult:1.35, scoutMult:1.8, tournMult:1.15, offerMult:1.3, tuition:15000, energyExtra:0,  coaches:true,  shopCost:1, shopEff:1,   stockDrift:0.004,  crashBias:0.4,  showdown:0.05 },
-  normal: { nm:"Normal", moneyMult:1,   repMult:1,    gainMult:1,    scoutMult:1,   tournMult:1,    offerMult:1,   tuition:25000, energyExtra:0,  coaches:true,  shopCost:1, shopEff:1,   stockDrift:0,      crashBias:0.5,  showdown:0 },
-  hard:   { nm:"Hard",   moneyMult:0.5, repMult:0.55, gainMult:0.6,  scoutMult:0.5, tournMult:0.75, offerMult:0.6, tuition:50000, energyExtra:10, coaches:false, shopCost:2, shopEff:0.5, stockDrift:-0.012, crashBias:0.72, showdown:-0.08 },
+  easy:   { nm:"Easy",   moneyMult:1.6, repMult:1.5,  gainMult:1.35, scoutMult:1.8, tournMult:1.15, offerMult:1.3, tuition:15000, energyExtra:0,  coaches:true,  shopCost:1, shopEff:1,   stockDrift:0.004,  crashBias:0.4,  showdown:0.05,  goalMult:1.15, bootMin:8,  npcProb:0.55, npcMax:2 },
+  normal: { nm:"Normal", moneyMult:1,   repMult:1,    gainMult:1,    scoutMult:1,   tournMult:1,    offerMult:1,   tuition:25000, energyExtra:0,  coaches:true,  shopCost:1, shopEff:1,   stockDrift:0,      crashBias:0.5,  showdown:0,     goalMult:1,    bootMin:10, npcProb:0.62, npcMax:2 },
+  hard:   { nm:"Hard",   moneyMult:0.5, repMult:0.55, gainMult:0.6,  scoutMult:0.5, tournMult:0.75, offerMult:0.6, tuition:50000, energyExtra:10, coaches:false, shopCost:2, shopEff:0.5, stockDrift:-0.012, crashBias:0.72, showdown:-0.08, goalMult:0.7,  bootMin:15, npcProb:0.78, npcMax:3 },
 };
 function diff() { return DIFFS[(G && G.difficulty) || "normal"]; }
 
@@ -567,6 +598,146 @@ function effAttr(p, k) {
   return clamp(v, 1, 99);
 }
 
+// ============================== CHARACTER AVATAR ==============================
+const SKINS = ["#f8d0b0","#eab98c","#d29b6c","#a9714b","#7c4d2e","#5d3a22"];
+const HAIR_COLORS = ["#1a1a1a","#3b2a1a","#6b4423","#a56b2c","#d4b160","#b5442a","#8a8a8a","#efefef"];
+const HAIRC_NAMES = ["Black","Dark Brown","Brown","Caramel","Blonde","Ginger","Grey","White"];
+const HAIR_NAMES = ["Bald","Buzz","Short","Curly","Afro","Mohawk","Long"];
+
+// purely cosmetic — zero boosts, maximum drip
+const COSMETICS = [
+  { id:"headband",  slot:"hat",     nm:"Headband",       cost:800 },
+  { id:"beanie",    slot:"hat",     nm:"Beanie",         cost:1500 },
+  { id:"cap",       slot:"hat",     nm:"Snapback Cap",   cost:2500 },
+  { id:"crown",     slot:"hat",     nm:"Golden Crown",   cost:1000000 },
+  { id:"roundglasses", slot:"glasses", nm:"Round Glasses", cost:1200 },
+  { id:"shades",    slot:"glasses", nm:"Sunglasses",     cost:3000 },
+  { id:"earring",   slot:"ear",     nm:"Gold Earring",   cost:5000 },
+  { id:"goldchain", slot:"neck",    nm:"Gold Chain",     cost:25000 },
+  { id:"icechain",  slot:"neck",    nm:"Iced-Out Chain", cost:250000 },
+];
+
+const randomAvatar = () => ({ skin: irnd(0, SKINS.length - 1), hair: irnd(1, HAIR_NAMES.length - 1), hairColor: irnd(0, 5), brow: irnd(0, 2), mouth: irnd(0, 3), facial: 0, hat: null, glasses: null, ear: null, neck: null });
+
+function avatarSVG(av, size = 80, clubName) {
+  av = av || {};
+  const skin = SKINS[av.skin || 0], hc = HAIR_COLORS[av.hairColor || 0];
+  let jersey = "#2ea44f";
+  if (clubName) { let h = 0; for (let i = 0; i < clubName.length; i++) h = (h * 31 + clubName.charCodeAt(i)) >>> 0; jersey = CREST_PALETTE[h % CREST_PALETTE.length]; }
+  const L = [];
+  // torso, neck, ears, head
+  L.push(`<path d="M20,150 L20,136 Q24,116 46,112 L74,112 Q96,116 100,136 L100,150 Z" fill="${jersey}"/>`);
+  L.push(`<rect x="51" y="92" width="18" height="24" rx="7" fill="${skin}"/>`);
+  L.push(`<circle cx="26" cy="60" r="7" fill="${skin}"/><circle cx="94" cy="60" r="7" fill="${skin}"/>`);
+  L.push(`<ellipse cx="60" cy="58" rx="33" ry="38" fill="${skin}"/>`);
+  if (av.ear === "earring") L.push(`<circle cx="95" cy="69" r="3.4" fill="none" stroke="#f1c40f" stroke-width="2.4"/>`);
+  // full beard sits behind the mouth
+  if ((av.facial || 0) === 4) L.push(`<path d="M27,62 Q27,101 60,101 Q93,101 93,62 Q93,84 60,86 Q27,84 27,62 Z" fill="${hc}"/>`);
+  if ((av.facial || 0) === 1) L.push(`<path d="M30,64 Q32,96 60,98 Q88,96 90,64 Q86,86 60,88 Q34,86 30,64 Z" fill="${hc}" opacity="0.22"/>`);
+  // eyes
+  L.push(`<ellipse cx="47" cy="56" rx="6" ry="7" fill="#fff"/><ellipse cx="73" cy="56" rx="6" ry="7" fill="#fff"/>`);
+  L.push(`<circle cx="47.5" cy="57.5" r="2.7" fill="#2b2b2b"/><circle cx="72.5" cy="57.5" r="2.7" fill="#2b2b2b"/>`);
+  // brows
+  const brow = av.brow || 0;
+  if (brow === 0) L.push(`<path d="M40,45 L54,45 M66,45 L80,45" stroke="${hc}" stroke-width="3.2" stroke-linecap="round"/>`);
+  else if (brow === 1) L.push(`<path d="M40,47 Q47,41 54,47 M66,47 Q73,41 80,47" stroke="${hc}" stroke-width="3" fill="none" stroke-linecap="round"/>`);
+  else L.push(`<path d="M40,42 L54,47 M80,42 L66,47" stroke="${hc}" stroke-width="3.2" stroke-linecap="round"/>`);
+  // nose
+  L.push(`<path d="M60,60 Q56,69 61,70" stroke="#00000033" stroke-width="2.6" fill="none" stroke-linecap="round"/>`);
+  // mouth
+  const mouth = av.mouth || 0;
+  if (mouth === 0) L.push(`<path d="M48,80 Q60,90 72,80" stroke="#7a4a33" stroke-width="2.8" fill="none" stroke-linecap="round"/>`);
+  else if (mouth === 1) L.push(`<path d="M46,78 Q60,95 74,78 Q60,84 46,78 Z" fill="#fff" stroke="#7a4a33" stroke-width="2"/>`);
+  else if (mouth === 2) L.push(`<path d="M50,82 L70,82" stroke="#7a4a33" stroke-width="2.8" stroke-linecap="round"/>`);
+  else L.push(`<path d="M50,83 Q62,87 72,79" stroke="#7a4a33" stroke-width="2.8" fill="none" stroke-linecap="round"/>`);
+  // mustache / goatee
+  const facial = av.facial || 0;
+  if (facial === 2 || facial === 3) L.push(`<path d="M45,75 Q60,67 75,75 Q60,80 45,75 Z" fill="${hc}"/>`);
+  if (facial === 3) L.push(`<ellipse cx="60" cy="93" rx="9" ry="7" fill="${hc}"/>`);
+  // hair
+  const hair = av.hair || 0;
+  const cap = `<path d="M27,56 Q27,18 60,18 Q93,18 93,56 Q93,34 60,32 Q27,34 27,56 Z" fill="${hc}"/>`;
+  if (hair === 1) L.push(cap);
+  else if (hair === 2) L.push(cap + `<rect x="25" y="46" width="8" height="18" rx="3.5" fill="${hc}"/><rect x="87" y="46" width="8" height="18" rx="3.5" fill="${hc}"/>`);
+  else if (hair === 3) L.push(`<g fill="${hc}"><circle cx="38" cy="32" r="13"/><circle cx="60" cy="25" r="14"/><circle cx="82" cy="32" r="13"/><circle cx="30" cy="45" r="10"/><circle cx="90" cy="45" r="10"/></g>`);
+  else if (hair === 4) L.push(`<circle cx="60" cy="30" r="37" fill="${hc}"/>`);
+  else if (hair === 5) L.push(`<rect x="53" y="5" width="14" height="36" rx="7" fill="${hc}"/>`);
+  else if (hair === 6) L.push(cap + `<rect x="21" y="44" width="13" height="44" rx="6" fill="${hc}"/><rect x="86" y="44" width="13" height="44" rx="6" fill="${hc}"/>`);
+  // glasses
+  if (av.glasses === "roundglasses") L.push(`<circle cx="47" cy="57" r="9.5" fill="none" stroke="#222" stroke-width="2.5"/><circle cx="73" cy="57" r="9.5" fill="none" stroke="#222" stroke-width="2.5"/><path d="M56,57 L64,57" stroke="#222" stroke-width="2.5"/>`);
+  if (av.glasses === "shades") L.push(`<rect x="36" y="49" width="21" height="14" rx="5" fill="#15181c"/><rect x="63" y="49" width="21" height="14" rx="5" fill="#15181c"/><path d="M57,54 L63,54 M36,53 L28,51 M84,53 L92,51" stroke="#15181c" stroke-width="3"/>`);
+  // hats
+  if (av.hat === "headband") L.push(`<rect x="26" y="31" width="68" height="9" rx="4.5" fill="#e74c3c"/>`);
+  if (av.hat === "beanie") L.push(`<path d="M26,44 Q26,9 60,9 Q94,9 94,44 Z" fill="#3498db"/><rect x="26" y="38" width="68" height="9" rx="4" fill="#2c81ba"/>`);
+  if (av.hat === "cap") L.push(`<path d="M27,40 Q27,11 60,11 Q93,11 93,40 Z" fill="#c0392b"/><rect x="26" y="36" width="68" height="7" rx="3.5" fill="#96281b"/><ellipse cx="97" cy="40" rx="14" ry="5" fill="#96281b"/>`);
+  if (av.hat === "crown") L.push(`<path d="M34,30 L40,9 L50,23 L60,5 L70,23 L80,9 L86,30 Z" fill="#f1c40f" stroke="#d4ac0d" stroke-width="1.5"/><rect x="34" y="27" width="52" height="7" rx="2.5" fill="#f1c40f" stroke="#d4ac0d"/>`);
+  // chains
+  if (av.neck === "goldchain") L.push(`<path d="M42,116 Q60,134 78,116" stroke="#f1c40f" stroke-width="4" fill="none" stroke-dasharray="4,3"/>`);
+  if (av.neck === "icechain") L.push(`<path d="M40,115 Q60,135 80,115" stroke="#cfeef5" stroke-width="5" fill="none" stroke-dasharray="4,3"/><path d="M60,131 L67,139 L60,148 L53,139 Z" fill="#aef3ff" stroke="#7cd7e8" stroke-width="1.5"/>`);
+  return `<svg width="${size}" height="${Math.round(size * 150 / 120)}" viewBox="0 0 120 150">${L.join("")}</svg>`;
+}
+
+function openCustomizer(av, opts = {}) {
+  const FEATURES = [
+    { key:"skin", nm:"Skin", names: SKINS.map((_, i) => "Tone " + (i + 1)) },
+    { key:"hair", nm:"Hair", names: HAIR_NAMES },
+    { key:"hairColor", nm:"Hair Color", names: HAIRC_NAMES },
+    { key:"brow", nm:"Brows", names: ["Flat","Raised","Angled"] },
+    { key:"mouth", nm:"Mouth", names: ["Smile","Grin","Neutral","Smirk"] },
+    { key:"facial", nm:"Facial Hair", names: ["Clean","Stubble","Mustache","Goatee","Beard"] },
+  ];
+  const SLOTS = [{ key:"hat", nm:"Hat" }, { key:"glasses", nm:"Glasses" }, { key:"ear", nm:"Earring" }, { key:"neck", nm:"Chain" }];
+  const czRow = (nm, val, id) => `<div class="cz-row"><span class="cz-nm">${nm}</span>
+    <button class="cz-btn" data-cz="${id}" data-dir="-1">◀</button>
+    <span class="cz-val">${val}</span>
+    <button class="cz-btn" data-cz="${id}" data-dir="1">▶</button></div>`;
+  function draw() {
+    const p = opts.shop ? G.player : null;
+    const owned = p ? (p.cosmetics || []) : [];
+    showModal(`<div class="mg-wrap"><h2>🎨 Character Studio</h2>
+      <div style="margin:8px auto 4px">${avatarSVG(av, 128, opts.club)}</div>
+      ${FEATURES.map(f => czRow(f.nm, f.names[av[f.key] || 0], "f|" + f.key)).join("")}
+      ${p ? SLOTS.map(s => {
+        const cur = av[s.key] ? COSMETICS.find(c => c.id === av[s.key]).nm : "None";
+        const ownCount = COSMETICS.filter(c => c.slot === s.key && owned.includes(c.id)).length;
+        return czRow(s.nm, ownCount ? cur : "None (shop below)", "s|" + s.key);
+      }).join("")
+      + `<h3 style="margin:16px 0 4px;text-align:left">🛍️ Style Shop <span class="sub">pure drip — zero stat boosts · bank: ${money(p.money)}</span></h3>`
+      + (COSMETICS.filter(c => !owned.includes(c.id)).map(c =>
+          `<div class="transfer-row"><div class="tr-club">${c.nm}<span class="tr-req">${c.slot}</span></div>
+           <button class="btn" data-cz-buy="${c.id}" ${p.money < c.cost ? "disabled" : ""}>${money(c.cost)}</button></div>`).join("")
+         || `<p class="fade-muted">You own every cosmetic. Absolute icon.</p>`)
+      : ""}
+      <div style="margin-top:14px"><button class="btn" id="cz-done">Done</button></div></div>`);
+    document.querySelectorAll("[data-cz]").forEach(b => b.onclick = () => {
+      const [type, key] = b.dataset.cz.split("|");
+      const dir = +b.dataset.dir;
+      if (type === "f") {
+        const f = FEATURES.find(x => x.key === key);
+        av[key] = ((av[key] || 0) + dir + f.names.length) % f.names.length;
+      } else {
+        const owned2 = opts.shop ? (G.player.cosmetics || []) : [];
+        const options = [null, ...COSMETICS.filter(c => c.slot === key && owned2.includes(c.id)).map(c => c.id)];
+        av[key] = options[(options.indexOf(av[key] || null) + dir + options.length) % options.length];
+      }
+      draw();
+    });
+    document.querySelectorAll("[data-cz-buy]").forEach(b => b.onclick = () => {
+      const c = COSMETICS.find(x => x.id === b.dataset.czBuy);
+      const pl = G.player;
+      if (pl.money < c.cost) return;
+      pl.money -= c.cost;
+      pl.cosmetics.push(c.id);
+      av[c.slot] = c.id; // equip it right away
+      addNews(`🛍️ Bought ${c.nm} for ${money(c.cost)}. Pure style.`, "good");
+      saveGame();
+      draw();
+    });
+    $("cz-done").onclick = () => { closeModal(); if (opts.onDone) opts.onDone(); };
+  }
+  draw();
+}
+
 function overall(p) {
   let w;
   switch (p.pos) {
@@ -583,7 +754,7 @@ function addBoost(attr, amt, games, label) {
   const p = G.player;
   p.tempBoosts = p.tempBoosts || [];
   p.tempBoosts.push({ attr, amt, games, fresh: true });
-  addNews(`🔥 ${label}! +${amt} ${ATTR_NAMES[attr]} for the next ${games} game${games > 1 ? "s" : ""}.`, "gold");
+  addNews(`🔥 ${label}! +${amt} ${attrName(attr)} for the next ${games} game${games > 1 ? "s" : ""}.`, "gold");
 }
 
 // negative conditions that drag performance down (Easy mode is exempt)
@@ -628,6 +799,8 @@ function newPlayer(name, nation, pos, stage) {
     tempBoosts: [],  // { attr, amt, games, fresh } hot-streak boosts from mini-games
     portfolio: {},   // stock holdings: id -> { shares, cost }
     coaches: {},     // hired coaches: attr -> tier (1-3)
+    avatar: randomAvatar(),
+    cosmetics: [],   // owned cosmetic ids (looks only, no boosts)
   };
 }
 const freshSeasonStats = () => ({ apps:0, goals:0, assists:0, cleanSheets:0, motm:0, ratingsSum:0 });
@@ -759,7 +932,7 @@ function doTraining(t) {
 function applyTrainingGain(t, gain, mult) {
   const p = G.player;
   let g = gain * mult;
-  if (mult === 1 && Math.random() < 0.08) { g *= 2.2; addNews(`Breakthrough session! ${t.nm} training really clicked.`, "good"); }
+  if (mult === 1 && Math.random() < 0.08) { g *= 2.2; addNews(`Breakthrough session! ${trainDisp(t).nm} training really clicked.`, "good"); }
   p.attrs[t.attr] = clamp(p.attrs[t.attr] + g, 1, 99);
   return g;
 }
@@ -771,7 +944,7 @@ function completeTraining(t) {
 }
 function coachChallenge(t, baseGain) {
   timingMiniGame({
-    title: `${t.ico} Coach's Challenge: ${t.nm}`,
+    title: `${trainDisp(t).ico} Coach's Challenge: ${trainDisp(t).nm}`,
     desc: "The coach sets up a precision drill. Nail the green zone for double gains!",
     btn: "⚡ GO",
     stat: G.player.attrs[t.attr],
@@ -782,7 +955,7 @@ function coachChallenge(t, baseGain) {
       else { mult = 0.55; mor(-2); head = "😬 Sloppy"; sub = "You shanked it. The drill fizzles out."; }
       const g = applyTrainingGain(t, baseGain, mult);
       showModal(`<div class="mg-wrap"><h2>${head}</h2><p class="fade-muted" style="margin:12px 0">${sub}</p>
-        <div class="mg-result" style="color:var(--green-bright)">+${g.toFixed(1)} ${ATTR_NAMES[t.attr]}</div>
+        <div class="mg-result" style="color:var(--green-bright)">+${g.toFixed(1)} ${attrName(t.attr)}</div>
         <button class="btn" id="mg-continue">Continue</button></div>`);
       $("mg-continue").onclick = () => { closeModal(); completeTraining(t); };
     }
@@ -813,7 +986,7 @@ const EVENTS = [
     { label:"Sit this one out", sub:"No risk", apply(){ return ["Skipped poker night and got an early sleep."]; } },
   ]},
   { id:"extracoach", w:9, cd:5, title:"📋 Extra Session", text:()=>"The coach offers to stay late for one-on-one work.", choices:[
-    { label:"Stay late", sub:"+Random attribute, −12 Energy", apply(p){ const k = pick(Object.keys(ATTR_NAMES)); p.attrs[k] = clamp(p.attrs[k] + rnd(0.5, 1.2), 1, 99); nrg(-12); return [`Extra session with the coach — ${ATTR_NAMES[k]} improved.`, "good"]; } },
+    { label:"Stay late", sub:"+Random attribute, −12 Energy", apply(p){ const k = pick(Object.keys(ATTR_NAMES)); p.attrs[k] = clamp(p.attrs[k] + rnd(0.5, 1.2), 1, 99); nrg(-12); return [`Extra session with the coach — ${attrName(k)} improved.`, "good"]; } },
     { label:"Head home", sub:"+4 Energy", apply(){ nrg(4); return ["Went home early to rest instead of extra training."]; } },
   ]},
   { id:"family", w:7, cd:9, title:"🏠 Family Visit", text:p=>`Your family travels from ${p.nation} to watch you play this week.`, choices:[
@@ -938,13 +1111,13 @@ function hireCoach(attr, lvl) {
   p.coaches = p.coaches || {};
   if (lvl === 0) {
     delete p.coaches[attr];
-    addNews(`👔 ${ATTR_NAMES[attr]} coach released.`);
+    addNews(`👔 ${attrName(attr)} coach released.`);
   } else {
     const ct = COACH_TIERS[lvl - 1];
     if (p.money < ct.cost) return;
     p.money -= ct.cost; // first week's wages up front
     p.coaches[attr] = lvl;
-    addNews(`👔 Hired a ${ct.nm} for ${ATTR_NAMES[attr]}: ×${ct.mult} training gains (${money(ct.cost)}/week).`, "good");
+    addNews(`👔 Hired a ${ct.nm} for ${attrName(attr)}: ×${ct.mult} training gains (${money(ct.cost)}/week).`, "good");
   }
   render(); saveGame();
 }
@@ -1168,7 +1341,7 @@ function buyItem(catId) {
   if (cat.attr) {
     const gain = Math.max(1, Math.round(t.val * diff().shopEff));
     p.attrs[cat.attr] = clamp(p.attrs[cat.attr] + gain, 1, 99);
-    addNews(`🛒 Bought ${t.nm} for ${money(cost)}: +${gain} ${ATTR_NAMES[cat.attr]} permanently!`, "good");
+    addNews(`🛒 Bought ${t.nm} for ${money(cost)}: +${gain} ${attrName(cat.attr)} permanently!`, "good");
   } else {
     addNews(`🛒 Bought ${t.nm} for ${money(cost)}: ${t.fx}.`, "good");
   }
@@ -1441,10 +1614,10 @@ function crossClaimMoment() {
     title: "🧤 Dangerous cross under your bar!",
     desc: `A wicked in-swinger, strikers lurking, your defenders ball-watching. Your call, ${p.name}...`,
     options: [
-      { label:"👊 Punch through the crowd", sub:`Uses PHY (${Math.round(effAttr(p,"phy"))})`, pr: clamp(0.36 + effAttr(p,"phy") * 0.0045, .1, .9), boost:"phy",
+      { label:"👊 Punch through the crowd", sub:`Uses ${attrName("phy")} (${Math.round(effAttr(p,"phy"))})`, pr: clamp(0.36 + effAttr(p,"phy") * 0.0045, .1, .9), boost:"phy",
         win: { head:"👊 CLEARED!", sub:"You erupted through the bodies and hammered it away.", rating:0.8, line:`👊 {m}' — ${p.name} punches clear through a forest of players.` },
         lose:{ head:"💔 Punched... to a striker", sub:"Weak punch. Falls kindly. Bundled in.", concede:1, rating:-0.9, mor:-6, line:`💔 {m}' — ${p.name}'s punch falls to a striker who scores.` } },
-      { label:"🧲 Catch it at the highest point", sub:`Uses DEF (${Math.round(effAttr(p,"def"))})`, pr: clamp(0.28 + effAttr(p,"def") * 0.005, .1, .88), boost:"def",
+      { label:"🧲 Catch it at the highest point", sub:`Uses ${attrName("def")} (${Math.round(effAttr(p,"def"))})`, pr: clamp(0.28 + effAttr(p,"def") * 0.005, .1, .88), boost:"def",
         win: { head:"🧲 CLAIMED! LIKE VELCRO!", sub:"Plucked from the sky above everyone. Commanding.", rating:1.2, mor:6, line:`🧲 {m}' — ${p.name} rises above the chaos and claims the cross clean!` },
         lose:{ head:"🫳 DROPPED IT!", sub:"It squirms loose... and in. Nightmare.", concede:1, rating:-1.1, mor:-8, line:`🫳 {m}' — ${p.name} spills the cross and it's bundled home.` } },
       { label:"🧍 Stay on your line", sub:"The safe option", pr: 0.75,
@@ -1475,7 +1648,9 @@ function finishMatch(moment) {
   const eff = (ovr / 100) * (0.55 + 0.45 * p.energy / 100) * (0.75 + 0.5 * p.form / 100) * (0.8 + 0.4 * p.morale / 100) * (minutes / 90)
     * debuffs.reduce((m, d) => m * (d.eff || 1), 1);
   if (minutes > 0) {
-    const gProb = { GK:0, DEF:0.06, MID:0.22, FWD:0.55 }[p.pos] * eff * 1.9;
+    let scoreMult = diff().goalMult;
+    if (G.difficulty === "hard") scoreMult *= 0.5 + ovr * 0.005; // low-rated players really struggle to score on Hard
+    const gProb = { GK:0, DEF:0.06, MID:0.22, FWD:0.55 }[p.pos] * eff * 1.9 * scoreMult;
     const aProb = { GK:0.01, DEF:0.10, MID:0.42, FWD:0.28 }[p.pos] * eff * 1.9;
     for (let i = 0; i < gMe; i++) {
       if (Math.random() < gProb) { goals++; events.push(`⚽ ${irnd(2,90)}' — GOAL! ${p.name} scores!`); }
@@ -1541,7 +1716,7 @@ function finishMatch(moment) {
   for (const k of Object.keys(p.coaches || {})) {
     const ct = COACH_TIERS[p.coaches[k] - 1];
     if (p.money >= ct.cost) p.money -= ct.cost;
-    else { delete p.coaches[k]; addNews(`👔 Couldn't pay the ${ATTR_NAMES[k]} coach's ${money(ct.cost)} weekly wage — they walked.`, "bad"); }
+    else { delete p.coaches[k]; addNews(`👔 Couldn't pay the ${attrName(k)} coach's ${money(ct.cost)} weekly wage — they walked.`, "bad"); }
   }
   tickStocks();
 
@@ -1564,7 +1739,7 @@ function finishMatch(moment) {
   }
 
   // NPC top scorer race
-  G.topScorerNPC.goals += Math.random() < 0.62 ? irnd(0, 2) : 0;
+  G.topScorerNPC.goals += Math.random() < diff().npcProb ? irnd(0, diff().npcMax) : 0;
 
   // injury chance when exhausted (a personal physio halves the risk)
   if (minutes > 0 && p.energy < 15 && Math.random() < (lvl.physio ? 0.14 : 0.28)) {
@@ -1681,7 +1856,7 @@ function skipRound() { // used for injuries: team plays without you
   const d = me.strength - opp.strength;
   applyResult(me, opp, poissonish(clamp(1.35 + d*0.07,.15,4)), poissonish(clamp(1.35 - d*0.07,.15,4)));
   simulateOtherFixtures(me, opp);
-  G.topScorerNPC.goals += Math.random() < 0.62 ? irnd(0, 2) : 0;
+  G.topScorerNPC.goals += Math.random() < diff().npcProb ? irnd(0, diff().npcMax) : 0;
   tickStocks();
   G.week++;
 }
@@ -1713,7 +1888,7 @@ function endSeason() {
     p.money += Math.round(2000 * (6 - G.tier) * (6 - G.tier) * diff().moneyMult);
     headlines.push(`🏆 CHAMPIONS! ${G.clubName} win the ${leagueInfo().name}!`);
   }
-  if (s.goals > G.topScorerNPC.goals && s.goals >= 10) {
+  if (s.goals > G.topScorerNPC.goals && s.goals >= diff().bootMin) {
     p.trophies.push(`👟 Golden Boot — ${s.goals} goals (S${G.season})`);
     p.reputation = clamp(p.reputation + 4, 0, 100);
     headlines.push(`👟 Golden Boot! ${s.goals} goals beats ${G.topScorerNPC.name}'s ${G.topScorerNPC.goals}.`);
@@ -2084,7 +2259,7 @@ function finalShowdown(cfg) {
     showModal(`<div class="mg-wrap"><h2>${cfg.title}</h2>
       <p class="fade-muted" style="margin:6px 0">vs ${crest(cfg.opponent, 16)} ${cfg.opponent} · Moment ${idx + 1} of 4 &nbsp;${pips.join(" ")}</p>
       <p style="margin:14px 0;font-size:15px;line-height:1.6">${m.text}</p>
-      ${m.opts.map((o, i) => `<button class="event-choice" data-sd="${i}"><b>${o.label}</b><small>Uses ${ATTR_NAMES[o.stat]} (${Math.round(effAttr(p, o.stat))}) — ${Math.round(chanceFor(o.stat) * 100)}% chance</small></button>`).join("")}</div>`);
+      ${m.opts.map((o, i) => `<button class="event-choice" data-sd="${i}"><b>${o.label}</b><small>Uses ${attrName(o.stat)} (${Math.round(effAttr(p, o.stat))}) — ${Math.round(chanceFor(o.stat) * 100)}% chance</small></button>`).join("")}</div>`);
     document.querySelectorAll("[data-sd]").forEach(el => el.onclick = () => {
       const o = m.opts[+el.dataset.sd];
       const ok = Math.random() < chanceFor(o.stat);
@@ -2254,6 +2429,7 @@ function render() {
   const p = G.player;
   const ovr = overall(p);
   // sidebar
+  $("pc-avatar").innerHTML = avatarSVG(p.avatar, 62, G.clubName);
   $("pc-name").textContent = p.name;
   $("pc-sub").textContent = `${POSITIONS[p.pos]} · ${p.nation} · Age ${p.age}`;
   $("pc-ovr").textContent = ovr;
@@ -2262,10 +2438,10 @@ function render() {
     const v = Math.round(effAttr(p, k));
     const boosted = v > base;
     const col = boosted ? "#ff9636" : v >= 80 ? "var(--gold)" : v >= 65 ? "var(--green-bright)" : "#4a6";
-    return `<div class="attr-row"><span class="lbl">${ATTR_NAMES[k]}</span><div class="bar"><i style="width:${v}%;background:${col}"></i></div><b${boosted ? ` style="color:#ff9636"` : ""}>${v}</b></div>`;
+    return `<div class="attr-row"><span class="lbl">${attrName(k)}</span><div class="bar"><i style="width:${v}%;background:${col}"></i></div><b${boosted ? ` style="color:#ff9636"` : ""}>${v}</b></div>`;
   }).join("");
   $("pc-boosts").innerHTML = (p.tempBoosts || []).map(b =>
-    `<div class="boost-line">🔥 +${b.amt} ${ATTR_NAMES[b.attr]} · ${b.games} game${b.games > 1 ? "s" : ""} left</div>`).join("")
+    `<div class="boost-line">🔥 +${b.amt} ${attrName(b.attr)} · ${b.games} game${b.games > 1 ? "s" : ""} left</div>`).join("")
     + activeDebuffs(p).map(d => `<div class="debuff-line">${d.ico} ${d.label}</div>`).join("");
   $("bar-energy").style.width = p.energy + "%";
   $("val-energy").textContent = Math.round(p.energy);
@@ -2286,10 +2462,12 @@ function render() {
   $("tb-week").textContent = r < G.totalRounds ? `Matchday ${r + 1} of ${G.totalRounds}` : "Season complete";
 
   // actions
-  $("action-grid").innerHTML = TRAININGS.map(t =>
-    `<div class="action-card ${G.lastTraining === t.id ? "done" : ""}" data-train="${t.id}">
-      <div class="ico">${t.ico}</div><div class="nm">${t.nm}</div><div class="fx">${t.fx}${t.cost ? " · −" + t.cost + " NRG" : ""}${t.attr && p.coaches && p.coaches[t.attr] ? ` · 👔×${COACH_TIERS[p.coaches[t.attr]-1].mult}` : ""}</div>
-    </div>`).join("");
+  $("action-grid").innerHTML = TRAININGS.map(t => {
+    const d = trainDisp(t); // goalkeepers see keeper drills
+    return `<div class="action-card ${G.lastTraining === t.id ? "done" : ""}" data-train="${t.id}">
+      <div class="ico">${d.ico}</div><div class="nm">${d.nm}</div><div class="fx">${d.fx}${t.cost ? " · −" + t.cost + " NRG" : ""}${t.attr && p.coaches && p.coaches[t.attr] ? ` · 👔×${COACH_TIERS[p.coaches[t.attr]-1].mult}` : ""}</div>
+    </div>`;
+  }).join("");
   $("act-hint").textContent = G.trainedThisWeek ? "Activity done — time for the match!" : "Pick one activity, then play your match";
   document.querySelectorAll("[data-train]").forEach(el => {
     el.onclick = () => doTraining(TRAININGS.find(t => t.id === el.dataset.train));
@@ -2340,12 +2518,14 @@ function render() {
   $("shop-grid").innerHTML = SHOP.map(cat => {
     const lvl = (p.gearLevel || {})[cat.cat] || 0;
     const nextT = cat.tiers[lvl];
+    const catNm = isGK() && cat.attr ? GK_SHOP_NM[cat.cat] : cat.nm;
+    const fxTxt = nextT && cat.attr ? `+${nextT.val} ${attrFull(cat.attr)} permanently` : nextT ? nextT.fx : "";
     return `<div class="shop-card">
       <div class="ico">${cat.ico}</div>
-      <div class="nm">${cat.nm}</div>
+      <div class="nm">${catNm}</div>
       <div class="owned">Owned: ${lvl > 0 ? `<b>${cat.tiers[lvl - 1].nm}</b>` : "none"}</div>
       ${nextT
-        ? `<div class="next"><b>${nextT.nm}</b><br><span>${nextT.fx}${diff().shopEff < 1 ? ` <b style="color:var(--red)">(halved on Hard)</b>` : ""}</span></div>
+        ? `<div class="next"><b>${nextT.nm}</b><br><span>${fxTxt}${diff().shopEff < 1 ? ` <b style="color:var(--red)">(halved on Hard)</b>` : ""}</span></div>
            <button class="btn" data-shop="${cat.cat}" ${p.money < Math.round(nextT.cost * diff().shopCost) ? "disabled" : ""}>Buy — ${money(Math.round(nextT.cost * diff().shopCost))}</button>`
         : `<div class="next maxed">MAXED OUT ✨</div>`}
     </div>`;
@@ -2360,7 +2540,7 @@ function render() {
     const tr = TRAININGS.find(x => x.attr === k);
     return `<div class="shop-card">
       <div class="ico">${tr.ico}</div>
-      <div class="nm">${ATTR_NAMES[k]} Coach</div>
+      <div class="nm">${attrName(k)} Coach</div>
       <div class="owned">${lvl ? `<b>${COACH_TIERS[lvl-1].nm}</b> · ×${COACH_TIERS[lvl-1].mult} gains · ${money(COACH_TIERS[lvl-1].cost)}/week` : "No coach hired"}</div>
       <div class="next" style="display:flex;flex-direction:column;gap:6px">
         ${COACH_TIERS.map((ct, i) => lvl === i + 1
@@ -2553,6 +2733,8 @@ function migrateState(g) {
   if (!g.difficulty) g.difficulty = "normal";
   if (g.player.shaken === undefined) g.player.shaken = 0;
   if (!g.player.bestContinental) g.player.bestContinental = 0;
+  if (!g.player.avatar) g.player.avatar = randomAvatar();
+  if (!g.player.cosmetics) g.player.cosmetics = [];
   return g;
 }
 
@@ -2640,6 +2822,7 @@ function showMenu() {
   $("save-list").innerHTML = ids.length ? ids.map(id => {
     const s = acc.saves[id];
     return `<div class="transfer-row">
+      <span>${avatarSVG(s.player.avatar, 36, s.clubName)}</span>
       <div class="tr-club" style="text-align:left">${s.player.name} — ${crest(s.clubName, 15)} ${s.clubName}
         <span class="tr-req">Season ${s.season} · Age ${s.player.age} · ${POSITIONS[s.player.pos]} · 🏆 ${(s.player.trophies || []).length} · ${s.difficulty === "hard" ? "💀 Hard (ranked)" : s.difficulty === "easy" ? "😌 Easy" : "⚽ Normal"}</span>
       </div>
@@ -2769,10 +2952,13 @@ fillSchoolSelect();
 $("btn-start").onclick = () => {
   const name = $("inp-name").value.trim() || "Alex Doe";
   newGame(name, $("inp-nation").value, selectedPos, selectedStage, $("inp-club").value, selectedDiff);
+  G.player.avatar = JSON.parse(JSON.stringify(draftAvatar)); // the look you designed
   G.slotId = "s" + Date.now();
   showScreen("game-screen");
   render();
   saveGame();
+  draftAvatar = randomAvatar(); // fresh face for the next career
+  refreshSetupAvatar();
 };
 $("btn-setup-back").onclick = showMenu;
 
@@ -2806,6 +2992,13 @@ $("btn-retire-now").onclick = () => {
 };
 $("btn-flip").onclick = () => casinoBet("flip");
 $("btn-slots").onclick = () => casinoBet("slots");
+
+// character studio
+let draftAvatar = randomAvatar();
+function refreshSetupAvatar() { $("setup-avatar").innerHTML = avatarSVG(draftAvatar, 76); }
+$("btn-customize").onclick = () => openCustomizer(draftAvatar, { onDone: refreshSetupAvatar });
+refreshSetupAvatar();
+$("btn-character").onclick = () => openCustomizer(G.player.avatar, { shop: true, club: G.clubName, onDone: () => { render(); saveGame(); } });
 
 $("btn-newgame").onclick = () => { saveGame(); showMenu(); };
 $("btn-restart").onclick = () => showMenu();
