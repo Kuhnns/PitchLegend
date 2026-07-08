@@ -790,7 +790,7 @@ function newPlayer(name, nation, pos, stage) {
     startStage: stage, path: null,  // path becomes "hs-pro" or "college" at graduation
     attrs,
     potential: irnd(84, 97),        // hidden ceiling
-    energy: 100, form: 50, morale: 70, shaken: 0, bestContinental: 0,
+    energy: 100, form: 50, morale: 70, shaken: 0, bestContinental: 0, recentRatings: [],
     money: 500, wage: cfg.wage,
     reputation: 5,                  // 0..100
     seasonStats: freshSeasonStats(),
@@ -1470,6 +1470,7 @@ function transferNow(tier, clubName) {
   }
   p.wage = Math.round((200 + overall(p) * 14) * L.wageMult / 10) * 10;
   G.transferredThisSeason = true;
+  p.recentRatings = []; // the new club judges you from scratch
   mor(8);
   addNews(`✈️ TRANSFER! ${p.name} joins ${clubName} (${L.name}) on ${money(p.wage)}/week.`, "gold");
   closeModal(); render(); saveGame();
@@ -1943,20 +1944,29 @@ function finishMatch(moment) {
   G.trainedThisWeek = false;
   G.lastTraining = null;
 
-  // Hard mode: top-tier clubs cut under-performers on the spot
-  const cutAt = G.difficulty === "hard" && minutes > 0 ? ({ 1:5, 2:6, 3:6.5 })[G.tier] : null;
-  if (cutAt && rating < cutAt) {
+  // Hard mode: top-tier clubs judge you on your last 5 matches, not one bad day.
+  // Averaging at or below the tier's bar across 5 games gets you cut.
+  if (minutes > 0) {
+    p.recentRatings = p.recentRatings || [];
+    p.recentRatings.push(rating);
+    if (p.recentRatings.length > 5) p.recentRatings.shift();
+  }
+  const cutAt = G.difficulty === "hard" ? ({ 1:5, 2:6, 3:6.5 })[G.tier] : null;
+  const avg5 = cutAt && (p.recentRatings || []).length >= 5
+    ? p.recentRatings.reduce((a, b) => a + b, 0) / p.recentRatings.length : null;
+  if (cutAt && avg5 !== null && avg5 <= cutAt) {
     const destTier = G.tier + 1;
     const destClub = pick(CLUB_NAMES[destTier]);
     mor(-15); frm(-8); rep(-3);
-    addNews(`✂️ CUT! ${me.name} release ${p.name} after a ${rating.toFixed(1)} rating (Tier ${G.tier} demands ${cutAt}+ on Hard).`, "bad");
+    addNews(`✂️ CUT! ${me.name} release ${p.name} — a ${avg5.toFixed(2)} average over 5 games (Tier ${G.tier} demands above ${cutAt} on Hard).`, "bad");
     showModal(`<div class="mg-wrap"><h2>✂️ YOU'VE BEEN CUT</h2>
       <p class="fade-muted" style="margin:8px 0">${me.name} ${gMe}–${gOpp} ${opp.name} · you played ${minutes} minutes</p>
-      <p style="margin:14px 0;line-height:1.7">A <b style="color:var(--red)">${rating.toFixed(1)}</b> rating isn't good enough at ${crest(me.name, 16)} <b>${me.name}</b> — on Hard mode, Tier ${G.tier} demands at least <b>${cutAt}</b>. The club releases you on the spot.<br><br>${crest(destClub, 16)} <b>${destClub}</b> (Tier ${destTier}) offer you a lifeline.</p>
+      <p style="margin:14px 0;line-height:1.7">Your last 5 matches: <b style="color:var(--red)">${p.recentRatings.map(r => r.toFixed(1)).join(" · ")}</b> — a <b style="color:var(--red)">${avg5.toFixed(2)}</b> average. On Hard mode, ${crest(me.name, 16)} <b>${me.name}</b> demand better than <b>${cutAt}</b> at Tier ${G.tier}. The club releases you.<br><br>${crest(destClub, 16)} <b>${destClub}</b> (Tier ${destTier}) offer you a lifeline.</p>
       <button class="btn danger" id="cut-go">Accept your fate →</button></div>`);
     $("cut-go").onclick = () => {
       transferNow(destTier, destClub);
       G.transferredThisSeason = false; // a forced move doesn't burn your own transfer
+      p.recentRatings = [];            // fresh slate at the new club
       saveGame();
     };
     saveGame();
@@ -2501,6 +2511,7 @@ function startNewSeason(clubName, tier) {
   G.season++; G.year++; G.week = 1;
   p.seasonStats = freshSeasonStats();
   p.energy = 100; p.form = 50; p.morale = 65;
+  p.recentRatings = []; // clean slate each season
   G.trainedThisWeek = false; G.lastTraining = null;
   G.topScorerNPC = { name: npcName(), goals: 0 };
   G.pendingOffers = null;
@@ -2588,7 +2599,15 @@ function render() {
   }).join("");
   $("pc-boosts").innerHTML = (p.tempBoosts || []).map(b =>
     `<div class="boost-line">🔥 +${b.amt} ${attrName(b.attr)} · ${b.games} game${b.games > 1 ? "s" : ""} left</div>`).join("")
-    + activeDebuffs(p).map(d => `<div class="debuff-line">${d.ico} ${d.label}</div>`).join("");
+    + activeDebuffs(p).map(d => `<div class="debuff-line">${d.ico} ${d.label}</div>`).join("")
+    + (() => { // Hard-mode form watch: your rolling 5-game average vs the cut line
+        const cutAt = G.difficulty === "hard" ? ({ 1:5, 2:6, 3:6.5 })[G.tier] : null;
+        const rr = p.recentRatings || [];
+        if (!cutAt || rr.length < 3) return "";
+        const avg = rr.reduce((a, b) => a + b, 0) / rr.length;
+        const danger = avg <= cutAt + 0.4;
+        return `<div class="${danger ? "debuff-line" : "boost-line"}" style="${danger ? "" : "color:var(--muted)"}">📋 Form watch: ${avg.toFixed(2)} avg over ${rr.length} game${rr.length > 1 ? "s" : ""} (cut at ≤ ${cutAt})</div>`;
+      })();
   $("bar-energy").style.width = p.energy + "%";
   $("val-energy").textContent = Math.round(p.energy);
   $("bar-form").style.width = p.form + "%";
@@ -2881,6 +2900,7 @@ function migrateState(g) {
   if (!g.player.bestContinental) g.player.bestContinental = 0;
   if (!g.player.avatar) g.player.avatar = randomAvatar();
   if (!g.player.cosmetics) g.player.cosmetics = [];
+  if (!g.player.recentRatings) g.player.recentRatings = [];
   return g;
 }
 
