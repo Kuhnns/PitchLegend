@@ -186,6 +186,7 @@
   .event-choice small { display: block; color: var(--muted); margin-top: 3px; }
   .mg-result { font-size: 20px; font-weight: 800; margin: 14px 0; }
   .boost-line { color: #ff9636; font-size: 12px; margin-top: 7px; font-weight: 700; }
+  .debuff-line { color: var(--red); font-size: 12px; margin-top: 7px; font-weight: 700; }
 
   /* Shop */
   .shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 12px; }
@@ -421,6 +422,15 @@
           <div style="font-size:13.5px;margin-bottom:12px">Portfolio value: <b id="pf-value" style="color:var(--green-bright)">$0</b> · <span id="pf-profit"></span></div>
           <div id="stock-list"></div>
         </div>
+        <div class="panel">
+          <h3>🎰 Fafico Casino <span class="sub" id="casino-sub">Bet your fortune. The house usually wins.</span></h3>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <input class="st-amt" id="casino-bet" type="number" min="10" placeholder="$ bet" style="width:110px">
+            <button class="btn" id="btn-flip">🪙 Coin Flip (2×)</button>
+            <button class="btn gold" id="btn-slots">🎰 Spin the Slots</button>
+          </div>
+          <div id="casino-result" style="margin-top:12px;font-size:15px;min-height:22px"></div>
+        </div>
       </div>
 
       <!-- TRANSFERS -->
@@ -575,6 +585,16 @@ function addBoost(attr, amt, games, label) {
   p.tempBoosts.push({ attr, amt, games, fresh: true });
   addNews(`🔥 ${label}! +${amt} ${ATTR_NAMES[attr]} for the next ${games} game${games > 1 ? "s" : ""}.`, "gold");
 }
+
+// negative conditions that drag performance down (Easy mode is exempt)
+function activeDebuffs(p) {
+  if (!G || G.difficulty === "easy") return [];
+  const list = [];
+  if (p.form <= 0) list.push({ ico:"🥶", label:"Ice-cold form — performance suffers until form recovers", eff:0.85, rating:-0.5 });
+  if (p.morale <= 0) list.push({ ico:"😞", label:"Rock-bottom morale — matches & training suffer until it lifts", eff:0.85, rating:-0.5, gain:0.7 });
+  if ((p.shaken || 0) > 0) list.push({ ico:"😰", label:`Shaken by a nightmare match — ${p.shaken} game${p.shaken > 1 ? "s" : ""} left`, eff:0.9, rating:-0.4 });
+  return list;
+}
 const HERO_ATTR = { GK:"def", DEF:"def", MID:"pas", FWD:"pac" };
 
 const STAGE_CFG = {
@@ -597,7 +617,7 @@ function newPlayer(name, nation, pos, stage) {
     startStage: stage, path: null,  // path becomes "hs-pro" or "college" at graduation
     attrs,
     potential: irnd(84, 97),        // hidden ceiling
-    energy: 100, form: 50, morale: 70,
+    energy: 100, form: 50, morale: 70, shaken: 0, bestContinental: 0,
     money: 500, wage: cfg.wage,
     reputation: 5,                  // 0..100
     seasonStats: freshSeasonStats(),
@@ -666,7 +686,7 @@ const TRAININGS = [
   { id:"dri", ico:"✨", nm:"Ball Skills",fx:"+Dribbling", attr:"dri", cost:22 },
   { id:"def", ico:"🛡️", nm:"Defending",  fx:"+Defending", attr:"def", cost:22 },
   { id:"phy", ico:"💪", nm:"Gym",        fx:"+Physical",  attr:"phy", cost:22 },
-  { id:"rest",ico:"🛌", nm:"Rest",       fx:"+40 Energy", attr:null,  cost:0  },
+  { id:"rest",ico:"🛌", nm:"Rest",       fx:"+50 Energy", attr:null,  cost:0  },
 ];
 
 // stat nudge helpers (used by events, mini-games, matches)
@@ -715,7 +735,7 @@ function doTraining(t) {
   const p = G.player;
   if (G.trainedThisWeek) return;
   if (t.id === "rest") {
-    p.energy = clamp(p.energy + 40, 0, 100);
+    p.energy = clamp(p.energy + 50, 0, 100);
     addNews("Recovery week: feeling fresh again.");
     completeTraining(t);
     return;
@@ -730,7 +750,8 @@ function doTraining(t) {
   // school & path development bonuses
   const stageMult = G.tier >= 7 ? 1.25 : G.tier === 6 ? 1.35 : (p.path === "hs-pro" && p.age <= 21 ? 1.2 : 1);
   const coachMult = p.coaches && p.coaches[t.attr] ? COACH_TIERS[p.coaches[t.attr] - 1].mult : 1;
-  const baseGain = rnd(0.6, 1.6) * ageFactor * headroom * attrRoom * stageMult * coachMult * diff().gainMult;
+  const debuffGain = activeDebuffs(p).reduce((m, d) => m * (d.gain || 1), 1);
+  const baseGain = rnd(0.6, 1.6) * ageFactor * headroom * attrRoom * stageMult * coachMult * diff().gainMult * debuffGain;
   if (Math.random() < 0.4) { coachChallenge(t, baseGain); return; }
   applyTrainingGain(t, baseGain, 1);
   completeTraining(t);
@@ -928,6 +949,42 @@ function hireCoach(attr, lvl) {
   render(); saveGame();
 }
 
+// ============================== CASINO ==============================
+// slots table: [probability, payout multiplier] — the rest is a loss
+const CASINO_ODDS = {
+  easy:   { flip: 0.52, slots: [[0.25, 2], [0.08, 5], [0.010, 20]] },
+  normal: { flip: 0.47, slots: [[0.22, 2], [0.06, 5], [0.008, 20]] },
+  hard:   { flip: 0.33, slots: [[0.12, 2], [0.03, 5], [0.002, 20]] },
+};
+
+function casinoBet(game) {
+  const p = G.player;
+  const bet = Math.floor(parseFloat($("casino-bet").value));
+  const out = $("casino-result");
+  if (!bet || bet < 10) { out.innerHTML = `<span class="fade-muted">Minimum bet is $10.</span>`; return; }
+  if (bet > p.money) { out.innerHTML = `<span style="color:var(--red)">You don't have ${money(bet)} to bet.</span>`; return; }
+  const odds = CASINO_ODDS[G.difficulty || "normal"];
+  if (game === "flip") {
+    if (Math.random() < odds.flip) { p.money += bet; out.innerHTML = `🪙 <b style="color:var(--green-bright)">HEADS! You win ${money(bet)}.</b>`; }
+    else { p.money -= bet; out.innerHTML = `🪙 <b style="color:var(--red)">Tails. ${money(bet)} gone.</b>`; }
+  } else {
+    p.money -= bet;
+    const r = Math.random();
+    let acc = 0, mult = 0;
+    for (const [prob, m] of odds.slots) { acc += prob; if (r < acc) { mult = m; break; } }
+    if (mult) {
+      p.money += bet * mult;
+      const reel = mult >= 20 ? "💎💎💎" : mult >= 5 ? "7️⃣7️⃣7️⃣" : "🍒🍒🍒";
+      out.innerHTML = `🎰 ${reel} — <b style="color:var(--green-bright)">${mult}× WIN! Profit ${money(bet * mult - bet)}.</b>`;
+      if (mult >= 20) addNews(`🎰 JACKPOT! ${p.name} turns ${money(bet)} into ${money(bet * 20)} at the casino!`, "gold");
+    } else {
+      const sym = () => pick(["🍒", "🍋", "⚽", "💎", "7️⃣"]);
+      out.innerHTML = `🎰 ${sym()}${sym()}${sym()} — <b style="color:var(--red)">no match. ${money(bet)} gone.</b>`;
+    }
+  }
+  render(); saveGame();
+}
+
 // ============================== STOCK MARKET ==============================
 const STOCK_DEFS = [
   { id:"safebank", nm:"SafeBank Savings",    ico:"🏦", base:100, vol:0.015, drift:0.004 },
@@ -1009,6 +1066,55 @@ function repReq(tier, idx) {
   const base   = { 1:70,   2:45,  3:25,  4:10,  5:0   }[tier];
   const spread = { 1:2.73, 2:1.6, 3:1.5, 4:1.2, 5:0.5 }[tier];
   return Math.min(100, base + Math.round((11 - idx) * spread));
+}
+
+// Signing for a club that has NOT scouted you demands proof: a prestige-scaled
+// objective checklist, tuned by difficulty (Easy asks less, Hard asks a lot more).
+function clubObjectives(tier, idx) {
+  const p = G.player;
+  const prestige = repReq(tier, idx);
+  const dm = { easy: 0.6, normal: 1, hard: 1.6 }[G.difficulty || "normal"];
+  const isDef = p.pos === "GK" || p.pos === "DEF";
+  const objs = [];
+  const myRep = Math.round(p.reputation);
+  objs.push({ label: `Reputation ${prestige}+`, have: myRep, done: myRep >= prestige });
+  if (prestige >= 15) {
+    if (isDef) {
+      const need = Math.max(5, Math.round(prestige * 0.8 * dm));
+      const have = p.careerStats.cleanSheets + p.seasonStats.cleanSheets;
+      objs.push({ label: `${need} career clean sheets`, have, done: have >= need });
+    } else {
+      const need = Math.max(5, Math.round(prestige * 1.33 * dm));
+      const have = p.careerStats.goals + p.seasonStats.goals;
+      objs.push({ label: `${need} career goals`, have, done: have >= need });
+    }
+  }
+  if (prestige >= 55) {
+    const need = Math.max(1, Math.round((prestige / 40) * dm));
+    const key = isDef ? "Team of the Season" : "Golden Boot";
+    const have = p.trophies.filter(t => t.includes(key)).length;
+    objs.push({ label: `Win ${need}× ${key}`, have, done: have >= need });
+  }
+  if (prestige >= 70) {
+    let lvl = prestige >= 90 ? 1 : 0;
+    if (G.difficulty === "hard") lvl++;
+    if (G.difficulty === "easy") lvl--;
+    lvl = clamp(lvl, 0, 4);
+    const stageNames = ["Qualify for", "Reach the quarter-finals of", "Reach the semi-finals of", "Reach the final of", "Win"];
+    const have = p.bestContinental || 0;
+    objs.push({ label: `${stageNames[lvl]} the Continental Champions Cup`, have, done: have >= lvl + 1 });
+  }
+  return objs;
+}
+
+function showObjectivesModal(tier, idx, clubName) {
+  const objs = clubObjectives(tier, idx);
+  const met = objs.filter(o => o.done).length;
+  showModal(`<h2>🎯 Sign for ${crest(clubName, 18)} ${clubName}</h2>
+    <p class="fade-muted" style="margin:10px 0;line-height:1.6">No scout has recommended you, so ${clubName} demand proof (${diff().nm} mode objectives — ${met}/${objs.length} complete):</p>
+    ${objs.map(o => `<div class="news-item ${o.done ? "good" : "bad"}">${o.done ? "✅" : "❌"} ${o.label}${!o.done && o.have !== undefined ? ` <span class="fade-muted">(you: ${o.have})</span>` : ""}</div>`).join("")}
+    <p class="fade-muted" style="margin:12px 0;font-size:13px">💡 Tip: big performances (7.8+ ratings) can get you SCOUTED — scouted clubs skip objectives entirely for 5 matchdays.</p>
+    <div style="text-align:center"><button class="btn" onclick="closeModal()">OK</button></div>`);
 }
 
 function confirmTransfer(tier, clubName) {
@@ -1365,7 +1471,9 @@ function finishMatch(moment) {
   // --- player contributions ---
   const events = [];
   let goals = 0, assists = 0, saves = 0;
-  const eff = (ovr / 100) * (0.55 + 0.45 * p.energy / 100) * (0.75 + 0.5 * p.form / 100) * (0.8 + 0.4 * p.morale / 100) * (minutes / 90);
+  const debuffs = activeDebuffs(p);
+  const eff = (ovr / 100) * (0.55 + 0.45 * p.energy / 100) * (0.75 + 0.5 * p.form / 100) * (0.8 + 0.4 * p.morale / 100) * (minutes / 90)
+    * debuffs.reduce((m, d) => m * (d.eff || 1), 1);
   if (minutes > 0) {
     const gProb = { GK:0, DEF:0.06, MID:0.22, FWD:0.55 }[p.pos] * eff * 1.9;
     const aProb = { GK:0.01, DEF:0.10, MID:0.42, FWD:0.28 }[p.pos] * eff * 1.9;
@@ -1401,7 +1509,8 @@ function finishMatch(moment) {
     if (p.pos === "GK" || p.pos === "DEF") rating += gOpp === 0 ? 1.0 : -0.15 * gOpp;
     if (p.pos === "GK") rating += saves * 0.06;
     rating *= minutes / 90 > 0.6 ? 1 : 0.92;
-    rating = clamp(rating, 3, 10);
+    rating += debuffs.reduce((s, d) => s + (d.rating || 0), 0); // debuffs drag the rating down
+    rating = clamp(rating, 1, 10);
   }
 
   // --- apply result to table ---
@@ -1415,7 +1524,7 @@ function finishMatch(moment) {
     p.seasonStats.ratingsSum += rating;
     if ((p.pos === "GK" || p.pos === "DEF") && gOpp === 0) p.seasonStats.cleanSheets++;
     if (motm) p.seasonStats.motm++;
-    p.energy = clamp(p.energy - (minutes / 90) * 26 - 4 - diff().energyExtra, 0, 100);
+    p.energy = clamp(p.energy - (minutes / 90) * 16 - 2 - diff().energyExtra, 0, 100);
     p.form = clamp(p.form + (rating - 6.4) * 7, 0, 100);
     const repDelta = (rating - 6.8) * 0.25 + goals * 0.35 + (motm ? 0.6 : 0) + (6 - G.tier) * 0.02;
     p.reputation = clamp(p.reputation + (repDelta > 0 ? repDelta * diff().repMult : repDelta), 0, 100);
@@ -1446,11 +1555,33 @@ function finishMatch(moment) {
   // temporary boosts tick down (boosts earned this match start counting next game)
   p.tempBoosts = (p.tempBoosts || []).filter(b => { if (b.fresh) { delete b.fresh; return true; } return --b.games > 0; });
 
+  // debuff bookkeeping: shaken wears off with games played; a nightmare rating re-triggers it
+  if (minutes > 0 && p.shaken > 0) p.shaken--;
+  if (G.difficulty !== "easy" && minutes > 0 && rating < 3) {
+    p.shaken = 3;
+    addNews(`😰 A ${rating.toFixed(1)}-rated nightmare — ${p.name} is SHAKEN for the next 3 games.`, "bad");
+    events.push(`😰 ${p.name} looks completely lost out there.`);
+  }
+
   // NPC top scorer race
   G.topScorerNPC.goals += Math.random() < 0.62 ? irnd(0, 2) : 0;
 
   // injury chance when exhausted (a personal physio halves the risk)
   if (minutes > 0 && p.energy < 15 && Math.random() < (lvl.physio ? 0.14 : 0.28)) {
+    // Hard mode only: a tiny chance the injury ends everything.
+    // 0.01% at full form, scaling up to 1% at zero form.
+    if (G.difficulty === "hard") {
+      const ceChance = 0.0001 + (1 - p.form / 100) * 0.0099;
+      if (Math.random() < ceChance) {
+        G.careerEndedByInjury = true;
+        addNews(`💔 CAREER-ENDING INJURY. ${p.name}'s story ends on the pitch at ${p.age}.`, "bad");
+        showModal(`<div class="mg-wrap"><h2>💔 CAREER-ENDING INJURY</h2>
+          <p style="margin:14px 0;line-height:1.7">${p.name} goes down... and doesn't get up. The stadium falls silent.<br><br>The doctors confirm the worst: at ${p.age}, exhausted and out of form, the body gives out. There is no coming back from this one.</p>
+          <button class="btn danger" id="ce-go">Say goodbye →</button></div>`);
+        $("ce-go").onclick = () => retire(true);
+        return;
+      }
+    }
     const out = irnd(1, 3);
     p.form = clamp(p.form - 20, 0, 100);
     p.energy = clamp(p.energy + 25 * out, 0, 100);
@@ -1490,6 +1621,26 @@ function finishMatch(moment) {
   G.week++;
   G.trainedThisWeek = false;
   G.lastTraining = null;
+
+  // Hard mode: top-tier clubs cut under-performers on the spot
+  const cutAt = G.difficulty === "hard" && minutes > 0 ? ({ 1:5, 2:6, 3:6.5 })[G.tier] : null;
+  if (cutAt && rating < cutAt) {
+    const destTier = G.tier + 1;
+    const destClub = pick(CLUB_NAMES[destTier]);
+    mor(-15); frm(-8); rep(-3);
+    addNews(`✂️ CUT! ${me.name} release ${p.name} after a ${rating.toFixed(1)} rating (Tier ${G.tier} demands ${cutAt}+ on Hard).`, "bad");
+    showModal(`<div class="mg-wrap"><h2>✂️ YOU'VE BEEN CUT</h2>
+      <p class="fade-muted" style="margin:8px 0">${me.name} ${gMe}–${gOpp} ${opp.name} · you played ${minutes} minutes</p>
+      <p style="margin:14px 0;line-height:1.7">A <b style="color:var(--red)">${rating.toFixed(1)}</b> rating isn't good enough at ${crest(me.name, 16)} <b>${me.name}</b> — on Hard mode, Tier ${G.tier} demands at least <b>${cutAt}</b>. The club releases you on the spot.<br><br>${crest(destClub, 16)} <b>${destClub}</b> (Tier ${destTier}) offer you a lifeline.</p>
+      <button class="btn danger" id="cut-go">Accept your fate →</button></div>`);
+    $("cut-go").onclick = () => {
+      transferNow(destTier, destClub);
+      G.transferredThisSeason = false; // a forced move doesn't burn your own transfer
+      saveGame();
+    };
+    saveGame();
+    return;
+  }
 
   showMatchModal(me, opp, gMe, gOpp, events, minutes, rating, motm);
   saveGame();
@@ -1802,12 +1953,14 @@ function runContinentalRun(headlines, next) {
   const winChance = clamp((0.30 + (me.strength - 84) * 0.03 + ovr * 0.004) * diff().tournMult, 0.1, 0.88);
   const opps = CLUB_NAMES[1].filter(n => n !== G.clubName);
   const lines = [];
-  let alive = true, exitRound = "";
+  let alive = true, exitRound = "", roundsWon = 0;
   for (const round of ["Round of 16", "Quarter-final", "Semi-final"]) {
     const opp = opps.splice(irnd(0, opps.length - 1), 1)[0];
-    if (Math.random() < winChance) lines.push(`✅ ${round}: beat ${crest(opp, 15)} ${opp}`);
+    if (Math.random() < winChance) { roundsWon++; lines.push(`✅ ${round}: beat ${crest(opp, 15)} ${opp}`); }
     else { lines.push(`❌ ${round}: knocked out by ${crest(opp, 15)} ${opp}`); alive = false; exitRound = round; break; }
   }
+  // record the furthest continental stage ever reached (1=R16 … 4=final, 5=winner)
+  p.bestContinental = Math.max(p.bestContinental || 0, 1 + roundsWon);
   showModal(`<h2>🏆 Continental Champions Cup</h2>
     <p class="fade-muted" style="margin:8px 0">Europe's elite knockout — your cup run this season:</p>
     <div style="margin:14px 0;font-size:14px;line-height:2">${lines.map(l => `<div>${l}</div>`).join("")}</div>
@@ -1820,6 +1973,7 @@ function runContinentalRun(headlines, next) {
       opponent: pick(CLUB_NAMES[1].filter(n => n !== G.clubName)),
       onResult(won) {
         if (won) {
+          p.bestContinental = 5;
           p.trophies.push(`🏆 Continental Champions Cup (S${G.season})`);
           rep(8); mor(15); p.money += Math.round(250000 * diff().moneyMult);
           addBoost(HERO_ATTR[p.pos], 14, 3, "Continental Cup hero");
@@ -2075,7 +2229,7 @@ function retire(forced) {
   showScreen("retire-screen");
   document.getElementById("legacy-title").textContent = title;
   document.getElementById("legacy-sub").textContent =
-    `${p.name} retires at ${p.age}${forced ? " (the body said no more)" : ""} after ${p.careerStats.seasons} season${p.careerStats.seasons===1?"":"s"}. ${sub}`;
+    `${p.name} retires at ${p.age}${forced ? (G.careerEndedByInjury ? " (career ended by a devastating injury)" : " (the body said no more)") : ""} after ${p.careerStats.seasons} season${p.careerStats.seasons===1?"":"s"}. ${sub}`;
   const c = p.careerStats;
   const avg = c.apps ? (c.ratingsSum / c.apps).toFixed(2) : "—";
   document.getElementById("final-stat-boxes").innerHTML = statBoxes([
@@ -2111,7 +2265,8 @@ function render() {
     return `<div class="attr-row"><span class="lbl">${ATTR_NAMES[k]}</span><div class="bar"><i style="width:${v}%;background:${col}"></i></div><b${boosted ? ` style="color:#ff9636"` : ""}>${v}</b></div>`;
   }).join("");
   $("pc-boosts").innerHTML = (p.tempBoosts || []).map(b =>
-    `<div class="boost-line">🔥 +${b.amt} ${ATTR_NAMES[b.attr]} · ${b.games} game${b.games > 1 ? "s" : ""} left</div>`).join("");
+    `<div class="boost-line">🔥 +${b.amt} ${ATTR_NAMES[b.attr]} · ${b.games} game${b.games > 1 ? "s" : ""} left</div>`).join("")
+    + activeDebuffs(p).map(d => `<div class="debuff-line">${d.ico} ${d.label}</div>`).join("");
   $("bar-energy").style.width = p.energy + "%";
   $("val-energy").textContent = Math.round(p.energy);
   $("bar-form").style.width = p.form + "%";
@@ -2220,6 +2375,11 @@ function render() {
     hireCoach(k, +l);
   });
 
+  // casino flavour text per difficulty
+  $("casino-sub").textContent = G.difficulty === "hard"
+    ? "On Hard, the house REALLY wins. You have been warned."
+    : G.difficulty === "easy" ? "Feeling lucky? The odds here are almost friendly." : "Bet your fortune. The house usually wins.";
+
   // stock exchange
   const port = p.portfolio || {};
   let pfValue = 0, pfCost = 0;
@@ -2265,18 +2425,24 @@ function render() {
   $("tm-rep").textContent = inSchool ? "🎓 in school — market locked until you turn pro" : myRep + " / 100";
   $("transfer-list").innerHTML = LEAGUES.filter(L => L.tier <= 5).map(L => {
     const rows = CLUB_NAMES[L.tier].map((n, i) => {
-      const req = repReq(L.tier, i);
       const isCurrent = n === G.clubName;
       const scout = (G.scoutInterest || []).find(s => s.club === n);
-      const unlocked = myRep >= req || !!scout;
+      const objs = isCurrent ? [] : clubObjectives(L.tier, i);
+      const met = objs.filter(o => o.done).length;
+      const allMet = met === objs.length;
+      const unlocked = !!scout || allMet;
       const can = !isCurrent && unlocked && !G.transferredThisSeason && !inSchool;
       return `<div class="transfer-row${isCurrent ? " current" : ""}">
         <div class="tr-club">${crest(n, 16)} ${n}
-          <span class="tr-req ${unlocked ? "ok" : ""}">${L.name} · ${scout ? `🔥 SCOUTING YOU — rep waived, ${scout.until - G.weekCount} matchday${scout.until - G.weekCount > 1 ? "s" : ""} left` : unlocked ? "✓ Unlocked" : "🔒 Requires"} ${scout ? "" : "REP " + req}</span>
+          <span class="tr-req ${unlocked ? "ok" : ""}">${L.name} · ${isCurrent ? "" : scout ? `🔥 SCOUTING YOU — objectives waived, ${scout.until - G.weekCount} matchday${scout.until - G.weekCount > 1 ? "s" : ""} left` : allMet ? "✓ All objectives complete" : `🎯 ${met}/${objs.length} objectives met`}</span>
         </div>
         ${isCurrent
           ? `<span class="badge t1">YOUR CLUB</span>`
-          : `<button class="btn${unlocked ? "" : " secondary"}" data-join="${L.tier}|${n}" ${can ? "" : "disabled"}>${unlocked ? (G.transferredThisSeason ? "Next season" : "Join") : "🔒 " + req}</button>`}
+          : can
+            ? `<button class="btn" data-join="${L.tier}|${n}">Join</button>`
+            : unlocked
+              ? `<button class="btn secondary" disabled>${inSchool ? "In school" : "Next season"}</button>`
+              : `<button class="btn secondary" data-obj="${L.tier}|${i}|${n}" ${inSchool ? "disabled" : ""}>🎯 View</button>`}
       </div>`;
     }).join("");
     return `<div class="tm-league">Tier ${L.tier} — ${L.name}</div>${rows}`;
@@ -2284,6 +2450,10 @@ function render() {
   document.querySelectorAll("[data-join]").forEach(el => el.onclick = () => {
     const [t, n] = el.dataset.join.split("|");
     confirmTransfer(+t, n);
+  });
+  document.querySelectorAll("[data-obj]").forEach(el => el.onclick = () => {
+    const [t, i, n] = el.dataset.obj.split("|");
+    showObjectivesModal(+t, +i, n);
   });
 
   // history
@@ -2381,6 +2551,8 @@ function migrateState(g) {
   if (!g.player.portfolio) g.player.portfolio = {};
   if (!g.player.coaches) g.player.coaches = {};
   if (!g.difficulty) g.difficulty = "normal";
+  if (g.player.shaken === undefined) g.player.shaken = 0;
+  if (!g.player.bestContinental) g.player.bestContinental = 0;
   return g;
 }
 
@@ -2632,6 +2804,9 @@ $("btn-retire-now").onclick = () => {
     <div class="btn-row"><button class="btn danger" onclick="retire(false)">Yes, retire</button>
     <button class="btn secondary" onclick="closeModal()">Keep playing</button></div>`);
 };
+$("btn-flip").onclick = () => casinoBet("flip");
+$("btn-slots").onclick = () => casinoBet("slots");
+
 $("btn-newgame").onclick = () => { saveGame(); showMenu(); };
 $("btn-restart").onclick = () => showMenu();
 
