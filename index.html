@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pitch Legend — Soccer Career Simulator</title>
+<!-- Google AdSense -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5777258116191850" crossorigin="anonymous"></script>
 <style>
   :root {
     --bg: #0d1117;
@@ -603,6 +605,8 @@ const DIFFS = {
   hard:   { nm:"Hard",   moneyMult:0.5, repMult:0.55, gainMult:0.6,  scoutMult:0.5, tournMult:0.75, offerMult:0.6, tuition:50000, energyExtra:10, coaches:false, shopCost:2, shopEff:0.5, stockDrift:-0.012, crashBias:0.72, showdown:-0.08, goalMult:0.7,  bootMin:15, npcProb:0.78, npcMax:3 },
 };
 function diff() { return DIFFS[(G && G.difficulty) || "normal"]; }
+// success odds are hidden in cup games on Hard — trust your instincts
+function oddsLabel(chance) { return G.difficulty === "hard" ? "??% chance 🎲" : Math.round(chance * 100) + "% chance"; }
 
 // ============================== STATE ==============================
 let G = null; // full game state
@@ -2599,24 +2603,41 @@ function runCupCampaign(cfg, next) {
       <span class="vs-team">${crest(opp, 38)}<br>${opp}</span>
     </div><div class="anthem">${anthem}</div>`;
   }
-  function keyMoment(opp, cb) {
-    const m = pick(p.pos === "GK" ? SHOWDOWN_GK : SHOWDOWN_OUTFIELD);
-    showModal(`<div class="mg-wrap">${chip}
-      <p class="fade-muted" style="margin:6px 0">vs ${crest(opp, 15)} ${opp} — the match hinges on one moment</p>
-      <p style="margin:14px 0;font-size:15px;line-height:1.6">${m.text}</p>
-      ${m.opts.map((o, i) => `<button class="event-choice" data-cm="${i}"><b>${o.label}</b><small>Uses ${attrName(o.stat)} (${Math.round(effAttr(p, o.stat))}) — ${Math.round(chanceFor(o.stat) * 100)}% chance</small></button>`).join("")}</div>`);
-    document.querySelectorAll("[data-cm]").forEach(el => el.onclick = () => {
-      cb(Math.random() < chanceFor(m.opts[+el.dataset.cm].stat));
-    });
+  function playMoments(opp, total, cb) {
+    // a cup tie turns on several defining situations, drawn from the expanded pools
+    const pool2 = p.pos === "GK" ? [...SHOWDOWN_GK, ...CUP_GK] : [...SHOWDOWN_OUTFIELD, ...CUP_OUTFIELD];
+    const picked = [];
+    for (let i = 0; i < total; i++) picked.push(pool2.splice(irnd(0, pool2.length - 1), 1)[0]);
+    let mi = 0, wins = 0;
+    const mPips = [];
+    (function step() {
+      const m = picked[mi];
+      showModal(`<div class="mg-wrap">${chip}
+        <p class="fade-muted" style="margin:6px 0">vs ${crest(opp, 15)} ${opp} · Moment ${mi + 1} of ${total} &nbsp;${mPips.join(" ")}</p>
+        <p style="margin:14px 0;font-size:15px;line-height:1.6">${m.text}</p>
+        ${m.opts.map((o, i) => `<button class="event-choice" data-cm="${i}"><b>${o.label}</b><small>Uses ${attrName(o.stat)} (${Math.round(effAttr(p, o.stat))}) — ${oddsLabel(chanceFor(o.stat))}</small></button>`).join("")}</div>`);
+      document.querySelectorAll("[data-cm]").forEach(el => el.onclick = () => {
+        const ok = Math.random() < chanceFor(m.opts[+el.dataset.cm].stat);
+        mPips.push(ok ? "🟢" : "🔴");
+        if (ok) wins++;
+        mi++;
+        showModal(`<div class="mg-wrap">${chip}<h2>${ok ? "✅ You deliver!" : "❌ It slips away!"}</h2>
+          <p class="fade-muted" style="margin:10px 0">${ok ? pick(["The bench is on its feet!", "The away end goes dead silent.", "Pure tournament magic."]) : pick(["A groan rolls around the stadium...", "Their fans smell blood.", "Not your moment. Regroup."])}</p>
+          <div class="mg-result">${mPips.join(" ")}</div>
+          <button class="btn" id="cup-mnext">${mi < total ? "Next moment →" : "Full time →"}</button></div>`);
+        $("cup-mnext").onclick = () => mi < total ? step() : cb(wins);
+      });
+    })();
   }
   function playGroupMatch(i) {
     const opp = groupOpps[i];
     showModal(`<div class="mg-wrap">${decor}<h2 class="hype-banner">Group Match ${i + 1} of 3</h2>${walkout(opp)}
+      <p class="fade-muted">Two defining moments decide it — win both to take the match.</p>
       <button class="btn gold" id="cup-kick">⚽ Kick off →</button></div>`);
-    $("cup-kick").onclick = () => keyMoment(opp, ok => {
+    $("cup-kick").onclick = () => playMoments(opp, 2, wins => {
       let res, my, their;
-      if (ok) { res = "W"; their = irnd(0, 1); my = their + irnd(1, 2); group[0].pts += 3; }
-      else if (Math.random() < 0.45) { res = "D"; my = their = irnd(0, 2); group[0].pts += 1; }
+      if (wins === 2) { res = "W"; their = irnd(0, 1); my = their + irnd(1, 2); group[0].pts += 3; }
+      else if (wins === 1) { res = "D"; my = their = irnd(0, 2); group[0].pts += 1; }
       else { res = "L"; my = irnd(0, 1); their = my + irnd(1, 2); }
       group[0].gd += my - their;
       const g = group.find(t => t.nm === opp);
@@ -2691,11 +2712,12 @@ function runCupCampaign(cfg, next) {
       $("cup-go").onclick = () => { cfg.onEliminated && cfg.onEliminated(round); next(); };
     };
     showModal(`<div class="mg-wrap">${decor}<h2 class="hype-banner">${round}</h2>${walkout(opp)}
-      <p class="fade-muted">Win or go home. Lose the moment and it's sudden-death penalties.</p>
+      <p class="fade-muted">Win or go home. Take both moments to go through — split them and it's sudden-death penalties. Lose both and the run is over.</p>
       <button class="btn gold" id="cup-kick">⚽ Kick off →</button></div>`);
-    $("cup-kick").onclick = () => keyMoment(opp, ok => {
-      if (ok) through();
-      else suddenDeath(opp, scored => scored ? through() : out());
+    $("cup-kick").onclick = () => playMoments(opp, 2, wins => {
+      if (wins === 2) through();
+      else if (wins === 1) suddenDeath(opp, scored => scored ? through() : out());
+      else out();
     });
   }
   // the draw ceremony
@@ -2704,7 +2726,7 @@ function runCupCampaign(cfg, next) {
     <p class="anthem">${world ? "The draw is made. The whole planet holds its breath." : "The draw is made across the continent."}</p>
     <h3 style="margin:10px 0 2px">YOUR GROUP</h3>
     ${groupTableHTML()}
-    <p class="fade-muted" style="font-size:13px">Top 2 advance · every match hinges on one defining moment</p>
+    <p class="fade-muted" style="font-size:13px">Top 2 advance · every match turns on two defining moments</p>
     <button class="btn gold" id="cup-kick0">🏟️ Begin the campaign →</button></div>`);
   $("cup-kick0").onclick = () => playGroupMatch(0);
 }
@@ -2748,9 +2770,63 @@ const SHOWDOWN_GK = [
     { label:"Lurk for the loose-ball rebound", stat:"def" } ] },
 ];
 
+// extra tournament-only situations — cup nights write their own stories
+const CUP_OUTFIELD = [
+  { text:"The stadium DJ cuts out — 60,000 voices sing alone as you stand over a corner...", opts:[
+    { label:"Whip it in with venom", stat:"pas" },
+    { label:"Go short and drive at the box", stat:"dri" } ] },
+  { text:"Their captain flies in studs-up — you see it a heartbeat late...", opts:[
+    { label:"Hurdle it and keep running", stat:"pac" },
+    { label:"Brace and ride the contact", stat:"phy" } ] },
+  { text:"A 40-yard switch drops out of the floodlights toward you...", opts:[
+    { label:"Kill it stone dead", stat:"dri" },
+    { label:"Volley the pass first time", stat:"pas" } ] },
+  { text:"Extra time looms and your legs are screaming...", opts:[
+    { label:"Find one more sprint", stat:"phy" },
+    { label:"Read the play, save the legs", stat:"def" } ] },
+  { text:"Their keeper is stranded off his line after a corner breaks down...", opts:[
+    { label:"Shoot from inside your own half", stat:"sho" },
+    { label:"Carry it 60 yards yourself", stat:"pac" } ] },
+  { text:"VAR check... play on! The ball squirts loose in their box...", opts:[
+    { label:"Pounce before anyone reacts", stat:"pac" },
+    { label:"Open your body and place it", stat:"sho" } ] },
+  { text:"Rain hammers down and the ball skids off the turf at you...", opts:[
+    { label:"Adjust and take it in stride", stat:"dri" },
+    { label:"Smash it first time", stat:"sho" } ] },
+  { text:"Two markers sandwich you at the near post as the cross comes in...", opts:[
+    { label:"Spin off the front man", stat:"dri" },
+    { label:"Back into both and hold your ground", stat:"phy" } ] },
+  { text:"Your winger is free, but the pass has to be inch-perfect...", opts:[
+    { label:"Bend it with the outside of the boot", stat:"pas" },
+    { label:"Drive inside and drag defenders first", stat:"dri" } ] },
+  { text:"Their fresh-legged super-sub runs straight at you — you're the last line...", opts:[
+    { label:"Time the standing tackle", stat:"def" },
+    { label:"Show him wide and match his pace", stat:"pac" } ] },
+];
+const CUP_GK = [
+  { text:"The swirling night wind holds the cross up in the lights...", opts:[
+    { label:"Leap early and punch through it", stat:"phy" },
+    { label:"Wait, read the drop, claim it", stat:"def" } ] },
+  { text:"A vicious knuckleball dips at you from 30 yards...", opts:[
+    { label:"Strong wrists — parry it wide", stat:"phy" },
+    { label:"Watch it all the way into the gloves", stat:"def" } ] },
+  { text:"A one-two carves your defence open — it's two on one against you...", opts:[
+    { label:"Charge the passer down", stat:"def" },
+    { label:"Stand tall and fill the goal", stat:"phy" } ] },
+  { text:"The pitch is soaked — a daisy-cutter skips wickedly toward your corner...", opts:[
+    { label:"Get the long barrier down", stat:"def" },
+    { label:"Smother it with a full dive", stat:"phy" } ] },
+  { text:"Your defender slips! Their striker is in behind with the ball...", opts:[
+    { label:"Sprint out and sweep outside the box", stat:"pac" },
+    { label:"Hold the angle and force the chip", stat:"def" } ] },
+  { text:"99th minute, corner to you — the manager waves you forward. Even YOU...", opts:[
+    { label:"Attack the cross like a striker", stat:"phy" },
+    { label:"Hang back for the rebound", stat:"def" } ] },
+];
+
 function finalShowdown(cfg) {
   const p = G.player;
-  const pool = [...(p.pos === "GK" ? SHOWDOWN_GK : SHOWDOWN_OUTFIELD)];
+  const pool = p.pos === "GK" ? [...SHOWDOWN_GK, ...CUP_GK] : [...SHOWDOWN_OUTFIELD, ...CUP_OUTFIELD];
   const moments = [];
   for (let i = 0; i < 4; i++) moments.push(pool.splice(irnd(0, pool.length - 1), 1)[0]);
   let idx = 0, wins = 0;
@@ -2762,7 +2838,7 @@ function finalShowdown(cfg) {
     showModal(`<div class="mg-wrap"><h2>${cfg.title}</h2>
       <p class="fade-muted" style="margin:6px 0">vs ${crest(cfg.opponent, 16)} ${cfg.opponent} · Moment ${idx + 1} of 4 &nbsp;${pips.join(" ")}</p>
       <p style="margin:14px 0;font-size:15px;line-height:1.6">${m.text}</p>
-      ${m.opts.map((o, i) => `<button class="event-choice" data-sd="${i}"><b>${o.label}</b><small>Uses ${attrName(o.stat)} (${Math.round(effAttr(p, o.stat))}) — ${Math.round(chanceFor(o.stat) * 100)}% chance</small></button>`).join("")}</div>`);
+      ${m.opts.map((o, i) => `<button class="event-choice" data-sd="${i}"><b>${o.label}</b><small>Uses ${attrName(o.stat)} (${Math.round(effAttr(p, o.stat))}) — ${oddsLabel(chanceFor(o.stat))}</small></button>`).join("")}</div>`);
     document.querySelectorAll("[data-sd]").forEach(el => el.onclick = () => {
       const o = m.opts[+el.dataset.sd];
       const ok = Math.random() < chanceFor(o.stat);
@@ -2773,7 +2849,7 @@ function finalShowdown(cfg) {
         <p class="fade-muted" style="margin:12px 0">${ok ? pick(["The crowd erupts!", "Textbook. Absolutely textbook.", "They simply can't handle you today."]) : pick(["The chance slips away...", "Their fans roar. Momentum shifts.", "So close — but not this time."])}</p>
         <div class="mg-result">${pips.join(" ")}</div>
         <button class="btn" id="sd-next">${idx < 4 ? "Next moment →" : "Final whistle approaches..."}</button></div>`);
-      $("sd-next").onclick = () => { idx < 4 ? showMoment() : resolve(); };
+      $("sd-next").onclick = () => { if (idx >= 4) return resolve(); if (idx === 2) return showHalftime(); showMoment(); };
     });
   }
 
@@ -2796,9 +2872,21 @@ function finalShowdown(cfg) {
   }
 
   const HYPE = {
-    world:       { banner:"🌍 THE WORLD CUP FINAL 🌍", decor:"🎆 🎇 🎆", anthem:"🎵 The anthems ring out. Flags from every nation fill the stands.", crowd:"1.5 BILLION people are watching around the planet. Legends are born on nights like this.", tunnel:"🎺 Walk out to the roar of the world →", winTitle:"CHAMPIONS OF THE WORLD!", winSub:"Your name just entered football history. Forever." },
-    continental: { banner:"🏆 THE CONTINENTAL FINAL 🏆", decor:"⭐ 🏆 ⭐", anthem:"🎵 The famous cup anthem plays. Grown adults are crying in the stands.", crowd:"80,000 inside the stadium. Millions more across the continent. One match for eternity.", tunnel:"🎺 Walk out under the lights →", winTitle:"CHAMPIONS OF THE CONTINENT!", winSub:"The biggest club prize there is — and it's yours." },
-    school:      { banner:"🏟️ THE CHAMPIONSHIP FINAL 🏟️", decor:"📣 🏟️ 📣", anthem:"📣 The marching band plays. The bleachers are shaking.", crowd:"The whole town shut down to be here tonight. Everyone you know is in those stands.", tunnel:"🎺 Run out of the locker room →", winTitle:"CHAMPIONS!", winSub:"They'll talk about this night for years." },
+    world:       { banner:"🌍 THE WORLD CUP FINAL 🌍", decor:"🎆 🎇 🎆", anthem:"🎵 The anthems ring out. Flags from every nation fill the stands.", crowd:"1.5 BILLION people are watching around the planet. Legends are born on nights like this.", tunnel:"🎺 Walk out to the roar of the world →",
+      buildup:"🏨 The night before, you barely sleep. 400 messages on your phone. Back home, the streets are empty — an entire nation is indoors, waiting for you.",
+      halftime:"🗣️ The dressing room hums with nerves. The manager grabs your shoulder: “Forty-five minutes from immortality. Go be legendary.”",
+      ftLine:"Your teammates sprint at you from every direction. Somewhere back home, a whole country is losing its mind.",
+      winTitle:"CHAMPIONS OF THE WORLD!", winSub:"Your name just entered football history. Forever." },
+    continental: { banner:"🏆 THE CONTINENTAL FINAL 🏆", decor:"⭐ 🏆 ⭐", anthem:"🎵 The famous cup anthem plays. Grown adults are crying in the stands.", crowd:"80,000 inside the stadium. Millions more across the continent. One match for eternity.", tunnel:"🎺 Walk out under the lights →",
+      buildup:"🚌 The team bus crawls through a sea of scarves and flares. You press a hand to the glass. Tonight is everything you dreamed of as a kid.",
+      halftime:"🗣️ Halftime. The captain slams a locker shut: “We did NOT come this far to blink now!”",
+      ftLine:"Grown adults are weeping in the stands. The badge on your chest just became eternal.",
+      winTitle:"CHAMPIONS OF THE CONTINENT!", winSub:"The biggest club prize there is — and it's yours." },
+    school:      { banner:"🏟️ THE CHAMPIONSHIP FINAL 🏟️", decor:"📣 🏟️ 📣", anthem:"📣 The marching band plays. The bleachers are shaking.", crowd:"The whole town shut down to be here tonight. Everyone you know is in those stands.", tunnel:"🎺 Run out of the locker room →",
+      buildup:"🏫 The pep rally spilled into the streets. Your name is painted on half the shop windows in town.",
+      halftime:"🗣️ Coach kneels in the huddle: “Look around. Remember this forever. Now go finish it.”",
+      ftLine:"The bleachers empty onto the field. You're carried off on their shoulders.",
+      winTitle:"CHAMPIONS!", winSub:"They'll talk about this night for years." },
   }[cfg.stage || "school"];
 
   function showHype() {
@@ -2815,16 +2903,48 @@ function finalShowdown(cfg) {
     $("sd-tunnel").onclick = showMoment;
   }
 
-  function finish(won, sub) {
-    showModal(`${won ? confettiHTML(40) : ""}<div class="mg-wrap">
-      ${won ? `<div class="trophy-big">🏆</div><h2 class="hype-banner">${HYPE.winTitle}</h2>` : `<h2>💔 DEFEAT IN THE FINAL</h2>`}
-      <p class="fade-muted" style="margin:12px 0">${won ? HYPE.winSub + " " : ""}${sub}</p>
-      <div class="mg-result">${pips.join(" ")}</div>
-      <button class="btn${won ? " gold" : ""}" id="sd-done">Continue</button></div>`);
-    $("sd-done").onclick = () => cfg.onResult(won);
+  function showBuildup() {
+    showModal(`<div class="mg-wrap"><div class="fireworks">${HYPE.decor}</div><h2 class="hype-banner">${HYPE.banner}</h2>
+      <p style="margin:16px 0;font-size:15px;line-height:1.8">${HYPE.buildup}</p>
+      <button class="btn gold" id="sd-arrive">🏟️ Matchday arrives →</button></div>`);
+    $("sd-arrive").onclick = showHype;
   }
 
-  showHype();
+  function showHalftime() {
+    const mood = wins === 2 ? "You're bossing every big moment — stay ruthless." : wins === 1 ? "Level in the moments that matter. The next one tilts the night." : "Backs against the wall. Finals are won from here.";
+    showModal(`<div class="mg-wrap"><h2>🕧 HALFTIME</h2>
+      <p style="margin:14px 0;font-size:15px;line-height:1.8">${HYPE.halftime}</p>
+      <p class="fade-muted">${mood} &nbsp;${pips.join(" ")}</p>
+      <button class="btn gold" id="sd-out2">Back out for the second half →</button></div>`);
+    $("sd-out2").onclick = showMoment;
+  }
+
+  function finish(won, sub) {
+    if (!won) {
+      showModal(`<div class="mg-wrap"><h2>💔 DEFEAT IN THE FINAL</h2>
+        <p class="fade-muted" style="margin:12px 0">${sub}</p>
+        <p class="fade-muted">You collect the runners-up medal in silence. Remember this feeling — it fuels the next run.</p>
+        <div class="mg-result">${pips.join(" ")}</div>
+        <button class="btn" id="sd-done">Continue</button></div>`);
+      $("sd-done").onclick = () => cfg.onResult(false);
+      return;
+    }
+    // full-time whistle first, then the trophy lift
+    showModal(`${confettiHTML(24)}<div class="mg-wrap"><h2 class="hype-banner">FULL TIME!</h2>
+      <p style="margin:14px 0;font-size:15px;line-height:1.8">The whistle goes. ${HYPE.ftLine}</p>
+      <div class="mg-result">${pips.join(" ")}</div>
+      <button class="btn gold" id="sd-lift">🏆 Lift the trophy →</button></div>`);
+    $("sd-lift").onclick = () => {
+      showModal(`${confettiHTML(60)}<div class="mg-wrap">
+        <div class="trophy-big">🏆</div><h2 class="hype-banner">${HYPE.winTitle}</h2>
+        <p class="fade-muted" style="margin:12px 0">${HYPE.winSub} ${sub}</p>
+        <div class="anthem">🎶 The crowd chants your name: “${p.name.toUpperCase()}! ${p.name.toUpperCase()}!”</div>
+        <button class="btn gold" id="sd-done" style="margin-top:10px">Continue</button></div>`);
+      $("sd-done").onclick = () => cfg.onResult(true);
+    };
+  }
+
+  showBuildup();
 }
 
 function generateOffers(myPos, avg) {
