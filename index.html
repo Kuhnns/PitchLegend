@@ -174,6 +174,25 @@
   .vs-line .vs-mid { animation: vs-slam .6s .5s ease both; }
   .anthem { animation: rise-fade .8s .8s ease both; color: var(--muted); font-size: 13px; margin: 8px 0; }
   .fireworks { font-size: 22px; letter-spacing: 10px; animation: rise-fade .6s .15s ease both; }
+  /* the FINAL walk-out — a staged cinematic */
+  @keyframes walk-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  @keyframes shockwave { 0% { transform: scale(.2); opacity: .95; } 100% { transform: scale(10); opacity: 0; } }
+  @keyframes cam-shake { 0%, 100% { transform: none; } 20% { transform: translate(-5px, 3px); } 40% { transform: translate(5px, -3px); } 60% { transform: translate(-4px, -2px); } 80% { transform: translate(4px, 2px); } }
+  @keyframes flicker-in { 0% { opacity: 0; } 8% { opacity: 1; } 18% { opacity: .15; } 30% { opacity: 1; } 42% { opacity: .35; } 58% { opacity: 1; } 70% { opacity: .6; } 100% { opacity: 1; } }
+  .walkout-final { animation: cam-shake .45s 2.45s; }
+  .walkout-final .hype-banner { animation: flicker-in 1.4s both, banner-glow 2.2s 1.4s ease-in-out infinite; }
+  .wo-stage { display: flex; align-items: center; justify-content: center; gap: 26px; margin: 16px 0 8px; position: relative; min-height: 120px; }
+  .wo-player { animation: walk-in-left 1.7s .35s ease-out both; }
+  .wo-player .wo-bob { animation: walk-bob .34s 5 .35s; }
+  .wo-opp { animation: walk-in-right 1.7s .35s ease-out both; }
+  .wo-name { font-weight: 800; font-size: 13.5px; margin-top: 4px; }
+  .wo-vs { font-size: 46px; font-weight: 900; color: var(--gold); animation: vs-slam .55s 2.1s ease both; text-shadow: 0 0 18px #f1c40f66; }
+  .wo-shockwave { position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border: 3px solid var(--gold); border-radius: 50%; opacity: 0; animation: shockwave .9s 2.3s ease-out; pointer-events: none; }
+  .wo-line { opacity: 0; animation: rise-fade .7s ease both; color: var(--muted); font-size: 13.5px; margin: 7px 0; }
+  .wo-line.l1 { animation-delay: 2.8s; }
+  .wo-line.l2 { animation-delay: 3.5s; }
+  .wo-line.l3 { animation-delay: 4.2s; color: var(--text); font-weight: 700; }
+  .wo-btn { opacity: 0; animation: rise-fade .6s 4.9s ease both; }
   .stage-chip { display: inline-block; padding: 3px 14px; border-radius: 12px; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px; }
   .chip-world { background: #2a2410; color: var(--gold); border: 1px solid var(--gold); }
   .chip-cont { background: #161a3a; color: #8fa8ff; border: 1px solid #5b74e8; }
@@ -689,6 +708,9 @@ const COSMETICS = [
   { id:"silverchain",slot:"neck",   nm:"Silver Chain",    cost:8000 },
   { id:"medal",     slot:"neck",    nm:"Gold Medal",      cost:150000 },
   { id:"warpaint",  slot:"face",    nm:"War Paint",       cost:2000 },
+  // 1-of-1 weekly exclusive — cannot be bought, only won by finishing a real-life
+  // week as #1 on the global leaderboard
+  { id:"goatcrown", slot:"hat",     nm:"👑 GOAT Crown (weekly 1-of-1)", cost:0, exclusive:true },
 ];
 
 const randomAvatar = () => ({ skin: irnd(0, SKINS.length - 1), hair: irnd(1, HAIR_NAMES.length - 1), hairColor: irnd(0, 5), brow: irnd(0, 2), mouth: irnd(0, 3), facial: 0, hat: null, glasses: null, ear: null, neck: null, face: null });
@@ -754,6 +776,7 @@ function avatarSVG(av, size = 80, clubName) {
   if (av.hat === "beanie") L.push(`<path d="M26,44 Q26,9 60,9 Q94,9 94,44 Z" fill="#3498db"/><rect x="26" y="38" width="68" height="9" rx="4" fill="#2c81ba"/>`);
   if (av.hat === "cap") L.push(`<path d="M27,40 Q27,11 60,11 Q93,11 93,40 Z" fill="#c0392b"/><rect x="26" y="36" width="68" height="7" rx="3.5" fill="#96281b"/><ellipse cx="97" cy="40" rx="14" ry="5" fill="#96281b"/>`);
   if (av.hat === "crown") L.push(`<path d="M34,30 L40,9 L50,23 L60,5 L70,23 L80,9 L86,30 Z" fill="#f1c40f" stroke="#d4ac0d" stroke-width="1.5"/><rect x="34" y="27" width="52" height="7" rx="2.5" fill="#f1c40f" stroke="#d4ac0d"/>`);
+  if (av.hat === "goatcrown") L.push(`<path d="M31,32 L36,7 L47,21 L60,2 L73,21 L84,7 L89,32 Z" fill="#ffd75e" stroke="#c9930a" stroke-width="1.6"/><rect x="31" y="29" width="58" height="8" rx="3" fill="#ffd75e" stroke="#c9930a" stroke-width="1.4"/><circle cx="45" cy="33" r="2.7" fill="#e74c3c"/><circle cx="60" cy="33" r="2.7" fill="#2ecc71"/><circle cx="75" cy="33" r="2.7" fill="#3498db"/><path d="M60,8 l1.8,3.7 4.1,.6 -3,2.8 .7,4 -3.6,-1.9 -3.6,1.9 .7,-4 -3,-2.8 4.1,-.6 Z" fill="#fff" stroke="#c9930a" stroke-width=".8"/>`);
   if (av.hat === "partyhat") L.push(`<path d="M60,0 L74,32 L46,32 Z" fill="#e91e8c"/><path d="M50,22 L70,22 M53,14 L67,14" stroke="#f1c40f" stroke-width="2.5"/><circle cx="60" cy="0" r="4" fill="#f1c40f"/>`);
   if (av.hat === "bandana") L.push(`<path d="M26,38 Q60,29 94,38 L92,29 Q60,21 28,29 Z" fill="#c0392b"/><path d="M92,32 L106,28 L104,40 Z" fill="#c0392b"/><g fill="#fff"><circle cx="42" cy="33" r="1.5"/><circle cx="60" cy="31" r="1.5"/><circle cx="78" cy="33" r="1.5"/></g>`);
   if (av.hat === "bucket") L.push(`<ellipse cx="60" cy="35" rx="40" ry="8" fill="#6b8e5a"/><path d="M33,35 Q33,12 60,12 Q87,12 87,35 Z" fill="#7ba86a"/><path d="M33,30 Q60,36 87,30" stroke="#5a7a4a" stroke-width="3" fill="none"/>`);
@@ -788,7 +811,8 @@ function openCustomizer(av, opts = {}) {
     <button class="cz-btn" data-cz="${id}" data-dir="1">▶</button></div>`;
   function draw() {
     const p = opts.shop ? G.player : null;
-    const owned = p ? (p.cosmetics || []) : [];
+    const accEx = (SESSION && loadAccounts()[SESSION] && loadAccounts()[SESSION].exclusives) || [];
+    const owned = p ? [...(p.cosmetics || []), ...(accEx.some(e => e.startsWith("goat-")) ? ["goatcrown"] : [])] : [];
     showModal(`<div class="mg-wrap"><h2>🎨 Character Studio</h2>
       <div style="margin:8px auto 4px">${avatarSVG(av, 128, opts.club)}</div>
       ${FEATURES.map(f => czRow(f.nm, f.names[av[f.key] || 0], "f|" + f.key)).join("")}
@@ -798,7 +822,8 @@ function openCustomizer(av, opts = {}) {
         return czRow(s.nm, ownCount ? cur : "None (shop below)", "s|" + s.key);
       }).join("")
       + `<h3 style="margin:16px 0 4px;text-align:left">🛍️ Style Shop <span class="sub">pure drip — zero stat boosts · bank: ${money(p.money)}</span></h3>`
-      + (COSMETICS.filter(c => !owned.includes(c.id)).map(c =>
+      + (owned.includes("goatcrown") ? `<div class="transfer-row" style="border-color:var(--gold)"><div class="tr-club">👑 GOAT Crown<span class="tr-req">1-of-1 · won as weekly #1 on the global leaderboard</span></div><span class="badge t1">EXCLUSIVE</span></div>` : "")
+      + (COSMETICS.filter(c => !c.exclusive && !owned.includes(c.id)).map(c =>
           `<div class="transfer-row"><div class="tr-club">${c.nm}<span class="tr-req">${c.slot}</span></div>
            <button class="btn" data-cz-buy="${c.id}" ${p.money < c.cost ? "disabled" : ""}>${money(c.cost)}</button></div>`).join("")
          || `<p class="fade-muted">You own every cosmetic. Absolute icon.</p>`)
@@ -2677,18 +2702,6 @@ function runCupCampaign(cfg, next) {
       $("cup-go").onclick = () => { cfg.onEliminated && cfg.onEliminated("Group Stage"); next(); };
     }
   }
-  function suddenDeath(opp, cb) {
-    showModal(`<div class="mg-wrap">${chip}<h2>😱 IT GOES TO PENALTIES</h2>
-      <p class="fade-muted" style="margin:10px 0">Sudden death vs ${crest(opp, 15)} ${opp}. ${p.name} steps up — score and you're through, miss and you're OUT.</p>
-      <div class="goal-mouth">${PEN_ZONES.map((z, i) => `<div class="goal-zone" data-cpen="${i}">${z.nm}</div>`).join("")}</div></div>`);
-    document.querySelectorAll("[data-cpen]").forEach(el => el.onclick = () => {
-      const zi = +el.dataset.cpen, z = PEN_ZONES[zi];
-      const keeper = weightedPick([1.4, .5, 1.4, 1.9, .6, 1.9]);
-      const kickStat = p.pos === "GK" ? effAttr(p, "pas") : effAttr(p, "sho");
-      const missC = clamp(z.miss - kickStat * 0.0015, .02, .5);
-      cb(Math.random() >= missC && !(zi === keeper && Math.random() < z.save));
-    });
-  }
   function playKnockout(k) {
     if (k >= cfg.knockouts.length) {
       cfg.recordStage && cfg.recordStage(4); // the final, reached
@@ -2712,11 +2725,11 @@ function runCupCampaign(cfg, next) {
       $("cup-go").onclick = () => { cfg.onEliminated && cfg.onEliminated(round); next(); };
     };
     showModal(`<div class="mg-wrap">${decor}<h2 class="hype-banner">${round}</h2>${walkout(opp)}
-      <p class="fade-muted">Win or go home. Take both moments to go through — split them and it's sudden-death penalties. Lose both and the run is over.</p>
+      <p class="fade-muted">Win or go home. Take both moments to go through — split them and it goes to a full penalty shootout. Lose both and the run is over.</p>
       <button class="btn gold" id="cup-kick">⚽ Kick off →</button></div>`);
     $("cup-kick").onclick = () => playMoments(opp, 2, wins => {
       if (wins === 2) through();
-      else if (wins === 1) suddenDeath(opp, scored => scored ? through() : out());
+      else if (wins === 1) penaltyShootout({ opponent: opp, home: cfg.home, chip }, won => won ? through() : out());
       else out();
     });
   }
@@ -2824,6 +2837,97 @@ const CUP_GK = [
     { label:"Hang back for the rebound", stat:"def" } ] },
 ];
 
+// ============================== PENALTY SHOOTOUT ==============================
+// A playable best-of-5 shootout (sudden death if level). Outfielders pick their
+// spots for every kick; goalkeepers play it from the other end — picking dives.
+function penaltyShootout(opts, cb) {
+  const p = G.player;
+  const isGK = p.pos === "GK";
+  const mine = [], theirs = [];
+  let sudden = false;
+  const chip = opts.chip || "";
+  const scoreRow = (arr, n) => arr.map(v => v ? "🟢" : "🔴").concat(Array(Math.max(0, n - arr.length)).fill("⚪")).join(" ");
+  function decided() {
+    const mScore = mine.filter(Boolean).length, tScore = theirs.filter(Boolean).length;
+    if (!sudden) {
+      if (mScore > tScore + (5 - theirs.length)) return true;
+      if (tScore > mScore + (5 - mine.length)) return false;
+      if (mine.length >= 5 && theirs.length >= 5) {
+        if (mScore !== tScore) return mScore > tScore;
+        sudden = true;
+      }
+      return null;
+    }
+    if (mine.length === theirs.length && mine.length) {
+      const i = mine.length - 1;
+      if (mine[i] !== theirs[i]) return mine[i];
+    }
+    return null;
+  }
+  function showRound(feedback) {
+    const n = sudden ? Math.max(mine.length, theirs.length) + 1 : 5;
+    showModal(`<div class="mg-wrap">${chip}<h2 class="hype-banner">⚽ PENALTY SHOOTOUT${sudden ? " — SUDDEN DEATH" : ""}</h2>
+      <p class="fade-muted" style="margin:4px 0">vs ${crest(opts.opponent, 15)} ${opts.opponent}</p>
+      <div style="font-size:14px;margin:10px 0;line-height:2">
+        <div><b>${opts.home}:</b> ${scoreRow(mine, n)}</div>
+        <div><b>${opts.opponent}:</b> ${scoreRow(theirs, n)}</div>
+      </div>
+      ${feedback ? `<p style="margin:10px 0;font-size:14.5px">${feedback}</p>` : ""}
+      ${isGK
+        ? `<p class="fade-muted">Their taker stares you down. Pick your dive, ${p.name}.</p>
+           <div class="btn-row" style="justify-content:center">
+             <button class="btn secondary" data-ps="0">↖ Dive Left</button>
+             <button class="btn secondary" data-ps="1">🧍 Stand Tall</button>
+             <button class="btn secondary" data-ps="2">↗ Dive Right</button></div>`
+        : `<p class="fade-muted">${p.name} steps up. Pick your spot.</p>
+           <div class="goal-mouth">${PEN_ZONES.map((z, i) => `<div class="goal-zone" data-ps="${i}">${z.nm}</div>`).join("")}</div>`}
+    </div>`);
+    document.querySelectorAll("[data-ps]").forEach(el => el.onclick = () => {
+      const lines = [];
+      if (isGK) {
+        // you're in goal: their kick first, then your teammate shoots (auto)
+        const shot = weightedPick([2, 1, 2]);
+        const saved = +el.dataset.ps === shot && Math.random() < 0.45 + effAttr(p, "def") * 0.004;
+        theirs.push(!saved);
+        lines.push(saved ? `🧤 SAVED!! ${p.name} flies the right way!` : `⚽ They send you the wrong way.`);
+        let d = decided();
+        if (d !== null) return finishShootout(d, lines.join(" "));
+        const t = Math.random() < 0.76;
+        mine.push(t);
+        lines.push(t ? `🟢 ${opts.home} convert.` : `🔴 Your teammate blazes it over!`);
+      } else {
+        // you shoot first, then their taker (auto)
+        const zi = +el.dataset.ps, z = PEN_ZONES[zi];
+        const keeper = weightedPick([1.4, .5, 1.4, 1.9, .6, 1.9]);
+        const missC = clamp(z.miss - effAttr(p, "sho") * 0.0015, .02, .5);
+        const scored = Math.random() >= missC && !(zi === keeper && Math.random() < z.save);
+        mine.push(scored);
+        lines.push(scored ? `⚽ ${p.name} ${z.panenka ? "PANENKAS it — outrageous!" : "buries it!"}` : `💔 ${p.name}'s kick doesn't go in!`);
+        let d = decided();
+        if (d !== null) return finishShootout(d, lines.join(" "));
+        const t = Math.random() < 0.74;
+        theirs.push(t);
+        lines.push(t ? `🟢 ${opts.opponent} score theirs.` : `🔴 THEY MISS! Advantage ${opts.home}!`);
+      }
+      const d = decided();
+      if (d !== null) return finishShootout(d, lines.join(" "));
+      showRound(lines.join(" "));
+    });
+  }
+  function finishShootout(won, lastLine) {
+    showModal(`${won ? confettiHTML(22) : ""}<div class="mg-wrap">${chip}
+      <h2 class="hype-banner">${won ? "🧨 SHOOTOUT WON!" : "💔 SHOOTOUT LOST"}</h2>
+      <p style="margin:10px 0">${lastLine}</p>
+      <div style="font-size:14px;line-height:2">
+        <div><b>${opts.home}:</b> ${scoreRow(mine, mine.length)}</div>
+        <div><b>${opts.opponent}:</b> ${scoreRow(theirs, theirs.length)}</div>
+      </div>
+      <button class="btn${won ? " gold" : ""}" id="ps-done" style="margin-top:8px">Continue</button></div>`);
+    $("ps-done").onclick = () => cb(won);
+  }
+  showRound("");
+}
+
 function finalShowdown(cfg) {
   const p = G.player;
   const pool = p.pos === "GK" ? [...SHOWDOWN_GK, ...CUP_GK] : [...SHOWDOWN_OUTFIELD, ...CUP_OUTFIELD];
@@ -2856,18 +2960,13 @@ function finalShowdown(cfg) {
   function resolve() {
     if (wins >= 3) return finish(true, "You dominated the biggest stage of them all.");
     if (wins <= 1) return finish(false, "Outclassed on the day. The lessons will hurt — and help.");
-    // 2–2: everything rests on one deciding penalty
-    showModal(`<div class="mg-wrap"><h2>😱 IT ALL COMES DOWN TO ONE PENALTY</h2>
-      <p class="fade-muted" style="margin:10px 0">Score level at the death. ${p.name} grabs the ball. Pick your spot.</p>
-      <div class="goal-mouth">${PEN_ZONES.map((z, i) => `<div class="goal-zone" data-sdpen="${i}">${z.nm}</div>`).join("")}</div></div>`);
-    document.querySelectorAll("[data-sdpen]").forEach(el => el.onclick = () => {
-      const zi = +el.dataset.sdpen, z = PEN_ZONES[zi];
-      const keeper = weightedPick([1.4, .5, 1.4, 1.9, .6, 1.9]);
-      const kickStat = p.pos === "GK" ? effAttr(p, "pas") : effAttr(p, "sho");
-      const missC = clamp(z.miss - kickStat * 0.0015, .02, .5);
-      const scored = Math.random() >= missC && !(zi === keeper && Math.random() < z.save);
-      pips.push(scored ? "🟢" : "🔴");
-      finish(scored, scored ? (z.panenka ? "A PANENKA. IN A FINAL. Immortality achieved." : "Nerves of steel when it mattered most.") : "The keeper wins the duel. Heartbreak.");
+    // 2–2: 120 minutes can't separate you — a full penalty shootout decides the final
+    showModal(`<div class="mg-wrap"><h2>😱 IT GOES TO A PENALTY SHOOTOUT</h2>
+      <p style="margin:12px 0;font-size:15px;line-height:1.7">120 minutes and nothing between you. The players collapse to the turf. The keepers stretch. The whole stadium is on its feet — this final will be decided from twelve yards.</p>
+      <button class="btn gold" id="sd-pens">${p.pos === "GK" ? "🧤 Take your place on the line →" : "⚽ Walk to the spot →"}</button></div>`);
+    $("sd-pens").onclick = () => penaltyShootout({ opponent: cfg.opponent, home: cfg.home || G.clubName }, won => {
+      pips.push(won ? "🟢" : "🔴");
+      finish(won, won ? "You won the shootout when it mattered most. Ice. Cold." : "Beaten from twelve yards. There is no crueller way to lose.");
     });
   }
 
@@ -2890,16 +2989,22 @@ function finalShowdown(cfg) {
   }[cfg.stage || "school"];
 
   function showHype() {
-    showModal(`<div class="mg-wrap"><div class="fireworks">${HYPE.decor}</div><h2 class="hype-banner">${HYPE.banner}</h2>
-      <div class="vs-line">
-        <span class="vs-team">${crest(cfg.home || G.clubName, 40)}<br>${cfg.home || G.clubName}</span>
-        <span class="vs-mid">VS</span>
-        <span class="vs-team">${crest(cfg.opponent, 40)}<br>${cfg.opponent}</span>
+    const home = cfg.home || G.clubName;
+    // a staged cinematic: floodlights flicker on, YOU walk out of the tunnel,
+    // the opponent emerges opposite, the VS slams down with a shockwave,
+    // then the commentary lines land one by one
+    showModal(`<div class="mg-wrap walkout-final"><div class="fireworks">${HYPE.decor}</div>
+      <h2 class="hype-banner">${HYPE.banner}</h2>
+      <div class="wo-stage">
+        <div class="wo-shockwave"></div>
+        <div class="wo-player"><span class="wo-bob" style="display:inline-block">${avatarSVG(p.avatar, 78, home)}</span><div class="wo-name">${p.name}<br><span class="fade-muted" style="font-weight:400">${crest(home, 14)} ${home}</span></div></div>
+        <span class="wo-vs">VS</span>
+        <div class="wo-opp">${crest(cfg.opponent, 58)}<div class="wo-name">${cfg.opponent}</div></div>
       </div>
-      <div class="anthem">${HYPE.anthem}</div>
-      <p style="margin:12px 0;font-size:15px;line-height:1.7">${HYPE.crowd}</p>
-      <p class="fade-muted">Four defining moments. One deciding penalty if it stays level. No second chances.</p>
-      <button class="btn gold" id="sd-tunnel">${HYPE.tunnel}</button></div>`);
+      <div class="wo-line l1">${HYPE.anthem}</div>
+      <div class="wo-line l2">${HYPE.crowd}</div>
+      <div class="wo-line l3">Four defining moments. A full penalty shootout if it stays level. No second chances.</div>
+      <button class="btn gold wo-btn" id="sd-tunnel">${HYPE.tunnel}</button></div>`);
     $("sd-tunnel").onclick = showMoment;
   }
 
@@ -3505,7 +3610,8 @@ function logout() {
 function showMenu() {
   const acc = currentAccount();
   if (!acc) { showScreen("auth-screen"); return; }
-  $("menu-user").textContent = acc.username;
+  const crowns = (acc.exclusives || []).filter(e => e.startsWith("goat-")).length;
+  $("menu-user").textContent = acc.username + (crowns ? ` 👑${crowns > 1 ? "×" + crowns : ""}` : "");
   $("menu-trophies").textContent = `${accountTrophyTotal(acc)} total · ${accountTrophyTotal(acc, true)} ranked (Hard)`;
   const ids = Object.keys(acc.saves);
   $("save-list").innerHTML = ids.length ? ids.map(id => {
@@ -3524,6 +3630,7 @@ function showMenu() {
   document.querySelectorAll("[data-load]").forEach(b => b.onclick = () => loadSlot(b.dataset.load));
   document.querySelectorAll("[data-del]").forEach(b => b.onclick = () => deleteSlot(b.dataset.del));
   showScreen("menu-screen");
+  showCrownNotice(); // celebrate a freshly won weekly crown
 }
 
 function loadSlot(id) {
@@ -3552,10 +3659,50 @@ function deleteSlot(id) {
 }
 
 // ============================== GLOBAL LEADERBOARD ==============================
-async function fetchBoard() {
+async function fetchBoardDoc() {
   const res = await fetch(BOARD_READ, { cache: "no-store" });
   const txt = await res.text();
-  try { return JSON.parse(txt).players || {}; } catch { return {}; }
+  try { const d = JSON.parse(txt); return { players: d.players || {}, crowns: d.crowns || {} }; }
+  catch { return { players: {}, crowns: {} }; }
+}
+async function fetchBoard() { return (await fetchBoardDoc()).players; }
+
+// real-life week number since the epoch — rolls over every 7 days
+const weekIdNow = () => Math.floor(Date.now() / 604800000);
+
+// the account holding the weekly #1 spot gets a 1-of-1 exclusive cosmetic
+function claimCrowns(crowns) {
+  if (!SESSION) return 0;
+  const accs = loadAccounts();
+  const acc = accs[SESSION];
+  if (!acc) return 0;
+  acc.exclusives = acc.exclusives || [];
+  const added = [];
+  for (const [wk, c] of Object.entries(crowns || {})) {
+    if (String(c.u).toLowerCase() === SESSION && !acc.exclusives.includes("goat-" + wk)) {
+      acc.exclusives.push("goat-" + wk);
+      added.push(wk);
+    }
+  }
+  if (added.length) {
+    acc.pendingCrownNotice = (acc.pendingCrownNotice || []).concat(added);
+    saveAccounts(accs);
+  }
+  return added.length;
+}
+
+function showCrownNotice() {
+  const accs = loadAccounts();
+  const acc = SESSION && accs[SESSION];
+  if (!acc || !(acc.pendingCrownNotice || []).length) return;
+  acc.pendingCrownNotice = [];
+  saveAccounts(accs);
+  showModal(`${confettiHTML(50)}<div class="mg-wrap"><div class="trophy-big">👑</div>
+    <h2 class="hype-banner">WEEKLY #1 IN THE WORLD</h2>
+    <p style="margin:14px 0;font-size:15px;line-height:1.8">You finished a real-life week as the <b>#1 player on the global leaderboard</b>. A 1-of-1 exclusive has been added to your account:</p>
+    <p style="font-size:17px;font-weight:800;color:var(--gold)">👑 THE GOAT CROWN</p>
+    <p class="fade-muted">Equip it in the Character Studio. Nobody can buy it. They can only take it from you next week.</p>
+    <button class="btn gold" onclick="closeModal()">Legendary.</button></div>`);
 }
 
 async function submitScore() {
@@ -3563,19 +3710,32 @@ async function submitScore() {
   if (!acc) return;
   const entry = { u: acc.username, t: accountTrophyTotal(acc, true), ts: Date.now() }; // Hard-mode trophies only
   try {
-    const players = await fetchBoard();
+    const doc = await fetchBoardDoc();
+    const players = doc.players, crowns = doc.crowns;
     const key = acc.username.toLowerCase();
-    if (players[key] && players[key].t === entry.t) return; // nothing new to report
-    players[key] = entry;
-    const keys = Object.keys(players);
-    if (keys.length > 100) { // keep the store lean: only the top 100 survive
-      keys.sort((a, b) => (players[b].t || 0) - (players[a].t || 0)).slice(100).forEach(k => delete players[k]);
+    let dirty = false;
+    if (!players[key] || players[key].t !== entry.t) {
+      players[key] = entry;
+      const keys = Object.keys(players);
+      if (keys.length > 100) { // keep the store lean: only the top 100 survive
+        keys.sort((a, b) => (players[b].t || 0) - (players[a].t || 0)).slice(100).forEach(k => delete players[k]);
+      }
+      dirty = true;
     }
-    await fetch(BOARD_WRITE, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ key: BOARD_KEY, value: JSON.stringify({ players }) }),
-    }).catch(() => {});
+    // weekly crown: the first player online after the week rolls over records last week's #1
+    const lastWeek = weekIdNow() - 1;
+    if (!crowns[lastWeek]) {
+      const top = Object.values(players).sort((a, b) => (b.t || 0) - (a.t || 0))[0];
+      if (top && (top.t || 0) > 0) { crowns[lastWeek] = { u: top.u, t: top.t, ts: Date.now() }; dirty = true; }
+    }
+    if (dirty) {
+      await fetch(BOARD_WRITE, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ key: BOARD_KEY, value: JSON.stringify({ players, crowns }) }),
+      }).catch(() => {});
+    }
+    if (claimCrowns(crowns) && !$("menu-screen").classList.contains("hidden")) showCrownNotice();
   } catch { /* offline — the local board still works */ }
 }
 
@@ -3583,9 +3743,10 @@ async function openBoard() {
   showScreen("board-screen");
   $("board-body").innerHTML = `<tr><td colspan="3" class="fade-muted">Loading global standings…</td></tr>`;
   $("board-note").textContent = "";
-  let players = {};
+  let players = {}, crowns = {};
   try {
-    players = await fetchBoard();
+    const doc = await fetchBoardDoc();
+    players = doc.players; crowns = doc.crowns;
   } catch {
     $("board-note").textContent = "⚠️ Couldn't reach the global server — showing players on this device only.";
   }
@@ -3594,10 +3755,22 @@ async function openBoard() {
     const t = accountTrophyTotal(accs[k], true); // Hard-mode trophies only
     if (!players[k] || (players[k].t || 0) < t) players[k] = { u: accs[k].username, t };
   }
+  // weekly crown counts per player + the current reigning holder
+  const crownCount = {};
+  let reigning = null;
+  for (const wk of Object.keys(crowns).sort((a, b) => a - b)) {
+    const k = String(crowns[wk].u).toLowerCase();
+    crownCount[k] = (crownCount[k] || 0) + 1;
+    reigning = crowns[wk].u;
+  }
+  if (reigning) $("board-note").textContent = `👑 Reigning weekly #1: ${reigning} — finish a real-life week on top to win the 1-of-1 GOAT Crown.`;
+  else if (!$("board-note").textContent) $("board-note").textContent = "👑 Finish a real-life week as #1 to win the exclusive 1-of-1 GOAT Crown cosmetic.";
   const rows = Object.values(players).sort((a, b) => (b.t || 0) - (a.t || 0)).slice(0, 100);
   const medal = i => i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : (i + 1);
-  $("board-body").innerHTML = rows.length ? rows.map((r, i) =>
-    `<tr class="${SESSION && r.u.toLowerCase() === SESSION ? "me" : ""}"><td>${medal(i)}</td><td>${String(r.u).slice(0, 20)}</td><td class="num">${r.t || 0}</td></tr>`).join("")
+  $("board-body").innerHTML = rows.length ? rows.map((r, i) => {
+    const k = String(r.u).toLowerCase();
+    return `<tr class="${SESSION && k === SESSION ? "me" : ""}"><td>${medal(i)}</td><td>${String(r.u).slice(0, 20)}${crownCount[k] ? ` 👑${crownCount[k] > 1 ? "×" + crownCount[k] : ""}` : ""}</td><td class="num">${r.t || 0}</td></tr>`;
+  }).join("")
     : `<tr><td colspan="3" class="fade-muted">Nobody has won a trophy yet. Be the first!</td></tr>`;
 }
 
