@@ -279,6 +279,10 @@
         <button class="btn" id="btn-newcareer" style="flex:1">+ New Career</button>
         <button class="btn gold" id="btn-board" style="flex:1">🌍 Leaderboard</button>
       </div>
+      <div class="btn-row" style="margin-top:10px">
+        <button class="btn secondary" id="btn-support" style="flex:1">☕ Support the Dev</button>
+      </div>
+      <small style="display:block;margin-top:8px;color:var(--muted)">Pitch Legend is free. If you're enjoying it, a tip keeps it growing 💚</small>
     </div>
   </div>
 
@@ -462,9 +466,9 @@
           </div>
         </div>
         <div class="panel">
-          <h3>🎰 Fafico Casino <span class="sub" id="casino-sub">Bet your fortune. The house usually wins.</span></h3>
+          <h3>🕹️ Fafico Arcade <span class="sub" id="casino-sub">Play the arcade minigames — tricky to beat!</span></h3>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-            <input class="st-amt" id="casino-bet" type="number" min="10" placeholder="$ bet" style="width:110px">
+            <input class="st-amt" id="casino-bet" type="number" min="10" placeholder="$ to play" style="width:110px">
             <button class="btn" id="btn-flip">🪙 Coin Flip (2×)</button>
             <button class="btn gold" id="btn-slots">🎰 Slots</button>
             <button class="btn" id="btn-bj">🃏 Blackjack</button>
@@ -530,6 +534,8 @@
 "use strict";
 // ============================== DATA ==============================
 const SAVE_KEY = "pitchLegendSave_v1";
+// 👇 Paste your own donation link here (Ko-fi, Buy Me a Coffee, PayPal.me, etc.). Leave as-is to show a placeholder message.
+const SUPPORT_URL = "https://ko-fi.com/YOUR_USERNAME_HERE";
 const POSITIONS = { GK:"Goalkeeper", DEF:"Defender", MID:"Midfielder", FWD:"Forward" };
 const ATTR_NAMES = { pac:"PAC", sho:"SHO", pas:"PAS", dri:"DRI", def:"DEF", phy:"PHY" };
 const ATTR_FULL   = { pac:"Pace", sho:"Shooting", pas:"Passing", dri:"Dribbling", def:"Defending", phy:"Physical" };
@@ -1173,7 +1179,7 @@ function hireCoach(attr, lvl) {
   render(); saveGame();
 }
 
-// ============================== CASINO ==============================
+// ============================== ARCADE MINIGAMES ==============================
 // slots table: [probability, payout multiplier] — the rest is a loss
 const CASINO_ODDS = {
   easy:   { flip: 0.52, slots: [[0.25, 2], [0.08, 5], [0.010, 20]] },
@@ -1200,7 +1206,7 @@ function casinoBet(game) {
       p.money += bet * mult;
       const reel = mult >= 20 ? "💎💎💎" : mult >= 5 ? "7️⃣7️⃣7️⃣" : "🍒🍒🍒";
       out.innerHTML = `🎰 ${reel} — <b style="color:var(--green-bright)">${mult}× WIN! Profit ${money(bet * mult - bet)}.</b>`;
-      if (mult >= 20) addNews(`🎰 JACKPOT! ${p.name} turns ${money(bet)} into ${money(bet * 20)} at the casino!`, "gold");
+      if (mult >= 20) addNews(`🎰 JACKPOT! ${p.name} turns ${money(bet)} into ${money(bet * 20)} at the arcade!`, "gold");
     } else {
       const sym = () => pick(["🍒", "🍋", "⚽", "💎", "7️⃣"]);
       out.innerHTML = `🎰 ${sym()}${sym()}${sym()} — <b style="color:var(--red)">no match. ${money(bet)} gone.</b>`;
@@ -1265,7 +1271,7 @@ function bjEnd() {
   if (pv > 21) { BJ.win = -1; BJ.msg = `BUST with ${pv}. −${money(BJ.bet)}`; }
   else if (dv > 21 || pv > dv) { p.money += BJ.bet * 2; BJ.win = 1; BJ.msg = `You win ${pv} vs ${dv > 21 ? "bust" : dv}! +${money(BJ.bet)}`; }
   else if (pv === dv && !rules.pushWins) { p.money += BJ.bet; BJ.win = 0; BJ.msg = "Push — bet returned."; }
-  else { BJ.win = -1; BJ.msg = pv === dv ? `Push... but on Hard the house keeps ties. −${money(BJ.bet)}` : `Dealer has ${dv}. −${money(BJ.bet)}`; }
+  else { BJ.win = -1; BJ.msg = pv === dv ? `Push... but on Hard the dealer keeps ties. −${money(BJ.bet)}` : `Dealer has ${dv}. −${money(BJ.bet)}`; }
   saveGame(); bjRender(true);
 }
 function bjRender(reveal) {
@@ -1343,7 +1349,7 @@ function vpRender() {
       G.player.money += ret;
       VP.win = ret - VP.bet;
       VP.msg = `${nm} — ${VP.win > 0 ? "+" + money(VP.win) : VP.win === 0 ? "push" : "−" + money(-VP.win)}`;
-      if (key === "royal") addNews(`🎴 ROYAL FLUSH! ${G.player.name} wins ${money(ret)} at the casino!`, "gold");
+      if (key === "royal") addNews(`🎴 ROYAL FLUSH! ${G.player.name} wins ${money(ret)} at the arcade!`, "gold");
       VP.drawn = true;
       saveGame(); vpRender();
     };
@@ -2916,10 +2922,10 @@ function render() {
     hireCoach(k, +l);
   });
 
-  // casino flavour text per difficulty
+  // arcade flavour text per difficulty
   $("casino-sub").textContent = G.difficulty === "hard"
-    ? "On Hard, the house REALLY wins. You have been warned."
-    : G.difficulty === "easy" ? "Feeling lucky? The odds here are almost friendly." : "Bet your fortune. The house usually wins.";
+    ? "On Hard, the arcade is brutal. You have been warned."
+    : G.difficulty === "easy" ? "The arcade odds are almost friendly on Easy." : "Play the arcade minigames — tricky to beat!";
 
   // stock exchange
   const port = p.portfolio || {};
@@ -3347,6 +3353,13 @@ $("btn-register").onclick = registerAccount;
 $("auth-pass").addEventListener("keydown", e => { if (e.key === "Enter") loginAccount(); });
 $("btn-logout").onclick = logout;
 $("btn-newcareer").onclick = () => showScreen("setup-screen");
+$("btn-support").onclick = () => {
+  if (SUPPORT_URL.includes("YOUR_USERNAME_HERE")) {
+    flashModal("☕ Support the Dev", `<p style="margin:12px 0;line-height:1.6">Thanks for wanting to support Pitch Legend! 💚</p><p class="fade-muted" style="font-size:13px">The developer hasn't set up their donation link yet. (Edit <b>SUPPORT_URL</b> at the top of the game's script to add a Ko-fi or Buy&nbsp;Me&nbsp;a&nbsp;Coffee link.)</p>`);
+  } else {
+    window.open(SUPPORT_URL, "_blank", "noopener");
+  }
+};
 $("btn-board").onclick = openBoard;
 $("btn-board-back").onclick = showMenu;
 $("btn-board-refresh").onclick = openBoard;
