@@ -148,7 +148,19 @@
   .modal {
     background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
     padding: 28px; max-width: 560px; width: 100%; max-height: 90vh; overflow-y: auto;
+    position: relative;
   }
+
+  /* tournament hype */
+  .trophy-big { font-size: 76px; line-height: 1.1; display: inline-block; filter: drop-shadow(0 0 24px #f1c40f99); animation: trophy-pop .7s ease; }
+  @keyframes trophy-pop { 0% { transform: scale(.2) rotate(-20deg); opacity: 0; } 70% { transform: scale(1.18); } 100% { transform: scale(1); } }
+  .confetti { position: absolute; inset: 0; overflow: hidden; pointer-events: none; border-radius: 16px; }
+  .confetti i { position: absolute; top: -16px; width: 8px; height: 14px; border-radius: 2px; opacity: .9; animation: confetti-fall linear infinite; }
+  @keyframes confetti-fall { to { transform: translateY(600px) rotate(720deg); } }
+  .vs-line { display: flex; align-items: center; justify-content: center; gap: 20px; margin: 18px 0; }
+  .vs-line .vs-team { font-weight: 800; font-size: 15px; max-width: 150px; }
+  .vs-line .vs-mid { font-size: 30px; font-weight: 900; color: var(--gold); animation: trophy-pop .5s ease; }
+  .hype-banner { color: var(--gold); letter-spacing: 2px; text-transform: uppercase; }
   .scoreline { display: flex; justify-content: space-between; align-items: center; margin: 16px 0 20px; }
   .scoreline .team { flex: 1; text-align: center; font-weight: 700; font-size: 15px; }
   .scoreline .score { font-size: 40px; font-weight: 800; padding: 0 18px; white-space: nowrap; }
@@ -427,6 +439,10 @@
           <div class="shop-grid" id="shop-grid"></div>
         </div>
         <div class="panel">
+          <h3>🧃 Consumables <span class="sub">Instant one-time boosts — stock up when the fixture list gets ugly.</span></h3>
+          <div class="shop-grid" id="consume-grid"></div>
+        </div>
+        <div class="panel">
           <h3>👔 Coaching Staff <span class="sub">Coaches multiply training gains for their stat — salary paid every week. Miss a payment and they walk.</span></h3>
           <div class="shop-grid" id="coach-grid"></div>
         </div>
@@ -434,6 +450,16 @@
           <h3>📈 Fafico Stock Exchange <span class="sub">Prices move every matchday. Invest wisely — or gamble on MoonShot.</span></h3>
           <div style="font-size:13.5px;margin-bottom:12px">Portfolio value: <b id="pf-value" style="color:var(--green-bright)">$0</b> · <span id="pf-profit"></span></div>
           <div id="stock-list"></div>
+          <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
+            <b>🎲 Options Desk</b> <span class="sub">5-tick expiry · pays 10× the move in your direction (capped) · wrong way = premium gone</span>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px">
+              <select id="opt-stock" class="st-amt" style="width:180px"></select>
+              <input id="opt-stake" class="st-amt" type="number" min="100" placeholder="$ premium">
+              <button class="btn" id="btn-call">📈 Call</button>
+              <button class="btn danger" id="btn-put">📉 Put</button>
+            </div>
+            <div id="opt-list" style="margin-top:10px;font-size:13px;line-height:1.9"></div>
+          </div>
         </div>
         <div class="panel">
           <h3>🎰 Fafico Casino <span class="sub" id="casino-sub">Bet your fortune. The house usually wins.</span></h3>
@@ -551,7 +577,7 @@ const NPC_LAST  = ["Silva","Berg","Ramírez","Okafor","Tanaka","Larsen","Duarte"
 
 // ============================== DIFFICULTY ==============================
 const DIFFS = {
-  easy:   { nm:"Easy",   moneyMult:1.6, repMult:1.5,  gainMult:1.35, scoutMult:1.8, tournMult:1.15, offerMult:1.3, tuition:15000, energyExtra:0,  coaches:true,  shopCost:1, shopEff:1,   stockDrift:0.004,  crashBias:0.4,  showdown:0.05,  goalMult:1.15, bootMin:8,  npcProb:0.55, npcMax:2 },
+  easy:   { nm:"Easy",   moneyMult:1.6, repMult:1.5,  gainMult:1.35, scoutMult:1.8, tournMult:1.15, offerMult:1.3, tuition:15000, energyExtra:0,  coaches:true,  shopCost:0.85, shopEff:1, stockDrift:0.004,  crashBias:0.4,  showdown:0.05,  goalMult:1.15, bootMin:8,  npcProb:0.55, npcMax:2 },
   normal: { nm:"Normal", moneyMult:1,   repMult:1,    gainMult:1,    scoutMult:1,   tournMult:1,    offerMult:1,   tuition:25000, energyExtra:0,  coaches:true,  shopCost:1, shopEff:1,   stockDrift:0,      crashBias:0.5,  showdown:0,     goalMult:1,    bootMin:10, npcProb:0.62, npcMax:2 },
   hard:   { nm:"Hard",   moneyMult:0.5, repMult:0.55, gainMult:0.6,  scoutMult:0.5, tournMult:0.75, offerMult:0.6, tuition:50000, energyExtra:10, coaches:false, shopCost:2, shopEff:0.5, stockDrift:-0.012, crashBias:0.72, showdown:-0.08, goalMult:0.7,  bootMin:15, npcProb:0.78, npcMax:3 },
 };
@@ -800,6 +826,8 @@ function newPlayer(name, nation, pos, stage) {
     gearLevel: {},   // shop purchases: category -> tier owned
     tempBoosts: [],  // { attr, amt, games, fresh } hot-streak boosts from mini-games
     portfolio: {},   // stock holdings: id -> { shares, cost }
+    shorts: {},      // short positions: id -> { shares, entry }
+    options: [],     // open options: { id, dir, stake, strike, left }
     coaches: {},     // hired coaches: attr -> tier (1-3)
     avatar: randomAvatar(),
     cosmetics: [],   // owned cosmetic ids (looks only, no boosts)
@@ -1091,6 +1119,27 @@ const SHOP = [
   { cat:"psych", nm:"Sports Psychologist", ico:"🧘", tiers:[
     { nm:"Sports Psychologist", cost:120000, fx:"+4 Morale every week", val:4 },
   ]},
+  { cat:"car", nm:"Garage", ico:"🚗", tiers:[
+    { nm:"City Scooter",  cost:3000,    fx:"+2 Morale every week", val:2 },
+    { nm:"Hot Hatchback", cost:40000,   fx:"+3 Morale every week", val:3 },
+    { nm:"Sports Car",    cost:300000,  fx:"+5 Morale every week", val:5 },
+    { nm:"Hypercar",      cost:2000000, fx:"+8 Morale every week", val:8 },
+  ]},
+  { cat:"recovery", nm:"Recovery Suite", ico:"🧊", tiers:[
+    { nm:"Ice Baths",             cost:15000,  fx:"Matches drain 2 less Energy", val:2 },
+    { nm:"Cryo Chamber",          cost:120000, fx:"Matches drain 4 less Energy", val:4 },
+    { nm:"Altitude Recovery Pod", cost:600000, fx:"Matches drain 6 less Energy", val:6 },
+  ]},
+  { cat:"nutrition", nm:"Nutrition", ico:"🥗", tiers:[
+    { nm:"Meal Plan",             cost:10000,  fx:"Age decline slowed 20%", val:0.2 },
+    { nm:"Personal Nutritionist", cost:90000,  fx:"Age decline slowed 40%", val:0.4 },
+    { nm:"Longevity Lab",         cost:500000, fx:"Age decline slowed 60%", val:0.6 },
+  ]},
+  { cat:"agent", nm:"Agent", ico:"🕴️", tiers:[
+    { nm:"Local Agent", cost:5000,   fx:"+8% wages on new contracts",  val:0.08 },
+    { nm:"Pro Agent",   cost:60000,  fx:"+15% wages on new contracts", val:0.15 },
+    { nm:"Super Agent", cost:400000, fx:"+25% wages on new contracts", val:0.25 },
+  ]},
   { cat:"physio", nm:"Personal Physio", ico:"🩺", tiers:[
     { nm:"Personal Physio", cost:200000, fx:"Injury risk cut in half", val:1 },
   ]},
@@ -1343,6 +1392,26 @@ function tickStocks() {
     s.hist.push(s.price);
     if (s.hist.length > 24) s.hist.shift();
   });
+  // margin calls: a short that doubles is liquidated, collateral gone
+  const p = G.player;
+  if (!p) return;
+  for (const id of Object.keys(p.shorts || {})) {
+    const s = G.stocks.find(x => x.id === id);
+    if (s && s.price >= 2 * p.shorts[id].entry) {
+      delete p.shorts[id];
+      addNews(`💥 MARGIN CALL! ${s.nm} doubled — your short was liquidated and the collateral is gone.`, "bad");
+    }
+  }
+  // options tick toward expiry and settle
+  (p.options || []).forEach(o => o.left--);
+  const due = (p.options || []).filter(o => o.left <= 0);
+  p.options = (p.options || []).filter(o => o.left > 0);
+  for (const o of due) {
+    const s = G.stocks.find(x => x.id === o.id);
+    const payout = optionValue(o);
+    p.money += payout;
+    addNews(`${payout > 0 ? "🎯" : "💸"} ${o.dir.toUpperCase()} on ${s.nm} expired: ${payout > 0 ? "paid " + money(payout) : "worthless — premium (" + money(o.stake) + ") gone"}.`, payout > 0 ? "good" : "bad");
+  }
 }
 
 function buyStock(id, qty) {
@@ -1369,6 +1438,59 @@ function sellStock(id, qty) {
   h.shares -= qty;
   if (!h.shares) delete p.portfolio[id];
   render(); saveGame();
+}
+
+// ---------- shorts & options ----------
+const SHORT_FEE = { easy: 0.02, normal: 0.05, hard: 0.10 };  // broker fee on collateral
+const OPT_CFG = { easy: { cap: 5, edge: 1.1 }, normal: { cap: 5, edge: 1 }, hard: { cap: 3, edge: 0.8 } };
+
+function openShort(id) {
+  const p = G.player, s = G.stocks.find(x => x.id === id);
+  const amt = parseFloat(document.querySelector(`[data-amt="${id}"]`).value);
+  if (!s || !amt || amt <= 0) { flashModal("Short selling 📉", "<p>Type a $ amount first — that's your collateral.</p>"); return; }
+  if (p.shorts[id]) { flashModal("Already short 📉", `<p>Cover your existing ${s.nm} short before opening another.</p>`); return; }
+  const shares = Math.floor(Math.min(amt, p.money) / s.price);
+  if (shares < 1) { flashModal("Not enough 💸", `<p>That doesn't cover one share of collateral at $${s.price.toFixed(2)}.</p>`); return; }
+  const collateral = shares * s.price;
+  const fee = Math.round(collateral * SHORT_FEE[G.difficulty || "normal"]);
+  if (p.money < collateral + fee) { flashModal("Not enough 💸", `<p>Shorting needs collateral <b>plus</b> the broker's ${money(fee)} fee.</p>`); return; }
+  p.money -= collateral + fee;
+  p.shorts[id] = { shares, entry: s.price };
+  addNews(`📉 Shorted ${shares}× ${s.nm} @ $${s.price.toFixed(2)} (fee ${money(fee)}). You profit if it FALLS — margin call if it doubles!`);
+  render(); saveGame();
+}
+
+function coverShort(id) {
+  const p = G.player, s = G.stocks.find(x => x.id === id), h = p.shorts[id];
+  if (!s || !h) return;
+  const payout = Math.max(0, Math.round(h.shares * (2 * h.entry - s.price)));
+  const pl = payout - Math.round(h.shares * h.entry);
+  p.money += payout;
+  delete p.shorts[id];
+  addNews(`📉 Covered the ${s.nm} short: ${pl >= 0 ? "+" : "−"}${money(Math.abs(pl))}.`, pl >= 0 ? "good" : "bad");
+  render(); saveGame();
+}
+
+function buyOption(dir) {
+  const p = G.player;
+  const id = $("opt-stock").value;
+  const stake = Math.floor(parseFloat($("opt-stake").value));
+  const s = G.stocks.find(x => x.id === id);
+  if (!s || !stake || stake < 100) { flashModal("Options Desk 🎲", "<p>Minimum premium is $100.</p>"); return; }
+  if ((p.options || []).length >= 5) { flashModal("Options Desk 🎲", "<p>Maximum 5 open options at once.</p>"); return; }
+  if (p.money < stake) { flashModal("Not enough 💸", `<p>You don't have ${money(stake)} for the premium.</p>`); return; }
+  p.money -= stake;
+  p.options.push({ id, dir, stake, strike: s.price, left: 5 });
+  addNews(`🎲 ${dir.toUpperCase()} option on ${s.nm}: strike $${s.price.toFixed(2)}, ${money(stake)} premium, expires in 5 ticks.`);
+  render(); saveGame();
+}
+
+function optionValue(o) {
+  const s = G.stocks.find(x => x.id === o.id);
+  const cfg = OPT_CFG[G.difficulty || "normal"];
+  let move = (s.price - o.strike) / o.strike;
+  if (o.dir === "put") move = -move;
+  return move > 0 ? Math.round(Math.min(cfg.cap, move * 10) * o.stake * cfg.edge) : 0;
 }
 
 function spark(hist, w = 90, h = 26) {
@@ -1439,7 +1561,7 @@ function showObjectivesModal(tier, idx, clubName) {
 function confirmTransfer(tier, clubName) {
   const p = G.player;
   const L = LEAGUES.find(l => l.tier === tier);
-  const newWage = Math.round((200 + overall(p) * 14) * L.wageMult / 10) * 10;
+  const newWage = Math.round((200 + overall(p) * 14) * L.wageMult * agentMult() / 10) * 10;
   showModal(`<h2>✈️ Join ${clubName}?</h2>
     <p style="margin:14px 0;line-height:1.7">${L.name} (Tier ${tier}) · Estimated wage: <b style="color:var(--green-bright)">${money(newWage)}/week</b><br>
     <span class="fade-muted">You can only transfer once per season. If the squad is much stronger than you, expect the bench.</span></p>
@@ -1468,12 +1590,37 @@ function transferNow(tier, clubName) {
     applyResult(me, opp, poissonish(clamp(1.35 + d * 0.07, .15, 4)), poissonish(clamp(1.35 - d * 0.07, .15, 4)));
     simulateOtherFixtures(me, opp);
   }
-  p.wage = Math.round((200 + overall(p) * 14) * L.wageMult / 10) * 10;
+  p.wage = Math.round((200 + overall(p) * 14) * L.wageMult * agentMult() / 10) * 10;
   G.transferredThisSeason = true;
   p.recentRatings = []; // the new club judges you from scratch
   mor(8);
   addNews(`✈️ TRANSFER! ${p.name} joins ${clubName} (${L.name}) on ${money(p.wage)}/week.`, "gold");
   closeModal(); render(); saveGame();
+}
+
+// owned tier value for a shop category (0 when none owned)
+function gearVal(cat) {
+  const lvl = (G && G.player && G.player.gearLevel ? G.player.gearLevel[cat] : 0) || 0;
+  return lvl ? SHOP.find(c => c.cat === cat).tiers[lvl - 1].val : 0;
+}
+function agentMult() { return 1 + gearVal("agent") * diff().shopEff; }
+
+// instant one-time boosts, repeatable — priced & weakened by difficulty
+const CONSUMABLES = [
+  { id:"drink",   ico:"🥤", nm:"Energy Shot",        cost:1500, amt:() => Math.max(1, Math.round(15 * diff().shopEff)), fx(){ return `+${this.amt()} Energy now`; },  use(){ nrg(this.amt()); } },
+  { id:"spa",     ico:"💆", nm:"Spa Day",            cost:2000, amt:() => Math.max(1, Math.round(12 * diff().shopEff)), fx(){ return `+${this.amt()} Morale now`; },  use(){ mor(this.amt()); } },
+  { id:"session", ico:"🎯", nm:"Private Session",    cost:3000, amt:() => Math.max(1, Math.round(8 * diff().shopEff)),  fx(){ return `+${this.amt()} Form now`; },    use(){ frm(this.amt()); } },
+  { id:"retreat", ico:"🧘", nm:"Meditation Retreat", cost:4500, amt:() => Math.max(1, Math.round(10 * diff().shopEff)), fx(){ return `+${this.amt()} Morale & +${Math.max(1, Math.round(5 * diff().shopEff))} Form`; }, use(){ mor(this.amt()); frm(Math.max(1, Math.round(5 * diff().shopEff))); } },
+];
+function useConsumable(id) {
+  const c = CONSUMABLES.find(x => x.id === id);
+  const cost = Math.round(c.cost * diff().shopCost);
+  const p = G.player;
+  if (p.money < cost) return;
+  p.money -= cost;
+  c.use();
+  addNews(`🧃 ${c.nm}: ${c.fx()} (${money(cost)}).`, "good");
+  render(); saveGame();
 }
 
 function buyItem(catId) {
@@ -1846,7 +1993,8 @@ function finishMatch(moment) {
     p.seasonStats.ratingsSum += rating;
     if ((p.pos === "GK" || p.pos === "DEF") && gOpp === 0) p.seasonStats.cleanSheets++;
     if (motm) p.seasonStats.motm++;
-    p.energy = clamp(p.energy - (minutes / 90) * 16 - 2 - diff().energyExtra, 0, 100);
+    const recov = Math.round(gearVal("recovery") * diff().shopEff);
+    p.energy = clamp(p.energy - Math.max(3, (minutes / 90) * 16 + 2 + diff().energyExtra - recov), 0, 100);
     p.form = clamp(p.form + (rating - 6.4) * 7, 0, 100);
     const repDelta = (rating - 6.8) * 0.25 + goals * 0.35 + (motm ? 0.6 : 0) + (6 - G.tier) * 0.02;
     p.reputation = clamp(p.reputation + (repDelta > 0 ? repDelta * diff().repMult : repDelta), 0, 100);
@@ -1872,6 +2020,7 @@ function finishMatch(moment) {
   const perk = v => Math.max(1, Math.round(v * diff().shopEff));
   if (lvl.house) p.energy = clamp(p.energy + perk(SHOP.find(c => c.cat === "house").tiers[lvl.house - 1].val), 0, 100);
   if (lvl.psych) p.morale = clamp(p.morale + perk(4), 0, 100);
+  if (lvl.car) p.morale = clamp(p.morale + perk(SHOP.find(c => c.cat === "car").tiers[lvl.car - 1].val), 0, 100);
   if (lvl.jet) { p.energy = clamp(p.energy + perk(4), 0, 100); p.morale = clamp(p.morale + perk(2), 0, 100); }
 
   // temporary boosts tick down (boosts earned this match start counting next game)
@@ -2073,7 +2222,7 @@ function finalizeSeason(headlines, myPos, avg) {
   // aging & decline
   p.age++;
   if (p.age >= 30) {
-    const decay = (p.age - 28) * rnd(0.5, 1.1);
+    const decay = (p.age - 28) * rnd(0.5, 1.1) * Math.max(0.2, 1 - gearVal("nutrition") * diff().shopEff);
     p.attrs.pac = clamp(p.attrs.pac - decay, 1, 99);
     p.attrs.phy = clamp(p.attrs.phy - decay * 0.8, 1, 99);
     if (p.age >= 33) { p.attrs.dri = clamp(p.attrs.dri - decay * 0.5, 1, 99); p.attrs.sho = clamp(p.attrs.sho - decay * 0.3, 1, 99); }
@@ -2142,7 +2291,7 @@ function showGraduation() {
   const p = G.player;
   const ovr = overall(p);
   const proClub = pick(CLUB_NAMES[5]);
-  const proWage = Math.round((200 + ovr * 14) / 10) * 10;
+  const proWage = Math.round((200 + ovr * 14) * agentMult() / 10) * 10;
   const collegeTeam = pick(CLUB_NAMES[6]);
   showModal(`<h2>🎓 Graduation Day — Decision Time</h2>
     <p style="margin:12px 0;line-height:1.7">${p.name} is 18. Scouts and college recruiters are both calling. This choice shapes everything:</p>
@@ -2170,10 +2319,10 @@ function showCollegeDecision() {
   const ovr = overall(p);
   const forced = p.age >= 22;
   const proClub = pick(CLUB_NAMES[5]);
-  const proWage = Math.round((200 + ovr * 14) / 10) * 10;
+  const proWage = Math.round((200 + ovr * 14) * agentMult() / 10) * 10;
   const star = ovr >= 62;
   const starClub = star ? pick(CLUB_NAMES[4]) : null;
-  const starWage = Math.round((200 + ovr * 14) * 2.2 / 10) * 10;
+  const starWage = Math.round((200 + ovr * 14) * 2.2 * agentMult() / 10) * 10;
   showModal(`<h2>🎓 College Season Over${forced ? " — Final Year!" : ""}</h2>
     <p style="margin:12px 0;line-height:1.7">${forced ? `You're 22 — eligibility is up. Time to turn pro.` : `Stay in school or chase the pro dream?`}${p.money < 0 ? ` Your student debt stands at <b style="color:var(--red)">${money(p.money)}</b>.` : ""}</p>
     <button class="event-choice" id="col-pro"><b>⚽ Declare for the pros — ${crest(proClub, 16)} ${proClub}</b>
@@ -2214,9 +2363,16 @@ const TOURNAMENTS = {
   8: { nm:"Regional Middle School Championship",  spots:4, rounds:["Semi-final"],                 repWin:1 },
 };
 
+function confettiHTML(n = 34) {
+  const cols = ["#f1c40f", "#e74c3c", "#3498db", "#2ecc71", "#e67e22", "#9b59b6", "#fff"];
+  let h = "";
+  for (let i = 0; i < n; i++) h += `<i style="left:${rnd(0, 100).toFixed(1)}%;background:${pick(cols)};animation-duration:${rnd(2.2, 4.6).toFixed(2)}s;animation-delay:${rnd(0, 2.5).toFixed(2)}s"></i>`;
+  return `<div class="confetti">${h}</div>`;
+}
+
 function showQualifiedModal(tournamentName, myPos, cb) {
   addNews(`🎟️ ${G.clubName} QUALIFY for the ${tournamentName}!`, "gold");
-  showModal(`<div class="mg-wrap"><h2>🎉 QUALIFIED!</h2>
+  showModal(`${confettiHTML(22)}<div class="mg-wrap"><h2 class="hype-banner">🎉 QUALIFIED!</h2>
     <p style="margin:14px 0;font-size:15px;line-height:1.7">${crest(G.clubName, 22)} <b>${G.clubName}</b> finished <b>${ord(myPos)}</b> in the league — that books a place in the<br><b style="color:var(--gold);font-size:17px">${tournamentName}</b>!</p>
     <button class="btn gold" id="q-go">🏟️ Begin the tournament →</button></div>`);
   $("q-go").onclick = cb;
@@ -2250,6 +2406,7 @@ function runSchoolTournament(headlines, myPos, next) {
       if (!alive) { addNews(`Out of the ${t.nm} at the ${exitRound}.`); next(); return; }
       finalShowdown({
         title: `🏆 ${t.nm.toUpperCase()} FINAL`,
+        stage: "school", home: G.clubName,
         opponent: pick(CLUB_NAMES[G.tier].filter(n => n !== G.clubName)),
         onResult(won) {
           if (won) {
@@ -2301,6 +2458,7 @@ function runContinentalRun(headlines, next) {
     if (!alive) { addNews(`Continental Cup run over — out at the ${exitRound}.`); next(); return; }
     finalShowdown({
       title: "🏆 CONTINENTAL CUP FINAL",
+      stage: "continental", home: G.clubName,
       opponent: pick(CLUB_NAMES[1].filter(n => n !== G.clubName)),
       onResult(won) {
         if (won) {
@@ -2334,7 +2492,8 @@ function runWorldCup(headlines, next) {
     if (Math.random() < winChance) lines.push(`✅ ${round}: ${p.nation} beat ${crest(opp, 15)} ${opp}`);
     else { lines.push(`❌ ${round}: eliminated by ${crest(opp, 15)} ${opp}`); alive = false; exitRound = round; break; }
   }
-  showModal(`<h2>🌍 WORLD CUP ${G.year}</h2>
+  showModal(`<h2 class="hype-banner" style="text-align:center">🌍 WORLD CUP ${G.year} 🌍</h2>
+    <p style="text-align:center" class="fade-muted">The greatest show on Earth. Once every four years. ${p.nation} expects.</p>
     <p style="margin:10px 0">${p.nation} call ${p.name} up for the World Cup!</p>
     <div style="margin:14px 0;font-size:14px;line-height:2">${lines.map(l => `<div>${l}</div>`).join("")}</div>
     ${alive ? `<p style="margin:12px 0"><b>${p.nation.toUpperCase()} ARE IN THE WORLD CUP FINAL!</b> The whole planet is watching.</p>` : `<p class="fade-muted" style="margin:12px 0">The dream dies at the ${exitRound}. In four years, you go again.</p>`}
@@ -2343,6 +2502,7 @@ function runWorldCup(headlines, next) {
     if (!alive) { rep(2); addNews(`🌍 World Cup over — ${p.nation} out at the ${exitRound}.`); next(); return; }
     finalShowdown({
       title: `🌍 WORLD CUP FINAL ${G.year}`,
+      stage: "world", home: p.nation,
       opponent: pick(NATIONS_POOL.filter(n => n !== p.nation)),
       onResult(won) {
         if (won) {
@@ -2448,15 +2608,35 @@ function finalShowdown(cfg) {
     });
   }
 
+  const HYPE = {
+    world:       { banner:"🌍 THE WORLD CUP FINAL 🌍", crowd:"1.5 BILLION people are watching around the planet. Legends are born on nights like this.", winTitle:"CHAMPIONS OF THE WORLD!", winSub:"Your name just entered football history. Forever." },
+    continental: { banner:"🏆 THE CONTINENTAL FINAL 🏆", crowd:"80,000 inside the stadium. Millions more across the continent. One match for eternity.", winTitle:"CHAMPIONS OF THE CONTINENT!", winSub:"The biggest club prize there is — and it's yours." },
+    school:      { banner:"🏟️ THE CHAMPIONSHIP FINAL 🏟️", crowd:"The whole town shut down to be here tonight. Everyone you know is in those stands.", winTitle:"CHAMPIONS!", winSub:"They'll talk about this night for years." },
+  }[cfg.stage || "school"];
+
+  function showHype() {
+    showModal(`<div class="mg-wrap"><h2 class="hype-banner">${HYPE.banner}</h2>
+      <div class="vs-line">
+        <span class="vs-team">${crest(cfg.home || G.clubName, 40)}<br>${cfg.home || G.clubName}</span>
+        <span class="vs-mid">VS</span>
+        <span class="vs-team">${crest(cfg.opponent, 40)}<br>${cfg.opponent}</span>
+      </div>
+      <p style="margin:12px 0;font-size:15px;line-height:1.7">${HYPE.crowd}</p>
+      <p class="fade-muted">Four defining moments. One deciding penalty if it stays level. No second chances.</p>
+      <button class="btn gold" id="sd-tunnel">🎺 Walk out of the tunnel →</button></div>`);
+    $("sd-tunnel").onclick = showMoment;
+  }
+
   function finish(won, sub) {
-    showModal(`<div class="mg-wrap"><h2>${won ? "🏆 YOU'VE WON IT ALL!" : "💔 DEFEAT IN THE FINAL"}</h2>
-      <p class="fade-muted" style="margin:12px 0">${sub}</p>
+    showModal(`${won ? confettiHTML(40) : ""}<div class="mg-wrap">
+      ${won ? `<div class="trophy-big">🏆</div><h2 class="hype-banner">${HYPE.winTitle}</h2>` : `<h2>💔 DEFEAT IN THE FINAL</h2>`}
+      <p class="fade-muted" style="margin:12px 0">${won ? HYPE.winSub + " " : ""}${sub}</p>
       <div class="mg-result">${pips.join(" ")}</div>
       <button class="btn${won ? " gold" : ""}" id="sd-done">Continue</button></div>`);
     $("sd-done").onclick = () => cfg.onResult(won);
   }
 
-  showMoment();
+  showHype();
 }
 
 function generateOffers(myPos, avg) {
@@ -2473,7 +2653,7 @@ function generateOffers(myPos, avg) {
     if (p.age >= 33 && L.tier < G.tier) chance *= 0.4;
     if (Math.random() < chance && offers.length < 3) {
       const clubName = pick(CLUB_NAMES[L.tier].filter(n => n !== G.clubName));
-      const wage = Math.round((200 + ovr * 14) * L.wageMult / 10) * 10;
+      const wage = Math.round((200 + ovr * 14) * L.wageMult * agentMult() / 10) * 10;
       offers.push({ tier: L.tier, league: L.name, club: clubName, wage });
     }
   }
@@ -2542,12 +2722,19 @@ function legacyRank(p) {
 function retire(forced) {
   const p = G.player;
   G.retired = true;
-  // cash out the stock portfolio into the final fortune
+  // cash out the stock portfolio, shorts and options into the final fortune
   for (const id in p.portfolio || {}) {
     const s = (G.stocks || []).find(x => x.id === id);
     if (s && p.portfolio[id].shares) p.money += Math.round(p.portfolio[id].shares * s.price);
   }
   p.portfolio = {};
+  for (const id in p.shorts || {}) {
+    const s = (G.stocks || []).find(x => x.id === id);
+    if (s) p.money += Math.max(0, Math.round(p.shorts[id].shares * (2 * p.shorts[id].entry - s.price)));
+  }
+  p.shorts = {};
+  (p.options || []).forEach(o => { p.money += optionValue(o); });
+  p.options = [];
   const [title, sub] = legacyRank(p);
   // bank this career's trophies into the account, then close the save slot
   const accs = loadAccounts();
@@ -2697,6 +2884,15 @@ function render() {
   }).join("");
   document.querySelectorAll("[data-shop]").forEach(el => el.onclick = () => buyItem(el.dataset.shop));
 
+  // consumables
+  $("consume-grid").innerHTML = CONSUMABLES.map(c => {
+    const cost = Math.round(c.cost * diff().shopCost);
+    return `<div class="shop-card"><div class="ico">${c.ico}</div><div class="nm">${c.nm}</div>
+      <div class="next"><span>${c.fx()}</span></div>
+      <button class="btn" data-consume="${c.id}" ${p.money < cost ? "disabled" : ""}>Use — ${money(cost)}</button></div>`;
+  }).join("");
+  document.querySelectorAll("[data-consume]").forEach(el => el.onclick = () => useConsumable(el.dataset.consume));
+
   // coaching staff
   $("coach-grid").innerHTML = !diff().coaches
     ? `<p class="fade-muted" style="grid-column:1/-1">💀 No coaches on Hard mode — you grind alone.</p>`
@@ -2735,14 +2931,17 @@ function render() {
     const prev = s.hist.length > 1 ? s.hist[s.hist.length - 2] : s.price;
     const chg = (s.price - prev) / prev * 100;
     const profit = val - h.cost;
+    const sh = (p.shorts || {})[s.id];
+    const shPL = sh ? Math.max(0, Math.round(sh.shares * (2 * sh.entry - s.price))) - Math.round(sh.shares * sh.entry) : 0;
     return `<div class="stock-row">
       <div class="st-info"><b>${s.ico} ${s.nm}</b>
-        <small>$${s.price.toFixed(2)} <span style="color:${chg >= 0 ? "var(--green-bright)" : "var(--red)"}">${chg >= 0 ? "▲" : "▼"}${Math.abs(chg).toFixed(1)}%</span>${h.shares ? ` · own ${h.shares} = ${money(val)} <span style="color:${profit >= 0 ? "var(--green-bright)" : "var(--red)"}">(${profit >= 0 ? "+" : "−"}${money(Math.abs(profit))})</span>` : ""}</small>
+        <small>$${s.price.toFixed(2)} <span style="color:${chg >= 0 ? "var(--green-bright)" : "var(--red)"}">${chg >= 0 ? "▲" : "▼"}${Math.abs(chg).toFixed(1)}%</span>${h.shares ? ` · own ${h.shares} = ${money(val)} <span style="color:${profit >= 0 ? "var(--green-bright)" : "var(--red)"}">(${profit >= 0 ? "+" : "−"}${money(Math.abs(profit))})</span>` : ""}${sh ? ` · <span style="color:var(--red)">SHORT ${sh.shares} @ $${sh.entry.toFixed(2)}</span> <span style="color:${shPL >= 0 ? "var(--green-bright)" : "var(--red)"}">(${shPL >= 0 ? "+" : "−"}${money(Math.abs(shPL))})</span>` : ""}</small>
       </div>
       ${spark(s.hist)}
       <div class="st-btns">
         <input class="st-amt" data-amt="${s.id}" type="number" min="1" placeholder="$ amount">
         <button class="btn" data-buyamt="${s.id}" ${p.money < s.price ? "disabled" : ""}>Buy</button>
+        ${sh ? `<button class="btn danger" data-cover="${s.id}">Cover</button>` : `<button class="btn secondary" data-short="${s.id}" ${p.money < s.price ? "disabled" : ""}>Short</button>`}
         <button class="btn secondary" data-sell="${s.id}|1" ${!h.shares ? "disabled" : ""}>Sell 1</button>
         <button class="btn secondary" data-sell="${s.id}|all" ${!h.shares ? "disabled" : ""}>All</button>
       </div></div>`;
@@ -2762,6 +2961,18 @@ function render() {
     else flashModal("Not enough 💸", `<p>That amount doesn't buy a single share of ${s.nm} at $${s.price.toFixed(2)}.</p>`);
   });
   document.querySelectorAll("[data-sell]").forEach(el => el.onclick = () => { const [id, q] = el.dataset.sell.split("|"); sellStock(id, q === "all" ? Infinity : +q); });
+  document.querySelectorAll("[data-short]").forEach(el => el.onclick = () => openShort(el.dataset.short));
+  document.querySelectorAll("[data-cover]").forEach(el => el.onclick = () => coverShort(el.dataset.cover));
+
+  // options desk
+  const optSel = $("opt-stock");
+  const optCur = optSel.value;
+  optSel.innerHTML = (G.stocks || []).map(s => `<option value="${s.id}" ${s.id === optCur ? "selected" : ""}>${s.ico} ${s.nm} — $${s.price.toFixed(2)}</option>`).join("");
+  $("opt-list").innerHTML = (p.options || []).map(o => {
+    const s = G.stocks.find(x => x.id === o.id);
+    const est = optionValue(o);
+    return `<div>${o.dir === "call" ? "📈 CALL" : "📉 PUT"} ${s.nm} · strike $${o.strike.toFixed(2)} · now $${s.price.toFixed(2)} · ${money(o.stake)} premium · ${o.left} tick${o.left > 1 ? "s" : ""} left → currently pays <b style="color:${est > 0 ? "var(--green-bright)" : "var(--red)"}">${money(est)}</b></div>`;
+  }).join("") || `<span class="fade-muted">No open options. Pick a stock, type a premium, choose your direction.</span>`;
 
   // transfer market
   G.scoutInterest = (G.scoutInterest || []).filter(s => s.until > G.weekCount);
@@ -2901,6 +3112,8 @@ function migrateState(g) {
   if (!g.player.avatar) g.player.avatar = randomAvatar();
   if (!g.player.cosmetics) g.player.cosmetics = [];
   if (!g.player.recentRatings) g.player.recentRatings = [];
+  if (!g.player.shorts) g.player.shorts = {};
+  if (!g.player.options) g.player.options = [];
   return g;
 }
 
@@ -3160,6 +3373,8 @@ $("btn-flip").onclick = () => casinoBet("flip");
 $("btn-slots").onclick = () => casinoBet("slots");
 $("btn-bj").onclick = startBlackjack;
 $("btn-poker").onclick = startPoker;
+$("btn-call").onclick = () => buyOption("call");
+$("btn-put").onclick = () => buyOption("put");
 
 // character studio
 let draftAvatar = randomAvatar();
