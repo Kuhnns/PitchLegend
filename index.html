@@ -325,7 +325,7 @@
   <!-- ============ LEADERBOARD ============ -->
   <div id="board-screen" class="hidden" style="padding-top:30px">
     <h1 class="logo" style="text-align:center;font-size:32px">🌍 GLOBAL <span>LEADERBOARD</span></h1>
-    <p class="tagline" style="text-align:center">Top 100 players by trophies won on <b style="color:var(--red)">💀 HARD mode</b> — glory must be earned.</p>
+    <p class="tagline" style="text-align:center">Top 100 by trophies won on <b style="color:var(--red)">💀 HARD mode</b> <b>this week</b> — the board resets every real-life week, and each week's #1 wins the 1-of-1 👑 GOAT Crown.</p>
     <div class="panel" style="max-width:640px;margin:0 auto">
       <div id="board-note" style="color:var(--gold);font-size:13px;margin-bottom:10px"></div>
       <table>
@@ -491,7 +491,7 @@
           <div style="font-size:13.5px;margin-bottom:12px">Portfolio value: <b id="pf-value" style="color:var(--green-bright)">$0</b> · <span id="pf-profit"></span></div>
           <div id="stock-list"></div>
           <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
-            <b>🎲 Options Desk</b> <span class="sub">5-tick expiry · pays 10× the move in your direction (capped) · wrong way = premium gone</span>
+            <b>🎲 Options Desk</b> <span class="sub">5-tick expiry · pays 10× the move in your direction (capped) · cash out early for 80% of value · wrong way = premium gone</span>
             <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px">
               <select id="opt-stock" class="st-amt" style="width:180px"></select>
               <input id="opt-stake" class="st-amt" type="number" min="100" placeholder="$ premium">
@@ -888,6 +888,17 @@ function activeDebuffs(p) {
 }
 const HERO_ATTR = { GK:"def", DEF:"def", MID:"pas", FWD:"pac" };
 
+// positional development: key stats grow fast, off-position stats barely grow.
+// FWD lives on shooting/pace/dribbling; DEF on defending/physical; MID on
+// passing/dribbling; GK on diving/reflexes (their def/phy slots).
+const POS_TRAIN = {
+  FWD: { sho:1.4, pac:1.4, dri:1.4, phy:1,   pas:1,   def:0.5 },
+  MID: { pas:1.4, dri:1.4, sho:1,   pac:1,   def:0.5, phy:0.5 },
+  DEF: { def:1.4, phy:1.4, pac:1,   pas:1,   sho:0.5, dri:0.5 },
+  GK:  { def:1.4, phy:1.4, dri:1,   pas:1,   pac:0.5, sho:0.5 },
+};
+function posTrainMult(attr) { return (G && G.player && POS_TRAIN[G.player.pos] && POS_TRAIN[G.player.pos][attr]) || 1; }
+
 const STAGE_CFG = {
   ms:      { tier:8, age:13, lo:30, hi:42, wage:10 },
   hs:      { tier:7, age:15, lo:36, hi:48, wage:20 },
@@ -1046,7 +1057,7 @@ function doTraining(t) {
   const stageMult = G.tier >= 7 ? 1.25 : G.tier === 6 ? 1.35 : (p.path === "hs-pro" && p.age <= 21 ? 1.2 : 1);
   const coachMult = p.coaches && p.coaches[t.attr] ? COACH_TIERS[p.coaches[t.attr] - 1].mult : 1;
   const debuffGain = activeDebuffs(p).reduce((m, d) => m * (d.gain || 1), 1);
-  const baseGain = rnd(0.6, 1.6) * ageFactor * headroom * attrRoom * stageMult * coachMult * diff().gainMult * debuffGain;
+  const baseGain = rnd(0.6, 1.6) * ageFactor * headroom * attrRoom * stageMult * coachMult * diff().gainMult * debuffGain * posTrainMult(t.attr);
   if (Math.random() < 0.4) { coachChallenge(t, baseGain); return; }
   applyTrainingGain(t, baseGain, 1);
   completeTraining(t);
@@ -1577,6 +1588,22 @@ function buyOption(dir) {
   render(); saveGame();
 }
 
+function cashOutOption(i) {
+  const p = G.player;
+  const o = (p.options || [])[i];
+  if (!o) return;
+  const s = G.stocks.find(x => x.id === o.id);
+  const payout = Math.round(optionValue(o) * 0.8); // 20% early-exit haircut
+  p.options.splice(i, 1);
+  p.money += payout;
+  const pl = payout - o.stake;
+  addNews(payout > 0
+    ? `💵 Cashed out the ${o.dir.toUpperCase()} on ${s.nm} early: ${money(payout)} (${pl >= 0 ? "+" : "−"}${money(Math.abs(pl))} on the premium).`
+    : `🗑️ Abandoned a worthless ${o.dir.toUpperCase()} on ${s.nm} — premium (${money(o.stake)}) gone.`,
+    pl >= 0 ? "good" : "bad");
+  render(); saveGame();
+}
+
 function optionValue(o) {
   const s = G.stocks.find(x => x.id === o.id);
   const cfg = OPT_CFG[G.difficulty || "normal"];
@@ -1726,7 +1753,7 @@ function buyItem(catId) {
   p.money -= cost;
   p.gearLevel[catId] = lvl + 1;
   if (cat.attr) {
-    const gain = Math.max(1, Math.round(t.val * diff().shopEff));
+    const gain = Math.max(1, Math.round(t.val * diff().shopEff * posTrainMult(cat.attr)));
     p.attrs[cat.attr] = clamp(p.attrs[cat.attr] + gain, 1, 99);
     addNews(`🛒 Bought ${t.nm} for ${money(cost)}: +${gain} ${attrName(cat.attr)} permanently!`, "good");
   } else {
@@ -3229,8 +3256,10 @@ function render() {
   // actions
   $("action-grid").innerHTML = TRAININGS.map(t => {
     const d = trainDisp(t); // goalkeepers see keeper drills
+    const pm = t.attr ? posTrainMult(t.attr) : 1;
+    const posTag = pm > 1 ? ` · <b style="color:var(--gold)">★ key stat ×1.4</b>` : pm < 1 ? ` · <span style="color:var(--red)">off-position ×0.5</span>` : "";
     return `<div class="action-card ${G.lastTraining === t.id ? "done" : ""}" data-train="${t.id}">
-      <div class="ico">${d.ico}</div><div class="nm">${d.nm}</div><div class="fx">${d.fx}${t.cost ? " · −" + t.cost + " NRG" : ""}${t.attr && p.coaches && p.coaches[t.attr] ? ` · 👔×${COACH_TIERS[p.coaches[t.attr]-1].mult}` : ""}</div>
+      <div class="ico">${d.ico}</div><div class="nm">${d.nm}</div><div class="fx">${d.fx}${t.cost ? " · −" + t.cost + " NRG" : ""}${posTag}${t.attr && p.coaches && p.coaches[t.attr] ? ` · 👔×${COACH_TIERS[p.coaches[t.attr]-1].mult}` : ""}</div>
     </div>`;
   }).join("");
   $("act-hint").textContent = G.trainedThisWeek ? "Activity done — time for the match!" : "Pick one activity, then play your match";
@@ -3284,13 +3313,15 @@ function render() {
     const lvl = (p.gearLevel || {})[cat.cat] || 0;
     const nextT = cat.tiers[lvl];
     const catNm = isGK() && cat.attr ? GK_SHOP_NM[cat.cat] : cat.nm;
-    const fxTxt = nextT && cat.attr ? `+${nextT.val} ${attrFull(cat.attr)} permanently` : nextT ? nextT.fx : "";
+    const fxTxt = nextT && cat.attr
+      ? `+${Math.max(1, Math.round(nextT.val * diff().shopEff * posTrainMult(cat.attr)))} ${attrFull(cat.attr)} permanently${posTrainMult(cat.attr) > 1 ? " ★" : ""}`
+      : nextT ? nextT.fx : "";
     return `<div class="shop-card">
       <div class="ico">${cat.ico}</div>
       <div class="nm">${catNm}</div>
       <div class="owned">Owned: ${lvl > 0 ? `<b>${cat.tiers[lvl - 1].nm}</b>` : "none"}</div>
       ${nextT
-        ? `<div class="next"><b>${nextT.nm}</b><br><span>${fxTxt}${diff().shopEff < 1 ? ` <b style="color:var(--red)">(halved on Hard)</b>` : ""}</span></div>
+        ? `<div class="next"><b>${nextT.nm}</b><br><span>${fxTxt}${diff().shopEff < 1 && !cat.attr ? ` <b style="color:var(--red)">(halved on Hard)</b>` : ""}</span></div>
            <button class="btn" data-shop="${cat.cat}" ${p.money < Math.round(nextT.cost * diff().shopCost) ? "disabled" : ""}>Buy — ${money(Math.round(nextT.cost * diff().shopCost))}</button>`
         : `<div class="next maxed">MAXED OUT ✨</div>`}
     </div>`;
@@ -3383,11 +3414,16 @@ function render() {
   const optSel = $("opt-stock");
   const optCur = optSel.value;
   optSel.innerHTML = (G.stocks || []).map(s => `<option value="${s.id}" ${s.id === optCur ? "selected" : ""}>${s.ico} ${s.nm} — $${s.price.toFixed(2)}</option>`).join("");
-  $("opt-list").innerHTML = (p.options || []).map(o => {
+  $("opt-list").innerHTML = (p.options || []).map((o, i) => {
     const s = G.stocks.find(x => x.id === o.id);
     const est = optionValue(o);
-    return `<div>${o.dir === "call" ? "📈 CALL" : "📉 PUT"} ${s.nm} · strike $${o.strike.toFixed(2)} · now $${s.price.toFixed(2)} · ${money(o.stake)} premium · ${o.left} tick${o.left > 1 ? "s" : ""} left → currently pays <b style="color:${est > 0 ? "var(--green-bright)" : "var(--red)"}">${money(est)}</b></div>`;
+    const cashNow = Math.round(est * 0.8); // early exit pays 80% — the broker keeps the rest
+    return `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span>${o.dir === "call" ? "📈 CALL" : "📉 PUT"} ${s.nm} · strike $${o.strike.toFixed(2)} · now $${s.price.toFixed(2)} · ${money(o.stake)} premium · ${o.left} tick${o.left > 1 ? "s" : ""} left → pays <b style="color:${est > 0 ? "var(--green-bright)" : "var(--red)"}">${money(est)}</b></span>
+      <button class="btn secondary" data-optout="${i}" style="padding:4px 10px;font-size:11.5px">${cashNow > 0 ? "💵 Cash out " + money(cashNow) : "🗑️ Abandon"}</button>
+    </div>`;
   }).join("") || `<span class="fade-muted">No open options. Pick a stock, type a premium, choose your direction.</span>`;
+  document.querySelectorAll("[data-optout]").forEach(el => el.onclick = () => cashOutOption(+el.dataset.optout));
 
   // transfer market
   G.scoutInterest = (G.scoutInterest || []).filter(s => s.until > G.weekCount);
@@ -3553,6 +3589,16 @@ function accountTrophyTotal(acc, hardOnly) {
   return t;
 }
 
+// Hard trophies won THIS real-life week (the board resets weekly, so only these count).
+// Works off a baseline snapshot taken at each week rollover — mutates acc, caller saves.
+function weeklyTrophyScore(acc) {
+  const wk = weekIdNow();
+  const total = accountTrophyTotal(acc, true);
+  if (!acc.weekBase || acc.weekBase.week !== wk) acc.weekBase = { week: wk, total };
+  if (acc.weekBase.total > total) acc.weekBase.total = total; // deleted saves shouldn't punish forever
+  return total - acc.weekBase.total;
+}
+
 async function registerAccount() {
   const user = $("auth-user").value.trim();
   const pass = $("auth-pass").value;
@@ -3612,7 +3658,10 @@ function showMenu() {
   if (!acc) { showScreen("auth-screen"); return; }
   const crowns = (acc.exclusives || []).filter(e => e.startsWith("goat-")).length;
   $("menu-user").textContent = acc.username + (crowns ? ` 👑${crowns > 1 ? "×" + crowns : ""}` : "");
-  $("menu-trophies").textContent = `${accountTrophyTotal(acc)} total · ${accountTrophyTotal(acc, true)} ranked (Hard)`;
+  const accsW = loadAccounts();
+  const weekly = weeklyTrophyScore(accsW[SESSION]);
+  saveAccounts(accsW); // persist the weekly baseline
+  $("menu-trophies").textContent = `${accountTrophyTotal(acc)} total · ${accountTrophyTotal(acc, true)} Hard · ${weekly} this week (ranked)`;
   const ids = Object.keys(acc.saves);
   $("save-list").innerHTML = ids.length ? ids.map(id => {
     const s = acc.saves[id];
@@ -3662,8 +3711,8 @@ function deleteSlot(id) {
 async function fetchBoardDoc() {
   const res = await fetch(BOARD_READ, { cache: "no-store" });
   const txt = await res.text();
-  try { const d = JSON.parse(txt); return { players: d.players || {}, crowns: d.crowns || {} }; }
-  catch { return { players: {}, crowns: {} }; }
+  try { const d = JSON.parse(txt); return { players: d.players || {}, crowns: d.crowns || {}, week: d.week || 0 }; }
+  catch { return { players: {}, crowns: {}, week: 0 }; }
 }
 async function fetchBoard() { return (await fetchBoardDoc()).players; }
 
@@ -3706,15 +3755,30 @@ function showCrownNotice() {
 }
 
 async function submitScore() {
-  const acc = currentAccount();
+  if (!SESSION) return;
+  const accs0 = loadAccounts();
+  const acc = accs0[SESSION];
   if (!acc) return;
-  const entry = { u: acc.username, t: accountTrophyTotal(acc, true), ts: Date.now() }; // Hard-mode trophies only
+  const wkScore = weeklyTrophyScore(acc); // trophies won THIS week only
+  saveAccounts(accs0);
+  const entry = { u: acc.username, t: wkScore, ts: Date.now() };
   try {
     const doc = await fetchBoardDoc();
-    const players = doc.players, crowns = doc.crowns;
-    const key = acc.username.toLowerCase();
+    let players = doc.players;
+    const crowns = doc.crowns;
+    const nowWk = weekIdNow();
     let dirty = false;
-    if (!players[key] || players[key].t !== entry.t) {
+    // WEEKLY RESET: when the real-life week rolls over, crown the finished week's
+    // #1 from its final standings, then wipe the board for a fresh race
+    if (doc.week && doc.week !== nowWk) {
+      const top = Object.values(players).sort((a, b) => (b.t || 0) - (a.t || 0))[0];
+      if (top && (top.t || 0) > 0 && !crowns[doc.week]) crowns[doc.week] = { u: top.u, t: top.t, ts: Date.now() };
+      players = {};
+      dirty = true;
+    }
+    if (!doc.week) dirty = true; // stamp the week on first contact
+    const key = acc.username.toLowerCase();
+    if (wkScore > 0 && (!players[key] || players[key].t !== entry.t)) {
       players[key] = entry;
       const keys = Object.keys(players);
       if (keys.length > 100) { // keep the store lean: only the top 100 survive
@@ -3722,17 +3786,11 @@ async function submitScore() {
       }
       dirty = true;
     }
-    // weekly crown: the first player online after the week rolls over records last week's #1
-    const lastWeek = weekIdNow() - 1;
-    if (!crowns[lastWeek]) {
-      const top = Object.values(players).sort((a, b) => (b.t || 0) - (a.t || 0))[0];
-      if (top && (top.t || 0) > 0) { crowns[lastWeek] = { u: top.u, t: top.t, ts: Date.now() }; dirty = true; }
-    }
     if (dirty) {
       await fetch(BOARD_WRITE, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({ key: BOARD_KEY, value: JSON.stringify({ players, crowns }) }),
+        body: new URLSearchParams({ key: BOARD_KEY, value: JSON.stringify({ players, crowns, week: nowWk }) }),
       }).catch(() => {});
     }
     if (claimCrowns(crowns) && !$("menu-screen").classList.contains("hidden")) showCrownNotice();
@@ -3745,16 +3803,19 @@ async function openBoard() {
   $("board-note").textContent = "";
   let players = {}, crowns = {};
   try {
+    await submitScore(); // handles the weekly rollover/reset before we read
     const doc = await fetchBoardDoc();
-    players = doc.players; crowns = doc.crowns;
+    crowns = doc.crowns;
+    players = doc.week === weekIdNow() ? doc.players : {}; // never show a stale week's race
   } catch {
     $("board-note").textContent = "⚠️ Couldn't reach the global server — showing players on this device only.";
   }
   const accs = loadAccounts(); // merge local accounts so the board works offline too
   for (const k in accs) {
-    const t = accountTrophyTotal(accs[k], true); // Hard-mode trophies only
-    if (!players[k] || (players[k].t || 0) < t) players[k] = { u: accs[k].username, t };
+    const t = weeklyTrophyScore(accs[k]); // this week's trophies only
+    if (t > 0 && (!players[k] || (players[k].t || 0) < t)) players[k] = { u: accs[k].username, t };
   }
+  saveAccounts(accs); // weeklyTrophyScore may have advanced baselines
   // weekly crown counts per player + the current reigning holder
   const crownCount = {};
   let reigning = null;
@@ -3763,8 +3824,10 @@ async function openBoard() {
     crownCount[k] = (crownCount[k] || 0) + 1;
     reigning = crowns[wk].u;
   }
-  if (reigning) $("board-note").textContent = `👑 Reigning weekly #1: ${reigning} — finish a real-life week on top to win the 1-of-1 GOAT Crown.`;
-  else if (!$("board-note").textContent) $("board-note").textContent = "👑 Finish a real-life week as #1 to win the exclusive 1-of-1 GOAT Crown cosmetic.";
+  const msLeft = (weekIdNow() + 1) * 604800000 - Date.now();
+  const resetIn = `⏳ resets in ${Math.floor(msLeft / 86400000)}d ${Math.floor(msLeft % 86400000 / 3600000)}h`;
+  if (reigning) $("board-note").textContent = `👑 Reigning weekly #1: ${reigning} · ${resetIn} — finish the week on top to win the 1-of-1 GOAT Crown.`;
+  else if (!$("board-note").textContent) $("board-note").textContent = `👑 Finish the week as #1 to win the exclusive GOAT Crown · ${resetIn}`;
   const rows = Object.values(players).sort((a, b) => (b.t || 0) - (a.t || 0)).slice(0, 100);
   const medal = i => i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : (i + 1);
   $("board-body").innerHTML = rows.length ? rows.map((r, i) => {
