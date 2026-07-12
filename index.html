@@ -1815,32 +1815,478 @@ const PEN_ZONES = [
   { nm:"↖ Top Left", miss:.30, save:.40 }, { nm:"⬆ Top Centre", miss:.24, save:.34 }, { nm:"↗ Top Right", miss:.30, save:.40 },
   { nm:"↙ Bottom Left", miss:.08, save:.60 }, { nm:"🥄 Panenka", miss:.10, save:.85, panenka:true }, { nm:"↘ Bottom Right", miss:.08, save:.60 },
 ];
+// ============================== 2D ARENA ==============================
+// Real playable 2D gameplay on a canvas: breakaways you dribble yourself,
+// penalties with a sweeping aim arrow, and reflex saves as a goalkeeper.
+const ARENA = { raf: 0, keys: {} };
+
+function arena2D(mode, opts, done) {
+  const p = G.player;
+  const W = 340, H = 430, GOAL_HALF = 55, GOAL_Y = 24;
+  const clubName = opts.club || G.clubName || "FC";
+  let jersey = "#2ea44f";
+  { let h = 0; for (let i = 0; i < clubName.length; i++) h = (h * 31 + clubName.charCodeAt(i)) >>> 0; jersey = CREST_PALETTE[h % CREST_PALETTE.length]; }
+  const skin = SKINS[(p.avatar && p.avatar.skin) || 0];
+  const hard = G.difficulty === "hard", easy = G.difficulty === "easy";
+  const isGKp = p.pos === "GK";
+  const title = { breakaway: "💨 BREAKAWAY — beat them and score!", penalty: "⚽ PENALTY — time your kick", save: "🧤 SAVE IT — block the shot!", match: "🕹️ THE FULL MATCH — 3:00 on the clock" }[mode];
+  const hint = { breakaway: "Move with arrows/WASD · PASS (X) works the one-two · SHOOT (SPACE) finishes — don't get tackled!", penalty: "The aim arrow sweeps across the goal — kick when it's on target. The edges risk going wide!", save: "◀ ▶ move your keeper — get in front of the shot!", match: isGKp ? "Your team attacks up top — then YOU make the saves. Most goals after 3:00 wins!" : "Pass to drag the keeper, shoot to finish, survive their counters. Most goals after 3:00 wins!" }[mode];
+  const controls = mode === "penalty"
+    ? `<button class="btn gold" id="ar-act" style="width:100%;max-width:340px">⚽ KICK (or SPACE)</button>`
+    : mode === "save"
+      ? `<div style="display:flex;gap:8px;justify-content:center"><button class="cz-btn" style="width:110px;height:46px;font-size:18px" data-ak="ArrowLeft">◀</button><button class="cz-btn" style="width:110px;height:46px;font-size:18px" data-ak="ArrowRight">▶</button></div>`
+      : `<div style="display:flex;gap:5px;justify-content:center;flex-wrap:wrap">
+          <button class="cz-btn" style="width:50px;height:46px" data-ak="ArrowLeft">◀</button>
+          <button class="cz-btn" style="width:50px;height:46px" data-ak="ArrowUp">▲</button>
+          <button class="cz-btn" style="width:50px;height:46px" data-ak="ArrowDown">▼</button>
+          <button class="cz-btn" style="width:50px;height:46px" data-ak="ArrowRight">▶</button>
+          <button class="btn" id="ar-pass" style="height:46px">🤝 PASS</button>
+          <button class="btn gold" id="ar-act" style="height:46px">⚽ SHOOT</button></div>`;
+  const chipStats = { breakaway: ["pac", "dri", "sho"], penalty: ["sho"], save: ["def", "phy", "pac"], match: isGKp ? ["def", "phy", "pac"] : ["pac", "dri", "sho", "def"] }[mode];
+  const statChips = chipStats.map(k => `${attrName(k)} <b style="color:var(--gold)">${Math.round(effAttr(p, k))}</b>`).join(" · ");
+  showModal(`<div class="mg-wrap">${opts.chip || ""}<h2 style="font-size:16px;margin-bottom:4px">${title}</h2>
+    <p class="fade-muted" style="font-size:12px;margin:2px 0 8px">Powered by your stats: ${statChips}</p>
+    <canvas id="arena" width="${W}" height="${H}" style="background:#1e7d3c;border-radius:10px;max-width:100%;touch-action:none"></canvas>
+    <div style="margin-top:8px">${controls}</div>
+    <p class="fade-muted" style="font-size:12px;margin-top:6px">${hint}</p></div>`);
+  const cv = $("arena"), ctx = cv.getContext("2d");
+  ARENA.keys = {};
+  const KEYMAP = { a:"ArrowLeft", d:"ArrowRight", w:"ArrowUp", s:"ArrowDown" };
+  const kd = e => { const k = KEYMAP[e.key] || e.key; ARENA.keys[k] = true; if (k.startsWith("Arrow") || e.key === " ") { e.preventDefault(); if (e.key === " ") act(); } if (e.key === "x" || e.key === "X") passAct(); };
+  const ku = e => { const k = KEYMAP[e.key] || e.key; ARENA.keys[k] = false; };
+  window.addEventListener("keydown", kd);
+  window.addEventListener("keyup", ku);
+  document.querySelectorAll("[data-ak]").forEach(b => {
+    const k = b.dataset.ak;
+    b.onpointerdown = e => { e.preventDefault(); ARENA.keys[k] = true; };
+    b.onpointerup = b.onpointerleave = () => { ARENA.keys[k] = false; };
+  });
+  if ($("ar-act")) $("ar-act").onclick = () => act();
+  if ($("ar-pass")) $("ar-pass").onclick = () => passAct();
+
+  // ---------- state ----------
+  const S = {
+    splash: null, won: false, over: false, frame: 0,
+    me: { x: W / 2, y: H - 52 },
+    keeper: { x: W / 2, y: GOAL_Y + 12 },
+    ball: null, // { x, y, vx, vy } once shot / in flight
+    defs: [],
+    aimX: W / 2, aimDir: 1,
+    phase: "play", // penalty: aim->fly ; save: windup->fly
+    target: 0, dive: 0, timer: (hard ? 9 : 12) * 60, // Hard gives you less time to score
+    mate: null, carrier: "me", passFlash: null,
+  };
+  if (mode === "breakaway") {
+    S.defs = [{ x: 62, y: 175 }, { x: W - 62, y: 175 }];
+    if (hard) { S.defs.push({ x: W / 2, y: 120 }); S.defs.push({ x: W / 2 - 40, y: 205 }); }
+    S.mate = { x: W / 2 + (Math.random() < 0.5 ? -75 : 75), y: H - 70 };
+  }
+  if (mode === "penalty") { S.me = { x: W / 2 - 28, y: H - 70 }; S.phase = "aim"; }
+  if (mode === "save") {
+    S.me = { x: W / 2, y: GOAL_Y + 12 }; // you ARE the keeper
+    S.phase = "windup";
+    S.shooter = { x: W / 2, y: H - 120 };
+    const wide = Math.random() < 0.10;
+    // on Hard, shooters pick the corners
+    S.target = wide ? W / 2 + (Math.random() < 0.5 ? -1 : 1) * (GOAL_HALF + 18)
+      : hard ? W / 2 + (Math.random() < 0.5 ? -1 : 1) * (GOAL_HALF - 6 - Math.random() * 12)
+      : W / 2 + (Math.random() * 2 - 1) * (GOAL_HALF - 8);
+    // RFX (phy) buys you reaction frames — high reflexes make the shot feel slower
+    S.flight = (hard ? 30 : easy ? 48 : 38) + Math.round(effAttr(p, "phy") * 0.07);
+  }
+  if (mode === "match") {
+    S.score = [0, 0];
+    S.clock = 180 * 62; // ≈ three minutes of ticks
+    S.bannerT = 0; S.bannerText = ""; S.afterBanner = null;
+    S.myKeeper = { x: W / 2 };
+    S.runner = null; S.shooter = null;
+    if (p.pos === "GK") startTeamAttack(); else resetAttack(); // hoisted helpers
+  }
+  // ---------- stats ARE the physics ----------
+  const pSpeed = clamp(1.5 + effAttr(p, "pac") * 0.028 + (easy ? 0.3 : 0) - (hard ? 0.3 : 0), 1.4, 4.6); // 99 PAC ≈ 2× a slow player
+  const defSpeed = 2.05 + (hard ? 0.75 : 0) - (easy ? 0.3 : 0);            // Hard defenders genuinely hunt you
+  const tackleR = clamp((hard ? 19 : 17) - effAttr(p, "dri") * 0.05, 11, 19); // and lunge from further out
+  const shotV = 5 + effAttr(p, "sho") * 0.02;                              // harder shots give the keeper less time
+  const gkTrack = hard ? 1.9 : 1.45;                                       // keeper shadowing while you dribble
+  const gkChase = hard ? 2.2 : 1.2;                                        // keeper closing on a struck ball
+  const lineReach = hard ? 16 : easy ? 9 : 11;                             // his reach on the line
+  const gkSpeed = clamp(1.3 + effAttr(p, "def") * 0.03 + effAttr(p, "pac") * 0.008 + (easy ? 0.3 : 0) - (hard ? 0.25 : 0), 1.3, 4.8);
+  const sweep = clamp(3.8 - effAttr(p, "sho") * 0.022 + (hard ? 1.1 : 0) - (easy ? 0.4 : 0), 1.4, 5);
+  const mateSho = effAttr(p, "sho") * 0.6 + 15;                            // your teammate is decent, not you
+
+  // ---------- full-match helpers ----------
+  function resetAttack() { // you get the ball near halfway and go again
+    S.phase = "attack";
+    S.me = { x: W / 2, y: H - 130 };
+    S.ball = null;
+    S.carrier = "me"; S.passFlash = null;
+    S.mate = { x: W / 2 + (Math.random() < 0.5 ? -75 : 75), y: H - 150 };
+    S.keeper = { x: W / 2, y: GOAL_Y + 12 };
+    S.defs = [{ x: 70, y: 150 }, { x: W - 70, y: 150 }];
+    if (hard) { S.defs.push({ x: W / 2, y: 110 }); S.defs.push({ x: W / 2 + 40, y: 185 }); }
+  }
+  function showBanner(text, after, t) {
+    S.phase = "banner"; S.bannerText = text; S.bannerT = t || 65; S.afterBanner = after;
+  }
+  function startCounter() { // they come at YOUR goal
+    if (isGKp) {
+      S.phase = "gksave"; S.gkPhase = "windup"; S.frame = 0;
+      S.me = { x: W / 2, y: GOAL_Y + 12 };
+      S.shooter = { x: W / 2 + (Math.random() * 2 - 1) * 60, y: H - 140 };
+      S.ball = null; S.fr = 0;
+      const wide = Math.random() < 0.08;
+      S.target = wide ? W / 2 + (Math.random() < .5 ? -1 : 1) * (GOAL_HALF + 16) : W / 2 + (Math.random() * 2 - 1) * (GOAL_HALF - 8);
+      S.gkFlight = (hard ? 30 : easy ? 48 : 38) + Math.round(effAttr(p, "phy") * 0.07);
+    } else {
+      S.phase = "counter";
+      S.runner = { x: W / 2 + (Math.random() * 2 - 1) * 80, y: H / 2 - 30 };
+      S.myKeeper = { x: W / 2 };
+    }
+  }
+  function startTeamAttack() { // GK careers: your team attacks while you watch
+    const scored = Math.random() < (0.42 + (easy ? 0.06 : 0) - (hard ? 0.12 : 0));
+    if (scored) S.score[0]++;
+    showBanner(scored ? "YOUR TEAM SCORES!" : "ATTACK BREAKS DOWN", startCounter, 75);
+  }
+  function matchEnd() {
+    const res = { won: S.score[0] > S.score[1], draw: S.score[0] === S.score[1], score: [...S.score] };
+    S.won = res.won || res.draw;
+    finish(res, res.draw ? "FULL TIME - DRAW" : res.won ? "FULL TIME - YOU WIN!" : "FULL TIME - DEFEAT");
+  }
+
+  const carrierObj = () => S.carrier === "mate" ? S.mate : S.me;
+  function shootFrom(who) {
+    // the shot goes across goal to the far post — drag the keeper one way, finish the other
+    const shSkill = who === S.mate ? mateSho : effAttr(p, "sho");
+    const targetX = clamp(W / 2 + (W / 2 - who.x) * 0.9, W / 2 - GOAL_HALF + 8, W / 2 + GOAL_HALF - 8);
+    const dx = targetX - who.x, dy = 12 - who.y;
+    const d = Math.hypot(dx, dy) || 1;
+    const wobble = (Math.random() - 0.5) * clamp(3.2 - shSkill * 0.028, 0.3, 3.2);
+    S.ball = { x: who.x, y: who.y - 10, vx: dx / d * shotV + wobble, vy: dy / d * shotV };
+  }
+  function act() {
+    if (S.over) return;
+    const attacking = (mode === "breakaway" && !S.ball) || (mode === "match" && S.phase === "attack" && !S.ball);
+    if (attacking) shootFrom(carrierObj());
+    if (mode === "penalty" && S.phase === "aim") {
+      S.phase = "fly";
+      S.target = S.aimX + (Math.random() - 0.5) * clamp((hard ? 15 : 12) - effAttr(p, "sho") * 0.1, 2, 15); // clean strikers hit their spot
+      S.ball = { x: W / 2, y: H - 84 };
+      S.fr = 0;
+      S.flightP = Math.round(32 - effAttr(p, "sho") * 0.08); // 99 SHO = a rocket the keeper barely sees
+      const correct = Math.random() < (hard ? 0.82 : 0.62);
+      const side = Math.sign(S.target - W / 2) || (Math.random() < 0.5 ? -1 : 1);
+      S.dive = W / 2 + (correct ? side : -side) * (18 + Math.random() * 26);
+    }
+  }
+  function passAct() {
+    if (S.over || !S.mate || S.ball) return;
+    const attacking = (mode === "breakaway") || (mode === "match" && S.phase === "attack");
+    if (!attacking) return;
+    const from = carrierObj(), to = S.carrier === "me" ? S.mate : S.me;
+    // a defender lurking near the passing lane can pick it off — PAS threads the needle
+    const midX = (from.x + to.x) / 2, midY = (from.y + to.y) / 2;
+    const laneDef = S.defs.some(d => Math.hypot(d.x - midX, d.y - midY) < 34);
+    const intercept = laneDef && Math.random() < clamp(0.58 - effAttr(p, "pas") * 0.0045 + (hard ? 0.15 : 0) - (easy ? 0.1 : 0), 0.05, 0.8);
+    S.passFlash = { x1: from.x, y1: from.y, x2: to.x, y2: to.y, t: 9, bad: intercept };
+    if (intercept) {
+      if (mode === "match") return showBanner("PASS PICKED OFF!", startCounter);
+      return finish(false, "INTERCEPTED!");
+    }
+    S.carrier = S.carrier === "me" ? "mate" : "me";
+  }
+  function finish(result, label) {
+    if (S.over) return;
+    S.over = true;
+    if (typeof result === "boolean") S.won = result;
+    S.splash = label;
+    draw();
+    setTimeout(() => {
+      clearInterval(ARENA.timer);
+      ARENA.tick = null;
+      window.removeEventListener("keydown", kd);
+      window.removeEventListener("keyup", ku);
+      done(result);
+    }, mode === "match" ? 1500 : 950);
+  }
+
+  function update() {
+    S.frame++;
+    const L = ARENA.keys.ArrowLeft, R = ARENA.keys.ArrowRight, U = ARENA.keys.ArrowUp, D = ARENA.keys.ArrowDown;
+    if (mode === "breakaway" && !S.over) {
+      if (!S.ball) {
+        S.me.x = clamp(S.me.x + (R ? pSpeed : 0) - (L ? pSpeed : 0), 16, W - 16);
+        S.me.y = clamp(S.me.y + (D ? pSpeed : 0) - (U ? pSpeed : 0), 70, H - 16);
+        // your teammate makes a supporting run on the other flank
+        S.mate.y = clamp(S.mate.y - pSpeed * 0.85, 62, H);
+        S.mate.x += clamp(clamp(S.me.x + (S.mate.x > S.me.x ? 72 : -72), 20, W - 20) - S.mate.x, -1.6, 1.6);
+        const car = carrierObj();
+        for (const dfd of S.defs) {
+          const dx = car.x - dfd.x, dy = car.y - dfd.y, d = Math.hypot(dx, dy) || 1;
+          dfd.x += dx / d * defSpeed; dfd.y += dy / d * defSpeed;
+          if (d < (S.carrier === "mate" ? tackleR + 2 : tackleR)) return finish(false, "TACKLED!");
+        }
+        // the keeper shades toward the CARRIER — a pass makes him scramble across
+        const guard = W / 2 + (car.x - W / 2) * 0.55;
+        S.keeper.x = clamp(S.keeper.x + Math.sign(guard - S.keeper.x) * gkTrack, W / 2 - GOAL_HALF, W / 2 + GOAL_HALF);
+        if (--S.timer <= 0) return finish(false, "TOO SLOW!");
+      } else {
+        S.ball.x += S.ball.vx; S.ball.y += S.ball.vy;
+        S.keeper.x = clamp(S.keeper.x + Math.sign(S.ball.x - S.keeper.x) * gkChase, W / 2 - GOAL_HALF, W / 2 + GOAL_HALF);
+        if (S.ball.y <= GOAL_Y) { // the save happens on the line — dive or despair
+          if (Math.abs(S.ball.x - S.keeper.x) < lineReach) return finish(false, "SAVED!");
+          return Math.abs(S.ball.x - W / 2) < GOAL_HALF - 4 ? finish(true, "GOAL!!") : finish(false, "WIDE!");
+        }
+        if (S.ball.x < 0 || S.ball.x > W) return finish(false, "WIDE!");
+      }
+    }
+    if (mode === "match" && !S.over) {
+      if (--S.clock <= 0) return matchEnd();
+      if (S.phase === "banner") {
+        if (--S.bannerT <= 0 && S.afterBanner) S.afterBanner();
+      } else if (S.phase === "attack") {
+        if (!S.ball) {
+          S.me.x = clamp(S.me.x + (R ? pSpeed : 0) - (L ? pSpeed : 0), 16, W - 16);
+          S.me.y = clamp(S.me.y + (D ? pSpeed : 0) - (U ? pSpeed : 0), 70, H - 60);
+          S.mate.y = clamp(S.mate.y - pSpeed * 0.85, 62, H);
+          S.mate.x += clamp(clamp(S.me.x + (S.mate.x > S.me.x ? 72 : -72), 20, W - 20) - S.mate.x, -1.6, 1.6);
+          const car = carrierObj();
+          for (const dfd of S.defs) {
+            const dx = car.x - dfd.x, dy = car.y - dfd.y, d = Math.hypot(dx, dy) || 1;
+            dfd.x += dx / d * defSpeed; dfd.y += dy / d * defSpeed;
+            if (d < (S.carrier === "mate" ? tackleR + 2 : tackleR)) return showBanner("DISPOSSESSED!", startCounter);
+          }
+          const guard = W / 2 + (car.x - W / 2) * 0.55;
+          S.keeper.x = clamp(S.keeper.x + Math.sign(guard - S.keeper.x) * gkTrack, W / 2 - GOAL_HALF, W / 2 + GOAL_HALF);
+        } else {
+          S.ball.x += S.ball.vx; S.ball.y += S.ball.vy;
+          S.keeper.x = clamp(S.keeper.x + Math.sign(S.ball.x - S.keeper.x) * gkChase, W / 2 - GOAL_HALF, W / 2 + GOAL_HALF);
+          if (S.ball.y <= GOAL_Y) {
+            if (Math.abs(S.ball.x - S.keeper.x) < lineReach) return showBanner("SAVED!", startCounter);
+            if (Math.abs(S.ball.x - W / 2) < GOAL_HALF - 4) { S.score[0]++; return showBanner("GOOOAL!", startCounter, 80); }
+            return showBanner("WIDE!", startCounter);
+          }
+          if (S.ball.x < 0 || S.ball.x > W) return showBanner("WIDE!", startCounter);
+        }
+      } else if (S.phase === "counter") {
+        S.runner.y += 2.2;
+        S.runner.x += (W / 2 - S.runner.x) * 0.006 + Math.sin(S.frame / 9) * 1.1;
+        S.myKeeper.x = clamp(S.myKeeper.x + Math.sign(S.runner.x - S.myKeeper.x) * (1.2 + effAttr(p, "def") * 0.008), W / 2 - GOAL_HALF, W / 2 + GOAL_HALF);
+        if (S.runner.y >= H - 60) {
+          const theyScore = Math.random() < clamp(0.42 - effAttr(p, "def") * 0.0018 + (hard ? 0.16 : 0) - (easy ? 0.06 : 0), 0.15, 0.68);
+          if (theyScore) S.score[1]++;
+          return showBanner(theyScore ? "THEY SCORE!" : "DEFENCE HOLDS!", resetAttack, 75);
+        }
+      } else if (S.phase === "gksave") {
+        S.me.x = clamp(S.me.x + (R ? gkSpeed : 0) - (L ? gkSpeed : 0), W / 2 - GOAL_HALF - 10, W / 2 + GOAL_HALF + 10);
+        if (S.gkPhase === "windup") {
+          S.shooter.y -= 0.9; S.fr++;
+          if (S.fr > 45) { S.gkPhase = "fly"; S.ball = { x: S.shooter.x, y: S.shooter.y }; S.fr = 0; }
+        } else {
+          S.fr++;
+          const t = S.fr / S.gkFlight;
+          S.ball.x = S.shooter.x + (S.target - S.shooter.x) * t;
+          S.ball.y = S.shooter.y + (GOAL_Y + 4 - S.shooter.y) * t;
+          if (t >= 1) {
+            S.ball = null;
+            if (Math.abs(S.target - W / 2) > GOAL_HALF - 2) return showBanner("OFF TARGET!", startTeamAttack);
+            const reach = 12 + effAttr(p, "phy") * 0.08;
+            if (Math.abs(S.me.x - S.target) < reach) return showBanner("WHAT A SAVE!", startTeamAttack, 75);
+            S.score[1]++;
+            return showBanner("THEY SCORE!", startTeamAttack, 75);
+          }
+        }
+      }
+    }
+    if (mode === "penalty" && !S.over) {
+      if (S.phase === "aim") {
+        S.aimX += S.aimDir * sweep;
+        if (S.aimX > W / 2 + GOAL_HALF + 16) S.aimDir = -1;
+        if (S.aimX < W / 2 - GOAL_HALF - 16) S.aimDir = 1;
+      } else {
+        S.fr++;
+        const t = S.fr / (S.flightP || 30);
+        S.ball.x = W / 2 + (S.target - W / 2) * t;
+        S.ball.y = (H - 84) + (GOAL_Y + 4 - (H - 84)) * t;
+        S.keeper.x += (S.dive - S.keeper.x) * 0.12;
+        if (t >= 1) {
+          if (Math.abs(S.target - W / 2) > GOAL_HALF - 3) return finish(false, "WIDE!");
+          const reach = hard ? 22 : easy ? 12 : 15;
+          return Math.abs(S.keeper.x - S.target) < reach ? finish(false, "SAVED!") : finish(true, "GOAL!!");
+        }
+      }
+    }
+    if (mode === "save" && !S.over) {
+      S.me.x = clamp(S.me.x + (R ? gkSpeed : 0) - (L ? gkSpeed : 0), W / 2 - GOAL_HALF - 10, W / 2 + GOAL_HALF + 10);
+      if (S.phase === "windup") {
+        S.shooter.y -= 0.9;
+        if (S.frame > 45) { S.phase = "fly"; S.ball = { x: W / 2, y: H - 140 }; S.fr = 0; }
+      } else if (S.ball) {
+        S.fr++;
+        const t = S.fr / S.flight;
+        S.ball.x = W / 2 + (S.target - W / 2) * t;
+        S.ball.y = (H - 140) + (GOAL_Y + 4 - (H - 140)) * t;
+        if (t >= 1) {
+          if (Math.abs(S.target - W / 2) > GOAL_HALF - 2) return finish(true, "OFF TARGET!");
+          const reach = 12 + effAttr(p, "phy") * 0.08; // RFX = wingspan
+          return Math.abs(S.me.x - S.target) < reach ? finish(true, "WHAT A SAVE!") : finish(false, "GOAL CONCEDED");
+        }
+      }
+    }
+  }
+
+  // ---------- RETRO renderer: everything drawn on a tiny canvas, scaled up 4× ----------
+  const px = document.createElement("canvas");
+  px.width = Math.round(W / 4); px.height = Math.round(H / 4);
+  const pc = px.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+  const q = v => Math.round(v / 4);
+  const pr = (x, y, w, h, c) => { pc.fillStyle = c; pc.fillRect(x, y, w, h); };
+  function ball(x, y) { pr(q(x) - 1, q(y) - 1, 2, 2, "#ffffff"); pr(q(x) - 1, q(y) - 1, 1, 1, "#cfcfcf"); }
+  function dude(x, y, col, sk) {
+    const sx = q(x), sy = q(y);
+    pr(sx - 2, sy + 2, 1, 2, "#1c2028"); pr(sx + 1, sy + 2, 1, 2, "#1c2028"); // legs
+    pr(sx - 2, sy - 2, 5, 4, col);                                            // shirt
+    pr(sx - 1, sy - 5, 3, 3, sk);                                             // head
+    pr(sx - 1, sy - 6, 3, 1, "#241a10");                                      // hair
+  }
+  function goalAt(gy, topGoal) {
+    const gx = q(W / 2 - GOAL_HALF), gw = q(GOAL_HALF * 2);
+    for (let nx = 0; nx < gw; nx += 2) pr(gx + nx, topGoal ? gy - 3 : gy + 1, 1, 3, "#ffffff55"); // net
+    pr(gx, gy, gw, 1, "#f4f4f4");
+    pr(gx, topGoal ? gy - 3 : gy, 1, 4, "#f4f4f4"); pr(gx + gw - 1, topGoal ? gy - 3 : gy, 1, 4, "#f4f4f4");
+  }
+  function ptext(t, x, y, c, size) {
+    pc.font = "bold " + (size || 7) + "px monospace"; pc.textAlign = "center"; pc.fillStyle = c;
+    pc.fillText(t, x, y);
+  }
+  function draw() {
+    for (let i = 0; i < 8; i++) { pc.fillStyle = i % 2 ? "#2f9e44" : "#40c057"; pc.fillRect(0, i * Math.ceil(px.height / 8), px.width, Math.ceil(px.height / 8)); }
+    pc.strokeStyle = "#e9fce9cc"; pc.lineWidth = 1;
+    pc.strokeRect(q(W / 2) - 23.5, 1.5, 47, 21); // top box
+    pc.beginPath(); pc.arc(q(W / 2), q(mode === "match" ? H / 2 : 130), 8, 0, 7); pc.stroke();
+    if (mode === "match") {
+      pc.beginPath(); pc.moveTo(0, q(H / 2) + .5); pc.lineTo(px.width, q(H / 2) + .5); pc.stroke();
+      pc.strokeRect(q(W / 2) - 23.5, px.height - 22.5, 47, 21); // bottom box
+      goalAt(px.height - q(GOAL_Y), false);
+    }
+    goalAt(q(GOAL_Y), true);
+    if (mode === "breakaway" || (mode === "match" && S.phase === "attack")) {
+      dude(S.keeper.x, S.keeper.y, "#ffd43b", "#eab98c");
+      for (const dfd of S.defs) dude(dfd.x, dfd.y, "#e03131", "#d29b6c");
+      if (S.mate) { // your teammate: same shirt, white chest stripe
+        dude(S.mate.x, S.mate.y, jersey, skin);
+        pr(q(S.mate.x) - 1, q(S.mate.y) - 1, 3, 1, "#ffffffcc");
+      }
+      dude(S.me.x, S.me.y, jersey, skin);
+      if (S.passFlash && S.passFlash.t > 0) { // the pass zips across
+        S.passFlash.t--;
+        pc.strokeStyle = S.passFlash.bad ? "#ff6b6b" : "#ffe066";
+        pc.lineWidth = 1;
+        pc.beginPath(); pc.moveTo(q(S.passFlash.x1), q(S.passFlash.y1)); pc.lineTo(q(S.passFlash.x2), q(S.passFlash.y2)); pc.stroke();
+      }
+      if (S.ball) ball(S.ball.x, S.ball.y);
+      else { const c = S.carrier === "mate" && S.mate ? S.mate : S.me; ball(c.x + 8, c.y + 6); }
+      if (mode === "breakaway") ptext(Math.ceil(S.timer / 60) + "s", 10, px.height - 3, "#fff", 6);
+    }
+    if (mode === "match" && S.phase === "counter") {
+      dude(S.runner.x, S.runner.y, "#e03131", "#d29b6c");
+      dude(S.myKeeper.x, H - GOAL_Y - 10, "#ffd43b", skin === "#f8d0b0" ? "#eab98c" : skin);
+      ball(S.runner.x, S.runner.y + 10);
+    }
+    if (mode === "save" || (mode === "match" && S.phase === "gksave")) {
+      if (S.shooter) dude(S.shooter.x, S.shooter.y, "#e03131", "#d29b6c");
+      dude(S.me.x, S.me.y, jersey, skin);
+      if (S.ball) ball(S.ball.x, S.ball.y); else if (S.shooter) ball(S.shooter.x, S.shooter.y + 12);
+    }
+    if (mode === "penalty") {
+      dude(S.keeper.x, S.keeper.y, "#ffd43b", "#eab98c");
+      dude(S.me.x, S.me.y, jersey, skin);
+      ball(S.ball ? S.ball.x : W / 2, S.ball ? S.ball.y : H - 84);
+      if (S.phase === "aim") {
+        pc.strokeStyle = "#ffd43b"; pc.lineWidth = 1;
+        pc.beginPath(); pc.moveTo(q(W / 2), q(H - 84)); pc.lineTo(q(S.aimX), q(GOAL_Y) + 2); pc.stroke();
+        pr(q(S.aimX) - 1, q(GOAL_Y) + 1, 3, 3, Math.abs(S.aimX - W / 2) > GOAL_HALF - 3 ? "#e03131" : "#ffd43b");
+      }
+    }
+    if (mode === "match") { // retro scoreboard strip
+      pr(0, 0, px.width, 8, "#111827dd");
+      const secs = Math.max(0, Math.ceil(S.clock / 62));
+      pc.textAlign = "left"; pc.font = "bold 6px monospace"; pc.fillStyle = "#ffd43b";
+      pc.fillText("YOU " + S.score[0] + "-" + S.score[1] + " OPP", 3, 6);
+      pc.textAlign = "right"; pc.fillText(Math.floor(secs / 60) + ":" + String(secs % 60).padStart(2, "0"), px.width - 3, 6);
+      if (S.phase === "banner" && S.bannerText) {
+        pr(0, q(H / 2) - 7, px.width, 12, "#111827cc");
+        ptext(S.bannerText, px.width / 2, q(H / 2) + 2, "#ffd43b", 7);
+      }
+    }
+    if (S.splash) {
+      pr(0, 0, px.width, px.height, S.won ? "#0d3d1eb8" : "#3d0d0db8");
+      pc.font = "bold 9px monospace";
+      if (pc.measureText(S.splash).width > px.width - 4) pc.font = "bold 7px monospace";
+      pc.textAlign = "center"; pc.fillStyle = S.won ? "#7dff9e" : "#ff8f86";
+      pc.fillText(S.splash, px.width / 2, px.height / 2);
+      if (mode === "match") ptext(S.score[0] + " - " + S.score[1], px.width / 2, px.height / 2 + 12, "#fff", 8);
+    }
+    ctx.clearRect(0, 0, W, H);
+    ctx.drawImage(px, 0, 0, px.width, px.height, 0, 0, W, H);
+  }
+  // setInterval keeps ticking even when rAF is throttled (e.g. embedded/background views)
+  ARENA.state = S;
+  if (ARENA.timer) clearInterval(ARENA.timer);
+  ARENA.tick = () => { if (!S.over) update(); draw(); };
+  ARENA.timer = setInterval(ARENA.tick, 16);
+  draw();
+}
+
+// the classic modes — pick a spot / pick a dive — kept alongside the 2D arena
+function classicPenaltyKick(cb) {
+  showModal(`<div class="mg-wrap"><h2>🎯 Pick your spot</h2>
+    <p class="fade-muted" style="margin:10px 0">Corners score more but risk missing. The Panenka is pure glory or pure shame.</p>
+    <div class="goal-mouth">${PEN_ZONES.map((z, i) => `<div class="goal-zone" data-cpk="${i}">${z.nm}</div>`).join("")}</div></div>`);
+  document.querySelectorAll("[data-cpk]").forEach(el => el.onclick = () => {
+    const zi = +el.dataset.cpk, z = PEN_ZONES[zi];
+    const keeper = weightedPick([1.4, .5, 1.4, 1.9, .6, 1.9]);
+    const missC = clamp(z.miss - effAttr(G.player, "sho") * 0.0015, .02, .5);
+    cb(Math.random() >= missC && !(zi === keeper && Math.random() < z.save));
+  });
+}
+function classicDive(cb) {
+  showModal(`<div class="mg-wrap"><h2>🧤 Pick your dive</h2>
+    <p class="fade-muted" style="margin:10px 0">Read the taker's mind.</p>
+    <div class="btn-row" style="justify-content:center">
+      <button class="btn secondary" data-cdv="0">↖ Dive Left</button>
+      <button class="btn secondary" data-cdv="1">🧍 Stand Tall</button>
+      <button class="btn secondary" data-cdv="2">↗ Dive Right</button></div></div>`);
+  document.querySelectorAll("[data-cdv]").forEach(el => el.onclick = () => {
+    const shot = weightedPick([2, 1, 2]);
+    cb(+el.dataset.cdv === shot && Math.random() < 0.45 + effAttr(G.player, "def") * 0.004);
+  });
+}
+
 function penaltyMoment() {
   const p = G.player;
-  showModal(`<div class="mg-wrap"><h2>⚽ PENALTY to ${G.clubName}!</h2>
-    <p class="fade-muted" style="margin:10px 0">${p.name} steps up... pick your spot. Corners score more but risk missing; the Panenka is pure glory or pure shame.</p>
-    <div class="goal-mouth">${PEN_ZONES.map((z, i) => `<div class="goal-zone" data-pen="${i}">${z.nm}</div>`).join("")}</div></div>`);
-  document.querySelectorAll("[data-pen]").forEach(el => el.onclick = () => {
-    const zi = +el.dataset.pen, z = PEN_ZONES[zi];
-    const keeper = weightedPick([1.4, .5, 1.4, 1.9, .6, 1.9]);
+  const outcome = ok => {
     const min = irnd(8, 88);
-    const missC = clamp(z.miss - effAttr(p, "sho") * 0.0015, .02, .5);
-    if (Math.random() < missC) {
-      mor(-8);
-      momentResultScreen("❌ MISSED!", "You went for too much. The fans groan...",
-        { goals:0, concede:0, ratingDelta:-0.7, line:`❌ ${min}' — ${p.name} blazes the penalty ${z.panenka ? "straight into the keeper's arms" : "wide"}!` });
-    } else if (zi === keeper && Math.random() < z.save) {
-      mor(-6);
-      momentResultScreen("🧤 SAVED!", "The keeper guessed right. Unlucky.",
-        { goals:0, concede:0, ratingDelta:-0.5, line:`🧤 ${min}' — penalty saved! The keeper read ${p.name}'s mind.` });
+    if (ok) {
+      mor(4);
+      addBoost("sho", 6, 2, "Penalty hero");
+      momentResultScreen("⚽ GOAL!", "Timed to perfection — the keeper had no chance.",
+        { goals:1, concede:0, ratingDelta:1.1, line:`⚽ ${min}' — GOAL! ${p.name} buries the penalty!` });
     } else {
-      mor(z.panenka ? 7 : 4);
-      addBoost("sho", z.panenka ? 8 : 6, 2, "Penalty hero");
-      momentResultScreen(z.panenka ? "🥄 PANENKA! GOAL!" : "⚽ GOAL!",
-        z.panenka ? "Absolute disrespect. The crowd loses its mind!" : "Cool as you like from the spot.",
-        { goals:1, concede:0, ratingDelta:z.panenka ? 1.4 : 1.1, line:`⚽ ${min}' — GOAL! ${p.name} ${z.panenka ? "dinks an outrageous Panenka down the middle" : "buries the penalty, " + z.nm.replace(/^\S+ /, "").toLowerCase()}!` });
+      mor(-7);
+      momentResultScreen("💔 NO GOAL!", "From twelve yards... it stings.",
+        { goals:0, concede:0, ratingDelta:-0.7, line:`💔 ${min}' — ${p.name}'s penalty doesn't go in!` });
     }
-  });
+  };
+  showModal(`<div class="mg-wrap"><h2>⚽ PENALTY to ${G.clubName}!</h2>
+    <p class="fade-muted" style="margin:10px 0">${p.name} steps up. How do you take it?</p>
+    <div class="btn-row" style="justify-content:center">
+      <button class="btn gold" id="pm-2d">🕹️ Play it in 2D</button>
+      <button class="btn secondary" id="pm-classic">🎯 Classic — pick your spot</button>
+    </div></div>`);
+  $("pm-2d").onclick = () => arena2D("penalty", {}, outcome);
+  $("pm-classic").onclick = () => classicPenaltyKick(outcome);
 }
 
 function freekickMoment() {
@@ -1901,50 +2347,41 @@ function tackleMoment() {
 
 function gkPenaltyMoment() {
   const p = G.player;
-  showModal(`<div class="mg-wrap"><h2>🧤 PENALTY against ${G.clubName}!</h2>
-    <p class="fade-muted" style="margin:10px 0">Their striker steps up. Pick your dive, ${p.name}.</p>
-    <div class="btn-row" style="justify-content:center">
-      <button class="btn secondary" data-dive="0">↖ Dive Left</button>
-      <button class="btn secondary" data-dive="1">🧍 Stand Tall</button>
-      <button class="btn secondary" data-dive="2">↗ Dive Right</button>
-    </div></div>`);
-  document.querySelectorAll("[data-dive]").forEach(el => el.onclick = () => {
-    const shot = weightedPick([2, 1, 2]);
+  const outcome = ok => {
     const min = irnd(8, 88);
-    if (+el.dataset.dive === shot && Math.random() < 0.45 + effAttr(p, "def") * 0.004) {
+    if (ok) {
       mor(8);
       addBoost("def", 6, 2, "Penalty-save hero");
       momentResultScreen("🧤 SAVED!!", "You're a wall! The stadium erupts.",
-        { goals:0, concede:0, ratingDelta:1.4, line:`🧤 ${min}' — PENALTY SAVED! ${p.name} guesses right and parries it away!` });
+        { goals:0, concede:0, ratingDelta:1.4, line:`🧤 ${min}' — PENALTY SAVED! ${p.name} keeps it out!` });
     } else {
-      momentResultScreen("⚽ Beaten", +el.dataset.dive === shot ? "You guessed right but it was too well placed." : "Sent the wrong way. Nothing you could do.",
+      momentResultScreen("⚽ Beaten", "It found the corner. Nothing you could do.",
         { goals:0, concede:1, ratingDelta:-0.3, line:`⚽ ${min}' — penalty converted past ${p.name}.` });
     }
-  });
+  };
+  showModal(`<div class="mg-wrap"><h2>🧤 PENALTY against ${G.clubName}!</h2>
+    <p class="fade-muted" style="margin:10px 0">Their striker steps up. How do you face it, ${p.name}?</p>
+    <div class="btn-row" style="justify-content:center">
+      <button class="btn gold" id="gm-2d">🕹️ Play it in 2D</button>
+      <button class="btn secondary" id="gm-classic">🧤 Classic — pick your dive</button>
+    </div></div>`);
+  $("gm-2d").onclick = () => arena2D("save", {}, outcome);
+  $("gm-classic").onclick = () => classicDive(outcome);
 }
 
 function breakawayMoment() {
   const p = G.player;
-  const opts = [
-    { nm:"🎯 Slot it near post", sub:"Safe finish (Shooting)", pr: 0.40 + effAttr(p, "sho") * 0.004, rating: 1.0, style:"a clinical near-post finish", boost:"sho" },
-    { nm:"🥄 Chip the keeper", sub:"High risk, all style (Dribbling)", pr: 0.20 + effAttr(p, "dri") * 0.005, rating: 1.4, style:"an outrageous chip", flair:true, boost:"dri" },
-    { nm:"💨 Round the keeper", sub:"Balanced (Pace + Dribbling)", pr: 0.30 + (effAttr(p, "pac") + effAttr(p, "dri")) * 0.0025, rating: 1.15, style:"rounding the keeper coolly", boost:"pac" },
-  ];
-  showModal(`<div class="mg-wrap"><h2>💨 One-on-one with the keeper!</h2>
-    <p class="fade-muted" style="margin:10px 0">${p.name} is clean through... what's the finish?</p>
-    ${opts.map((o, i) => `<button class="event-choice" data-bw="${i}"><b>${o.nm}</b><small>${o.sub} — ${Math.round(clamp(o.pr, 0, .95) * 100)}% chance</small></button>`).join("")}</div>`);
-  document.querySelectorAll("[data-bw]").forEach(el => el.onclick = () => {
-    const o = opts[+el.dataset.bw];
+  arena2D("breakaway", {}, ok => {
     const min = irnd(5, 88);
-    if (Math.random() < o.pr) {
-      mor(o.flair ? 7 : 4);
-      addBoost(o.boost, 6, 2, "Clutch finisher");
-      momentResultScreen(o.flair ? "🥄 FILTHY! GOAL!" : "⚽ GOAL!", o.flair ? "That's going viral tonight." : "Ice in the veins.",
-        { goals:1, concede:0, ratingDelta:o.rating, line:`⚽ ${min}' — GOAL! ${p.name} finishes the breakaway with ${o.style}!` });
+    if (ok) {
+      mor(5);
+      addBoost("pac", 6, 2, "Clutch finisher");
+      momentResultScreen("⚽ GOAL!", "You took them on yourself and finished it. Ice in the veins.",
+        { goals:1, concede:0, ratingDelta:1.15, line:`⚽ ${min}' — GOAL! ${p.name} dribbles clean through and scores!` });
     } else {
       mor(-4);
-      momentResultScreen("😤 Chance gone!", o.flair ? "The chip floats gently into the keeper's arms. Embarrassing." : "The keeper stands tall and wins the duel.",
-        { goals:0, concede:0, ratingDelta:-0.4, line:`😤 ${min}' — ${p.name} fluffs the one-on-one chance.` });
+      momentResultScreen("😤 Chance gone!", "The breakaway breaks down. The crowd holds its head.",
+        { goals:0, concede:0, ratingDelta:-0.4, line:`😤 ${min}' — ${p.name}'s breakaway comes to nothing.` });
     }
   });
 }
@@ -2900,36 +3337,26 @@ function penaltyShootout(opts, cb) {
         <div><b>${opts.opponent}:</b> ${scoreRow(theirs, n)}</div>
       </div>
       ${feedback ? `<p style="margin:10px 0;font-size:14.5px">${feedback}</p>` : ""}
-      ${isGK
-        ? `<p class="fade-muted">Their taker stares you down. Pick your dive, ${p.name}.</p>
-           <div class="btn-row" style="justify-content:center">
-             <button class="btn secondary" data-ps="0">↖ Dive Left</button>
-             <button class="btn secondary" data-ps="1">🧍 Stand Tall</button>
-             <button class="btn secondary" data-ps="2">↗ Dive Right</button></div>`
-        : `<p class="fade-muted">${p.name} steps up. Pick your spot.</p>
-           <div class="goal-mouth">${PEN_ZONES.map((z, i) => `<div class="goal-zone" data-ps="${i}">${z.nm}</div>`).join("")}</div>`}
+      <div class="btn-row" style="justify-content:center">
+        <button class="btn gold" id="ps-go">${isGK ? "🧤 Face it — 2D →" : "⚽ Step up — 2D →"}</button>
+        <button class="btn secondary" id="ps-classic">${isGK ? "🧤 Classic dive" : "🎯 Classic aim"}</button>
+      </div>
     </div>`);
-    document.querySelectorAll("[data-ps]").forEach(el => el.onclick = () => {
+    const afterAttempt = ok => {
       const lines = [];
       if (isGK) {
-        // you're in goal: their kick first, then your teammate shoots (auto)
-        const shot = weightedPick([2, 1, 2]);
-        const saved = +el.dataset.ps === shot && Math.random() < 0.45 + effAttr(p, "def") * 0.004;
-        theirs.push(!saved);
-        lines.push(saved ? `🧤 SAVED!! ${p.name} flies the right way!` : `⚽ They send you the wrong way.`);
+        // you played the save in 2D; then your teammate shoots (auto)
+        theirs.push(!ok);
+        lines.push(ok ? `🧤 SAVED!! ${p.name} gets across to it!` : `⚽ They beat you from the spot.`);
         let d = decided();
         if (d !== null) return finishShootout(d, lines.join(" "));
         const t = Math.random() < 0.76;
         mine.push(t);
         lines.push(t ? `🟢 ${opts.home} convert.` : `🔴 Your teammate blazes it over!`);
       } else {
-        // you shoot first, then their taker (auto)
-        const zi = +el.dataset.ps, z = PEN_ZONES[zi];
-        const keeper = weightedPick([1.4, .5, 1.4, 1.9, .6, 1.9]);
-        const missC = clamp(z.miss - effAttr(p, "sho") * 0.0015, .02, .5);
-        const scored = Math.random() >= missC && !(zi === keeper && Math.random() < z.save);
-        mine.push(scored);
-        lines.push(scored ? `⚽ ${p.name} ${z.panenka ? "PANENKAS it — outrageous!" : "buries it!"}` : `💔 ${p.name}'s kick doesn't go in!`);
+        // you took the kick in 2D; then their taker (auto)
+        mine.push(ok);
+        lines.push(ok ? `⚽ ${p.name} buries it!` : `💔 ${p.name}'s kick doesn't go in!`);
         let d = decided();
         if (d !== null) return finishShootout(d, lines.join(" "));
         const t = Math.random() < 0.74;
@@ -2939,7 +3366,9 @@ function penaltyShootout(opts, cb) {
       const d = decided();
       if (d !== null) return finishShootout(d, lines.join(" "));
       showRound(lines.join(" "));
-    });
+    };
+    $("ps-go").onclick = () => arena2D(isGK ? "save" : "penalty", { chip, club: opts.home }, afterAttempt);
+    $("ps-classic").onclick = () => (isGK ? classicDive : classicPenaltyKick)(afterAttempt);
   }
   function finishShootout(won, lastLine) {
     showModal(`${won ? confettiHTML(22) : ""}<div class="mg-wrap">${chip}
@@ -3030,9 +3459,64 @@ function finalShowdown(cfg) {
       </div>
       <div class="wo-line l1">${HYPE.anthem}</div>
       <div class="wo-line l2">${HYPE.crowd}</div>
-      <div class="wo-line l3">Four defining moments. A full penalty shootout if it stays level. No second chances.</div>
+      <div class="wo-line l3">Sim it, play the highlights, or play every minute yourself. Your final, your way.</div>
       <button class="btn gold wo-btn" id="sd-tunnel">${HYPE.tunnel}</button></div>`);
-    $("sd-tunnel").onclick = showMoment;
+    $("sd-tunnel").onclick = showPlayStyle;
+  }
+
+  // ---------- how do you want to play the final? ----------
+  function showPlayStyle() {
+    showModal(`<div class="mg-wrap"><h2>🎮 HOW WILL YOU PLAY THE FINAL?</h2>
+      <p class="fade-muted" style="margin:8px 0">vs ${crest(cfg.opponent, 15)} ${cfg.opponent}</p>
+      <button class="event-choice" id="fs-sim"><b>🎲 Sim the final</b><small>Instant result from your overall, morale and form</small></button>
+      <button class="event-choice" id="fs-high"><b>🎬 Play the 2D highlights</b><small>Three retro key moments decide it — win 2 of 3 (a split goes to penalties)</small></button>
+      <button class="event-choice" id="fs-full"><b>🕹️ Play the FULL match</b><small>3:00 on the clock, retro style — attack, defend, win it yourself</small></button></div>`);
+    $("fs-sim").onclick = simFinal;
+    $("fs-high").onclick = () => playHighlight(0, 0);
+    $("fs-full").onclick = fullMatch;
+  }
+  function goToShootout() {
+    showModal(`<div class="mg-wrap"><h2>😱 IT GOES TO A PENALTY SHOOTOUT</h2>
+      <p style="margin:12px 0;font-size:15px;line-height:1.7">Nothing between you when it mattered. The whole stadium is on its feet — this final will be decided from twelve yards.</p>
+      <button class="btn gold" id="sd-pens">${p.pos === "GK" ? "🧤 Take your place on the line →" : "⚽ Walk to the spot →"}</button></div>`);
+    $("sd-pens").onclick = () => penaltyShootout({ opponent: cfg.opponent, home: cfg.home || G.clubName }, won => {
+      pips.push(won ? "🟢" : "🔴");
+      finish(won, won ? "You won the shootout when it mattered most. Ice. Cold." : "Beaten from twelve yards. There is no crueller way to lose.");
+    });
+  }
+  function simFinal() {
+    const pWin = clamp(0.42 + (overall(p) - 70) * 0.01 + (p.morale - 50) * 0.002 + diff().showdown, 0.22, 0.82);
+    showModal(`<div class="mg-wrap"><h2>🎲 The final unfolds...</h2>
+      <p class="fade-muted" style="margin:12px 0">Ninety minutes of blood and thunder. You leave everything out there.</p>
+      <button class="btn gold" id="fs-ft">FULL TIME →</button></div>`);
+    $("fs-ft").onclick = () => {
+      const r = Math.random();
+      if (r < pWin) { pips.push("🟢"); finish(true, "You controlled the final from the first whistle."); }
+      else if (r < pWin + 0.14) { pips.push("⚪"); goToShootout(); }
+      else { pips.push("🔴"); finish(false, "It never quite clicked on the day."); }
+    };
+  }
+  function playHighlight(i, w) {
+    const seq = p.pos === "GK" ? ["save", "save", "save"] : ["breakaway", "penalty", "breakaway"];
+    if (i >= 3) {
+      if (w >= 2) return finish(true, `You owned ${w} of the 3 defining highlights.`);
+      if (w === 1) return goToShootout();
+      return finish(false, "Second-best in every highlight that mattered.");
+    }
+    showModal(`<div class="mg-wrap"><h2>🎬 HIGHLIGHT ${i + 1} OF 3</h2>
+      <p class="fade-muted" style="margin:10px 0">${pips.join(" ") || "The broadcast cuts to the key moment..."}</p>
+      <button class="btn gold" id="fs-hl">▶ Play it</button></div>`);
+    $("fs-hl").onclick = () => arena2D(seq[i], { club: cfg.home }, ok => {
+      pips.push(ok ? "🟢" : "🔴");
+      playHighlight(i + 1, w + (ok ? 1 : 0));
+    });
+  }
+  function fullMatch() {
+    arena2D("match", { club: cfg.home }, res => {
+      pips.push(res.won ? "🟢" : res.draw ? "⚪" : "🔴");
+      if (res.draw) return goToShootout();
+      finish(res.won, `Full time: ${res.score[0]}–${res.score[1]}. ` + (res.won ? "You dragged them over the line yourself." : "It slipped away out on the pitch."));
+    });
   }
 
   function showBuildup() {
