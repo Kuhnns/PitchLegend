@@ -196,6 +196,7 @@
   .stage-chip { display: inline-block; padding: 3px 14px; border-radius: 12px; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px; }
   .chip-world { background: #2a2410; color: var(--gold); border: 1px solid var(--gold); }
   .chip-cont { background: #161a3a; color: #8fa8ff; border: 1px solid #5b74e8; }
+  .chip-dom { background:#34220f; color:#ffd77a; border:1px solid #bf812d; }
   .group-table { max-width: 340px; margin: 10px auto; }
   .scoreline { display: flex; justify-content: space-between; align-items: center; margin: 16px 0 20px; }
   .scoreline .team { flex: 1; text-align: center; font-weight: 700; font-size: 15px; }
@@ -273,6 +274,24 @@
   .transfer-row .tr-req.ok { color: var(--green-bright); }
   .transfer-row .btn { padding: 7px 14px; font-size: 12.5px; white-space: nowrap; }
   .transfer-row.current { border-color: var(--green); background: #16301f; }
+  .agent-hero { display:grid; grid-template-columns:64px 1fr; gap:14px; align-items:center; padding:16px; border:1px solid #2e6f48; border-radius:14px; background:linear-gradient(135deg,#173b28,#17231c); margin-bottom:14px; }
+  .agent-face { width:58px; height:58px; display:grid; place-items:center; border-radius:50%; background:#eef3f0; color:#17231c; font-size:31px; border:3px solid var(--green); }
+  .agent-bubble { padding:11px 13px; border-radius:12px 12px 12px 3px; background:#23382c; border:1px solid var(--border); line-height:1.55; font-size:13px; }
+  .agent-tools { display:grid; grid-template-columns:minmax(180px,260px) 1fr auto; gap:8px; margin:12px 0; }
+  .agent-tools select,.agent-tools input { width:100%; padding:10px 12px; background:#111a15; color:var(--text); border:1px solid var(--border); border-radius:8px; }
+  .league-summary { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:12px 0; }
+  .league-summary > div { background:var(--panel2); border:1px solid var(--border); border-radius:10px; padding:10px; text-align:center; font-size:12px; }
+  .strength-chip { display:inline-block; padding:3px 7px; border-radius:999px; background:#2b352f; color:var(--gold); font-size:11px; font-weight:800; margin-left:5px; }
+  .qual-dot { display:inline-grid; place-items:center; width:18px; height:18px; border-radius:5px; font-size:10px; font-weight:900; margin-right:5px; }
+  .qual-champ { background:#6f52d9; color:#fff; }
+  .qual-second { background:#2484b5; color:#fff; }
+  .qual-third { background:#238f70; color:#fff; }
+  .qual-drop { background:#9d3131; color:#fff; }
+  .table-legend { display:flex; flex-wrap:wrap; gap:8px 14px; padding:10px 12px; margin:10px 0 13px; border:1px solid var(--border); border-radius:10px; background:var(--panel2); font-size:12px; }
+  .academy-card { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center; padding:12px; margin-top:8px; border:1px solid #4b5d86; border-radius:11px; background:linear-gradient(135deg,#181f36,#17231c); }
+  .academy-meter { height:7px; margin-top:7px; overflow:hidden; border-radius:99px; background:#111; }
+  .academy-meter i { display:block; height:100%; background:linear-gradient(90deg,#4d7dff,#b58cff); }
+  @media(max-width:700px){ .agent-tools{grid-template-columns:1fr}.league-summary{grid-template-columns:1fr}.agent-hero{grid-template-columns:48px 1fr}.agent-face{width:44px;height:44px;font-size:24px} }
 
   #retire-screen { text-align: center; padding-top: 30px; }
   .legacy-title { font-size: 34px; color: var(--gold); margin: 10px 0; }
@@ -351,8 +370,10 @@
         <option>Argentina</option><option>Brazil</option><option>England</option><option>France</option>
         <option>Germany</option><option>Italy</option><option>Japan</option><option selected>Mexico</option>
         <option>Netherlands</option><option>Nigeria</option><option>Portugal</option><option>Spain</option>
-        <option>USA</option><option>Uruguay</option>
+        <option>USA</option><option>Uruguay</option><option>Belgium</option><option>Colombia</option>
+        <option>Croatia</option><option>Morocco</option>
       </select>
+      <div id="home-league-preview" style="margin-top:10px;padding:11px 13px;border:1px solid var(--border);border-radius:10px;background:var(--panel2);text-align:left;font-size:13px"></div>
       <label>Difficulty</label>
       <div class="pos-grid" id="diff-grid" style="grid-template-columns:repeat(3,1fr)">
         <div class="pos-btn" data-diff="easy">😌 Easy<small>More of everything</small></div>
@@ -423,7 +444,8 @@
         <button class="tab-btn" data-tab="tab-table">League Table</button>
         <button class="tab-btn" data-tab="tab-stats">My Stats</button>
         <button class="tab-btn" data-tab="tab-shop">Shop</button>
-        <button class="tab-btn" data-tab="tab-transfers">Transfers</button>
+        <button class="tab-btn" data-tab="tab-invest">Investments</button>
+        <button class="tab-btn" data-tab="tab-transfers">Agent</button>
         <button class="tab-btn" data-tab="tab-history">Career</button>
       </div>
 
@@ -436,6 +458,7 @@
         <div class="panel">
           <h3>Next Match</h3>
           <div id="next-match-info" style="font-size:15px;margin-bottom:14px;"></div>
+          <div id="match-challenge" style="margin:-2px 0 14px;padding:11px 13px;border:1px solid var(--border);border-radius:10px;background:rgba(255,193,7,.06)"></div>
           <button class="btn" id="btn-play">▶ &nbsp;Play Match</button>
           <button class="btn secondary hidden" id="btn-endseason">Finish Season →</button>
         </div>
@@ -449,6 +472,8 @@
       <div id="tab-table" class="tab-page hidden">
         <div class="panel">
           <h3 id="table-title">League Table</h3>
+          <div id="table-league-summary" class="league-summary"></div>
+          <div id="table-qualification" class="table-legend"></div>
           <table>
             <thead><tr><th>#</th><th>Club</th><th class="num">P</th><th class="num">W</th><th class="num">D</th><th class="num">L</th><th class="num">GD</th><th class="num">Pts</th></tr></thead>
             <tbody id="league-table-body"></tbody>
@@ -486,6 +511,10 @@
           <h3>👔 Coaching Staff <span class="sub">Coaches multiply training gains for their stat — salary paid every week. Miss a payment and they walk.</span></h3>
           <div class="shop-grid" id="coach-grid"></div>
         </div>
+      </div>
+
+      <!-- INVESTMENTS -->
+      <div id="tab-invest" class="tab-page hidden">
         <div class="panel">
           <h3>📈 Fafico Stock Exchange <span class="sub">Prices move every matchday. Invest wisely — or gamble on MoonShot.</span></h3>
           <div style="font-size:13.5px;margin-bottom:12px">Portfolio value: <b id="pf-value" style="color:var(--green-bright)">$0</b> · <span id="pf-profit"></span></div>
@@ -500,6 +529,11 @@
             </div>
             <div id="opt-list" style="margin-top:10px;font-size:13px;line-height:1.9"></div>
           </div>
+        </div>
+        <div class="panel">
+          <h3>🏘️ Real Estate Market <span class="sub">Buy properties, collect rent every matchday, and sell as values rise or fall.</span></h3>
+          <div style="font-size:13.5px;margin-bottom:12px">Property value: <b id="re-value" style="color:var(--green-bright)">$0</b> · Weekly rent: <b id="re-rent" style="color:var(--gold)">$0</b></div>
+          <div class="shop-grid" id="realestate-grid"></div>
         </div>
         <div class="panel">
           <h3>🕹️ Fafico Arcade <span class="sub" id="casino-sub">Play the arcade minigames — tricky to beat!</span></h3>
@@ -517,7 +551,30 @@
       <!-- TRANSFERS -->
       <div id="tab-transfers" class="tab-page hidden">
         <div class="panel">
-          <h3>Transfer Market <span class="sub">Your reputation: <b id="tm-rep" style="color:var(--gold)">—</b> · clubs unlock as it grows · one transfer per season</span></h3>
+          <div class="agent-hero">
+            <div class="agent-face">🕴️</div>
+            <div><h3 style="margin:0 0 5px">Your Agent</h3><div id="agent-message" class="agent-bubble">I’ll compare leagues, club strength and your chance of earning minutes.</div></div>
+          </div>
+          <div class="agent-tools">
+            <select id="agent-league"></select>
+            <input id="agent-question" maxlength="90" placeholder="Ask about a club, league, fit, or transfer...">
+            <button class="btn" id="btn-agent-ask">Ask Agent</button>
+          </div>
+          <div class="btn-row" style="margin:0 0 14px">
+            <button class="btn secondary agent-quick" data-agentq="recommend">Recommend a club</button>
+            <button class="btn secondary agent-quick" data-agentq="league">Explain this league</button>
+            <button class="btn secondary agent-quick" data-agentq="fit">Am I ready?</button>
+            <button class="btn secondary agent-quick" data-agentq="academy">Academy advice</button>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>🏫 Youth Academy Network <span class="sub">Invite only · ages 14–18 · stronger academies demand more</span></h3>
+          <div id="academy-status"></div>
+          <div id="academy-offers"></div>
+        </div>
+        <div class="panel">
+          <h3>Agent Transfer Desk <span class="sub">Reputation: <b id="tm-rep" style="color:var(--gold)">—</b> · one move per season</span></h3>
+          <div id="agent-league-summary" class="league-summary"></div>
           <div id="transfer-list"></div>
         </div>
       </div>
@@ -614,6 +671,91 @@ const CLUB_NAMES = {
   7:["Central High Cougars","Eastwood Eagles","St. Mateo Saints","Northside Titans","Palm Valley Vipers","Riverside Rockets","Old Mill Mustangs","Harbor High Herons"],
   8:["Maple Grove Middle","Cedar Park Colts","Río Verde Juniors","Lakeside Otters","Sunnyhill Cubs","Fox Hollow Foxes","Stonebrook Bears","Willow Creek Wolves"],
 };
+
+// Real-world league structure. Team ratings are global (1–10), not relative to
+// their own country: a 4 in Mexico is the same football level as a 4 in Japan.
+// European league order follows the modern UEFA coefficient hierarchy, while
+// non-European leagues are balanced below the elite European competitions.
+const LEAGUE_CATALOG = [
+  { id:"eng", country:"England", flag:"🏴", name:"Premier League", tier:1, quality:10, wageMult:60, cup:"European Champions Cup", spots:5, secondary:2, clubs:[
+    ["Manchester City",10],["Liverpool",10],["Arsenal",9],["Chelsea",9],["Manchester United",8],["Tottenham Hotspur",8],["Newcastle United",8],["Aston Villa",7],["Brighton",7],["West Ham United",6],["Everton",6],["Leeds United",5]] },
+  { id:"ita", country:"Italy", flag:"🇮🇹", name:"Serie A", tier:1, quality:9.2, wageMult:48, cup:"European Champions Cup", spots:4, secondary:2, clubs:[
+    ["Inter Milan",10],["Juventus",9],["AC Milan",9],["Napoli",9],["Atalanta",8],["Roma",8],["Lazio",7],["Fiorentina",7],["Bologna",7],["Torino",6],["Genoa",5],["Udinese",5]] },
+  { id:"esp", country:"Spain", flag:"🇪🇸", name:"La Liga", tier:1, quality:9.1, wageMult:52, cup:"European Champions Cup", spots:4, secondary:2, clubs:[
+    ["Real Madrid",10],["Barcelona",10],["Atlético Madrid",9],["Athletic Club",8],["Villarreal",8],["Real Sociedad",7],["Real Betis",7],["Sevilla",7],["Valencia",6],["Celta Vigo",6],["Girona",6],["Osasuna",5]] },
+  { id:"ger", country:"Germany", flag:"🇩🇪", name:"Bundesliga", tier:1, quality:8.8, wageMult:45, cup:"European Champions Cup", spots:4, secondary:2, clubs:[
+    ["Bayern Munich",10],["Bayer Leverkusen",9],["Borussia Dortmund",9],["RB Leipzig",8],["Eintracht Frankfurt",8],["VfB Stuttgart",7],["Wolfsburg",6],["Borussia Mönchengladbach",6],["Freiburg",6],["Werder Bremen",5],["Mainz",5],["Union Berlin",5]] },
+  { id:"fra", country:"France", flag:"🇫🇷", name:"Ligue 1", tier:2, quality:8.0, wageMult:34, cup:"European Champions Cup", spots:3, secondary:2, clubs:[
+    ["Paris Saint-Germain",10],["Marseille",8],["Monaco",8],["Lille",8],["Lyon",7],["Nice",7],["Lens",7],["Rennes",6],["Strasbourg",6],["Toulouse",5],["Nantes",5],["Auxerre",4]] },
+  { id:"por", country:"Portugal", flag:"🇵🇹", name:"Primeira Liga", tier:2, quality:7.4, wageMult:22, cup:"European Champions Cup", spots:2, secondary:2, clubs:[
+    ["Sporting CP",8],["Benfica",8],["FC Porto",8],["Braga",7],["Vitória SC",6],["Famalicão",5],["Boavista",5],["Casa Pia",4],["Estoril",4],["Rio Ave",4]] },
+  { id:"ned", country:"Netherlands", flag:"🇳🇱", name:"Eredivisie", tier:2, quality:7.2, wageMult:20, cup:"European Champions Cup", spots:2, secondary:2, clubs:[
+    ["PSV Eindhoven",8],["Ajax",8],["Feyenoord",8],["AZ Alkmaar",7],["FC Twente",6],["Utrecht",6],["Heerenveen",5],["Sparta Rotterdam",4],["Groningen",4],["NEC Nijmegen",4]] },
+  { id:"bel", country:"Belgium", flag:"🇧🇪", name:"Belgian Pro League", tier:3, quality:6.5, wageMult:13, cup:"European Champions Cup", spots:2, secondary:1, clubs:[
+    ["Club Brugge",7],["Anderlecht",7],["Union Saint-Gilloise",7],["Genk",6],["Gent",6],["Antwerp",6],["Standard Liège",5],["Charleroi",4],["Mechelen",4],["Westerlo",4]] },
+  { id:"cro", country:"Croatia", flag:"🇭🇷", name:"Croatian Football League", tier:3, quality:5.9, wageMult:9, cup:"European Champions Cup", spots:1, secondary:1, clubs:[
+    ["Dinamo Zagreb",7],["Hajduk Split",6],["Rijeka",6],["Osijek",5],["Lokomotiva Zagreb",4],["Varaždin",4],["Istra 1961",3],["Slaven Belupo",3]] },
+  { id:"bra", country:"Brazil", flag:"🇧🇷", name:"Brasileirão Série A", tier:3, quality:7.0, wageMult:16, cup:"Copa Continental", spots:5, secondary:2, clubs:[
+    ["Palmeiras",7],["Flamengo",7],["Botafogo",7],["Fluminense",6],["Atlético Mineiro",6],["São Paulo",6],["Internacional",6],["Grêmio",6],["Corinthians",5],["Santos",5],["Cruzeiro",5],["Bahia",5]] },
+  { id:"arg", country:"Argentina", flag:"🇦🇷", name:"Liga Profesional Argentina", tier:3, quality:6.5, wageMult:12, cup:"Copa Continental", spots:5, secondary:2, clubs:[
+    ["River Plate",7],["Boca Juniors",7],["Racing Club",6],["Independiente",6],["Estudiantes",6],["Vélez Sarsfield",6],["San Lorenzo",5],["Rosario Central",5],["Talleres",5],["Lanús",5],["Newell's Old Boys",4],["Argentinos Juniors",4]] },
+  { id:"mex", country:"Mexico", flag:"🇲🇽", name:"Liga MX", tier:4, quality:5.2, wageMult:8, cup:"CONCACAF Champions Cup", spots:4, secondary:0, clubs:[
+    ["Club América",4],["Monterrey",4],["Tigres UANL",4],["Cruz Azul",4],["Toluca",4],["Pachuca",4],["Guadalajara",3],["Pumas UNAM",3],["León",3],["Santos Laguna",3],["Atlas",2],["Puebla",2]] },
+  { id:"usa", country:"USA", flag:"🇺🇸", name:"Major League Soccer", tier:4, quality:5.0, wageMult:9, cup:"CONCACAF Champions Cup", spots:4, secondary:0, clubs:[
+    ["Inter Miami",4],["Los Angeles FC",4],["Columbus Crew",4],["Seattle Sounders",4],["LA Galaxy",4],["FC Cincinnati",3],["Atlanta United",3],["New York City FC",3],["Portland Timbers",3],["Philadelphia Union",3],["Austin FC",2],["Toronto FC",2]] },
+  { id:"jpn", country:"Japan", flag:"🇯🇵", name:"J1 League", tier:4, quality:4.8, wageMult:7, cup:"Asian Champions League", spots:3, secondary:1, clubs:[
+    ["Vissel Kobe",4],["Kawasaki Frontale",4],["Yokohama F. Marinos",4],["Urawa Red Diamonds",4],["Sanfrecce Hiroshima",3],["Kashima Antlers",3],["Gamba Osaka",3],["FC Tokyo",3],["Cerezo Osaka",2],["Nagoya Grampus",2]] },
+  { id:"col", country:"Colombia", flag:"🇨🇴", name:"Categoría Primera A", tier:4, quality:5.1, wageMult:7, cup:"Copa Continental", spots:4, secondary:1, clubs:[
+    ["Atlético Nacional",5],["Millonarios",4],["Junior",4],["América de Cali",4],["Deportivo Cali",3],["Independiente Santa Fe",3],["Deportes Tolima",3],["Once Caldas",3],["Independiente Medellín",3],["Atlético Bucaramanga",2]] },
+  { id:"uru", country:"Uruguay", flag:"🇺🇾", name:"Uruguayan Primera División", tier:4, quality:5.0, wageMult:6, cup:"Copa Continental", spots:3, secondary:1, clubs:[
+    ["Peñarol",5],["Nacional",5],["Liverpool Montevideo",4],["Defensor Sporting",4],["Danubio",3],["Boston River",3],["Cerro Largo",2],["Wanderers",2]] },
+  { id:"mar", country:"Morocco", flag:"🇲🇦", name:"Botola Pro", tier:5, quality:4.1, wageMult:4, cup:"African Champions League", spots:2, secondary:1, clubs:[
+    ["Wydad AC",4],["Raja CA",4],["RS Berkane",4],["FAR Rabat",4],["FUS Rabat",3],["Maghreb de Fès",3],["Hassania Agadir",2],["Ittihad Tanger",1]] },
+  { id:"nig", country:"Nigeria", flag:"🇳🇬", name:"Nigeria Premier Football League", tier:5, quality:3.5, wageMult:3, cup:"African Champions League", spots:2, secondary:1, clubs:[
+    ["Enyimba",4],["Rivers United",3],["Remo Stars",3],["Rangers International",3],["Kano Pillars",3],["Shooting Stars",2],["Plateau United",2],["Bendel Insurance",1]] },
+];
+
+const NATION_LEAGUE = { Argentina:"arg", Brazil:"bra", England:"eng", France:"fra", Germany:"ger", Italy:"ita", Japan:"jpn", Mexico:"mex", Netherlands:"ned", Nigeria:"nig", Portugal:"por", Spain:"esp", USA:"usa", Uruguay:"uru", Croatia:"cro", Belgium:"bel", Morocco:"mar", Colombia:"col" };
+const leagueById = id => LEAGUE_CATALOG.find(l => l.id === id);
+const homeLeagueId = nation => NATION_LEAGUE[nation] || "eng";
+const clubEntry = (name, leagueId) => {
+  const leagues = leagueId ? [leagueById(leagueId)] : LEAGUE_CATALOG;
+  for (const L of leagues.filter(Boolean)) { const c = L.clubs.find(x => x[0] === name); if (c) return { league:L, name:c[0], rating:c[1] }; }
+  return null;
+};
+const ratingStrength = rating => Math.round(38 + rating * 5.5);
+const ratingTier = rating => rating >= 9 ? 1 : rating >= 7 ? 2 : rating >= 5 ? 3 : rating >= 3 ? 4 : 5;
+
+const DOMESTIC_CUPS = {
+  eng:{ cup:"FA Cup", shield:"FA Community Shield" }, esp:{ cup:"Copa del Rey", shield:"Supercopa de España" },
+  ger:{ cup:"DFB-Pokal", shield:"DFL-Supercup" }, ita:{ cup:"Coppa Italia", shield:"Supercoppa Italiana" },
+  fra:{ cup:"Coupe de France", shield:"Trophée des Champions" }, por:{ cup:"Taça de Portugal", shield:"Supertaça Cândido de Oliveira" },
+  ned:{ cup:"KNVB Cup", shield:"Johan Cruyff Shield" }, bel:{ cup:"Belgian Cup", shield:"Belgian Super Cup" },
+  cro:{ cup:"Croatian Cup", shield:"Croatian Super Cup" }, bra:{ cup:"Copa do Brasil", shield:"Supercopa do Brasil" },
+  arg:{ cup:"Copa Argentina", shield:"Supercopa Argentina" }, mex:{ cup:"Leagues Cup", shield:"Campeón de Campeones" },
+  usa:{ cup:"U.S. Open Cup", shield:"MLS Cup" }, jpn:{ cup:"Emperor's Cup", shield:"Japanese Super Cup" },
+  col:{ cup:"Copa Colombia", shield:"Superliga Colombiana" }, uru:{ cup:"Copa AUF Uruguay", shield:"Supercopa Uruguaya" },
+  mar:{ cup:"Moroccan Throne Cup", shield:"Moroccan Super Cup" }, nig:{ cup:"Nigeria Federation Cup", shield:"Nigeria Super Cup" },
+};
+
+function continentalSet(L) {
+  if (!L) return null;
+  if (L.cup === "European Champions Cup") return { region:"uefa", primary:"UEFA Champions League", secondary:"UEFA Europa League", third:"UEFA Conference League", secondarySpots:L.secondary || 0, thirdSpots:1 };
+  if (L.cup === "Copa Continental") return { region:"conmebol", primary:"Copa Libertadores", secondary:"Copa Sudamericana", third:null, secondarySpots:L.secondary || 1, thirdSpots:0 };
+  if (L.cup === "CONCACAF Champions Cup") return { region:"concacaf", primary:"CONCACAF Champions Cup", secondary:"Leagues Cup", third:null, secondarySpots:Math.max(1,L.secondary || 2), thirdSpots:0 };
+  if (L.cup === "Asian Champions League") return { region:"afc", primary:"AFC Champions League Elite", secondary:"AFC Champions League Two", third:null, secondarySpots:L.secondary || 1, thirdSpots:0 };
+  return { region:"caf", primary:"CAF Champions League", secondary:"CAF Confederation Cup", third:null, secondarySpots:L.secondary || 1, thirdSpots:0 };
+}
+
+function continentalEntry(myPos) {
+  const L = leagueById(G && G.leagueId);
+  if (!L || myPos < 1) return null;
+  const set = continentalSet(L);
+  if (myPos <= L.spots) return { nm:set.primary, level:1, region:set.region };
+  if (myPos <= L.spots + set.secondarySpots) return { nm:set.secondary, level:2, region:set.region };
+  if (set.third && myPos <= L.spots + set.secondarySpots + set.thirdSpots) return { nm:set.third, level:3, region:set.region };
+  return null;
+}
 const NPC_FIRST = ["Marco","Jonas","Diego","Kwame","Yuto","Erik","Pablo","Liam","Sergei","Matheus","Ousmane","Tomás","Ivan","Ricardo","Emil","Andrés"];
 const NPC_LAST  = ["Silva","Berg","Ramírez","Okafor","Tanaka","Larsen","Duarte","Walker","Petrov","Costa","Traoré","Vidal","Moreno","Klein","Rossi","Vargas"];
 
@@ -708,6 +850,22 @@ const COSMETICS = [
   { id:"silverchain",slot:"neck",   nm:"Silver Chain",    cost:8000 },
   { id:"medal",     slot:"neck",    nm:"Gold Medal",      cost:150000 },
   { id:"warpaint",  slot:"face",    nm:"War Paint",       cost:2000 },
+  // --- second accessory collection ---
+  { id:"sombrero",  slot:"hat",     nm:"Festival Sombrero", cost:12000 },
+  { id:"flowercrown",slot:"hat",    nm:"Flower Crown",      cost:15000 },
+  { id:"santahat",  slot:"hat",     nm:"Winter Hat",        cost:25000 },
+  { id:"knight",    slot:"hat",     nm:"Knight Helmet",     cost:100000 },
+  { id:"heartglasses",slot:"glasses",nm:"Heart Glasses",    cost:10000 },
+  { id:"pixelglasses",slot:"glasses",nm:"Pixel Shades",     cost:15000 },
+  { id:"visor",     slot:"glasses", nm:"Future Visor",      cost:20000 },
+  { id:"silverhoops",slot:"ear",    nm:"Silver Hoops",      cost:5000 },
+  { id:"lightningear",slot:"ear",   nm:"Lightning Earrings",cost:30000 },
+  { id:"tie",       slot:"neck",    nm:"Club Tie",          cost:7000 },
+  { id:"pearls",    slot:"neck",    nm:"Pearl Necklace",    cost:20000 },
+  { id:"headphones",slot:"neck",    nm:"Studio Headphones", cost:35000 },
+  { id:"freckles",  slot:"face",    nm:"Freckles",          cost:1000 },
+  { id:"bandaid",   slot:"face",    nm:"Cheek Bandage",     cost:2000 },
+  { id:"blush",     slot:"face",    nm:"Matchday Blush",    cost:500 },
   // 1-of-1 weekly exclusive — cannot be bought, only won by finishing a real-life
   // week as #1 on the global leaderboard
   { id:"goatcrown", slot:"hat",     nm:"👑 GOAT Crown (weekly 1-of-1)", cost:0, exclusive:true },
@@ -730,6 +888,8 @@ function avatarSVG(av, size = 80, clubName) {
   if (av.ear === "hoops") L.push(`<ellipse cx="95" cy="70" rx="4" ry="6" fill="none" stroke="#f1c40f" stroke-width="2"/><ellipse cx="25" cy="70" rx="4" ry="6" fill="none" stroke="#f1c40f" stroke-width="2"/>`);
   if (av.ear === "diamondstud") L.push(`<circle cx="95" cy="66" r="3" fill="#d6f0ff" stroke="#7cd7e8" stroke-width="1"/><circle cx="25" cy="66" r="3" fill="#d6f0ff" stroke="#7cd7e8" stroke-width="1"/>`);
   if (av.ear === "airpods") L.push(`<rect x="93" y="62" width="4.5" height="10" rx="2" fill="#fff" stroke="#bbb" stroke-width="0.8"/><rect x="22.5" y="62" width="4.5" height="10" rx="2" fill="#fff" stroke="#bbb" stroke-width="0.8"/>`);
+  if (av.ear === "silverhoops") L.push(`<ellipse cx="95" cy="70" rx="4" ry="6" fill="none" stroke="#bdc3c7" stroke-width="2"/><ellipse cx="25" cy="70" rx="4" ry="6" fill="none" stroke="#bdc3c7" stroke-width="2"/>`);
+  if (av.ear === "lightningear") L.push(`<path d="M94,62 L89,70 L94,70 L91,79 L100,67 L95,67 Z" fill="#f1c40f"/><path d="M26,62 L21,70 L26,70 L23,79 L32,67 L27,67 Z" fill="#f1c40f"/>`);
   // full beard sits behind the mouth
   if ((av.facial || 0) === 4) L.push(`<path d="M27,62 Q27,101 60,101 Q93,101 93,62 Q93,84 60,86 Q27,84 27,62 Z" fill="${hc}"/>`);
   if ((av.facial || 0) === 1) L.push(`<path d="M30,64 Q32,96 60,98 Q88,96 90,64 Q86,86 60,88 Q34,86 30,64 Z" fill="${hc}" opacity="0.22"/>`);
@@ -755,6 +915,9 @@ function avatarSVG(av, size = 80, clubName) {
   if (facial === 3) L.push(`<ellipse cx="60" cy="93" rx="9" ry="7" fill="${hc}"/>`);
   // face accessories (on the cheeks)
   if (av.face === "warpaint") L.push(`<g stroke="${jersey}" stroke-width="3" stroke-linecap="round"><path d="M33,63 L45,71 M33,69 L45,77"/><path d="M87,63 L75,71 M87,69 L75,77"/></g>`);
+  if (av.face === "freckles") L.push(`<g fill="#8b5e3c" opacity=".65"><circle cx="39" cy="68" r="1"/><circle cx="44" cy="70" r="1"/><circle cx="49" cy="68" r="1"/><circle cx="71" cy="68" r="1"/><circle cx="76" cy="70" r="1"/><circle cx="81" cy="68" r="1"/></g>`);
+  if (av.face === "bandaid") L.push(`<rect x="73" y="69" width="16" height="6" rx="3" fill="#e9c9a5" stroke="#b58d6c" stroke-width="1"/><path d="M78,70 L78,74 M84,70 L84,74" stroke="#b58d6c"/>`);
+  if (av.face === "blush") L.push(`<ellipse cx="39" cy="72" rx="8" ry="4" fill="#ef7f8d" opacity=".45"/><ellipse cx="81" cy="72" rx="8" ry="4" fill="#ef7f8d" opacity=".45"/>`);
   // hair
   const hair = av.hair || 0;
   const cap = `<path d="M27,56 Q27,18 60,18 Q93,18 93,56 Q93,34 60,32 Q27,34 27,56 Z" fill="${hc}"/>`;
@@ -771,6 +934,9 @@ function avatarSVG(av, size = 80, clubName) {
   if (av.glasses === "stars") L.push(`<rect x="36" y="49" width="21" height="13" rx="3" fill="#e84393"/><rect x="63" y="49" width="21" height="13" rx="3" fill="#e84393"/><path d="M57,54 L63,54 M36,53 L28,51 M84,53 L92,51" stroke="#e84393" stroke-width="3"/><text x="46.5" y="60" text-anchor="middle" font-size="9" fill="#fff">★</text><text x="73.5" y="60" text-anchor="middle" font-size="9" fill="#fff">★</text>`);
   if (av.glasses === "skigoggles") L.push(`<rect x="26" y="53" width="10" height="6" fill="#2c3e50"/><rect x="84" y="53" width="10" height="6" fill="#2c3e50"/><rect x="34" y="47" width="52" height="17" rx="8" fill="#2c3e50"/><rect x="38" y="50" width="44" height="11" rx="5" fill="#5dade2" opacity="0.85"/>`);
   if (av.glasses === "monocle") L.push(`<circle cx="73" cy="57" r="10" fill="#ffffff11" stroke="#f1c40f" stroke-width="2.5"/><path d="M73,67 Q77,80 70,88" stroke="#f1c40f" stroke-width="1.5" fill="none"/>`);
+  if (av.glasses === "heartglasses") L.push(`<text x="47" y="63" text-anchor="middle" font-size="22" fill="#ff4d8d">♥</text><text x="73" y="63" text-anchor="middle" font-size="22" fill="#ff4d8d">♥</text><path d="M56,55 L64,55" stroke="#ff4d8d" stroke-width="3"/>`);
+  if (av.glasses === "pixelglasses") L.push(`<path d="M34,49 H57 V57 H52 V63 H40 V58 H34 Z M63,49 H86 V58 H80 V63 H68 V57 H63 Z" fill="#111"/><rect x="57" y="52" width="6" height="3" fill="#111"/>`);
+  if (av.glasses === "visor") L.push(`<path d="M31,49 Q60,43 89,49 L84,65 Q60,70 36,65 Z" fill="#6de6ff" opacity=".72" stroke="#1e9bb8" stroke-width="2"/><path d="M34,52 Q60,47 86,52" stroke="#fff" stroke-width="2" opacity=".75"/>`);
   // hats
   if (av.hat === "headband") L.push(`<rect x="26" y="31" width="68" height="9" rx="4.5" fill="#e74c3c"/>`);
   if (av.hat === "beanie") L.push(`<path d="M26,44 Q26,9 60,9 Q94,9 94,44 Z" fill="#3498db"/><rect x="26" y="38" width="68" height="9" rx="4" fill="#2c81ba"/>`);
@@ -785,6 +951,10 @@ function avatarSVG(av, size = 80, clubName) {
   if (av.hat === "wizard") L.push(`<path d="M60,-10 L84,34 L36,34 Z" fill="#4b3b8f"/><path d="M34,34 Q60,42 86,34 L86,29 Q60,37 34,29 Z" fill="#5b4b9f"/><text x="66" y="20" font-size="10" fill="#f1c40f">✦</text><text x="52" y="30" font-size="7" fill="#f1c40f">✦</text>`);
   if (av.hat === "horns") L.push(`<path d="M34,26 Q26,4 42,10 Q39,18 46,28 Z" fill="#c0392b"/><path d="M86,26 Q94,4 78,10 Q81,18 74,28 Z" fill="#c0392b"/>`);
   if (av.hat === "halo") L.push(`<ellipse cx="60" cy="7" rx="22" ry="6" fill="none" stroke="#f9e79f" stroke-width="4"/><ellipse cx="60" cy="7" rx="22" ry="6" fill="none" stroke="#f1c40f" stroke-width="1.5"/>`);
+  if (av.hat === "sombrero") L.push(`<ellipse cx="60" cy="29" rx="52" ry="10" fill="#d9a441" stroke="#8a5a20" stroke-width="2"/><path d="M38,28 Q42,2 60,2 Q78,2 82,28 Z" fill="#e8bb5c" stroke="#8a5a20" stroke-width="2"/><path d="M17,29 Q60,42 103,29" stroke="#d63031" stroke-width="3" fill="none"/>`);
+  if (av.hat === "flowercrown") L.push(`<path d="M28,30 Q60,20 92,30" stroke="#3f8f4d" stroke-width="5" fill="none"/><g fill="#ff7eb6"><circle cx="36" cy="27" r="7"/><circle cx="60" cy="23" r="7"/><circle cx="84" cy="27" r="7"/></g><g fill="#ffd43b"><circle cx="36" cy="27" r="2"/><circle cx="60" cy="23" r="2"/><circle cx="84" cy="27" r="2"/></g>`);
+  if (av.hat === "santahat") L.push(`<path d="M29,34 Q39,0 77,5 Q91,10 91,22 Q72,13 43,31 Z" fill="#d63031"/><rect x="27" y="29" width="67" height="10" rx="5" fill="#fff"/><circle cx="91" cy="20" r="8" fill="#fff"/>`);
+  if (av.hat === "knight") L.push(`<path d="M28,43 Q28,5 60,2 Q92,5 92,43 L84,56 H36 Z" fill="#aeb6bf" stroke="#626b73" stroke-width="2"/><path d="M35,38 H85 V50 H35 Z" fill="#687078"/><path d="M42,42 H78 M48,38 V50 M60,38 V50 M72,38 V50" stroke="#dce1e5" stroke-width="2"/>`);
   // chains
   if (av.neck === "goldchain") L.push(`<path d="M42,116 Q60,134 78,116" stroke="#f1c40f" stroke-width="4" fill="none" stroke-dasharray="4,3"/>`);
   if (av.neck === "icechain") L.push(`<path d="M40,115 Q60,135 80,115" stroke="#cfeef5" stroke-width="5" fill="none" stroke-dasharray="4,3"/><path d="M60,131 L67,139 L60,148 L53,139 Z" fill="#aef3ff" stroke="#7cd7e8" stroke-width="1.5"/>`);
@@ -792,6 +962,9 @@ function avatarSVG(av, size = 80, clubName) {
   if (av.neck === "scarf") L.push(`<path d="M45,109 Q60,120 75,109 L75,118 Q60,127 45,118 Z" fill="#2980b9"/><rect x="51" y="117" width="8" height="24" fill="#2980b9"/><rect x="51" y="135" width="8" height="4" fill="#f1c40f"/>`);
   if (av.neck === "bowtie") L.push(`<path d="M52,114 L41,107 L41,121 Z" fill="#c0392b"/><path d="M68,114 L79,107 L79,121 Z" fill="#c0392b"/><rect x="56" y="110" width="8" height="8" rx="2" fill="#96281b"/>`);
   if (av.neck === "medal") L.push(`<path d="M52,110 L58,127 M68,110 L62,127" stroke="#c0392b" stroke-width="3"/><circle cx="60" cy="133" r="8" fill="#f1c40f" stroke="#d4ac0d" stroke-width="1.5"/><text x="60" y="137" text-anchor="middle" font-size="9" fill="#d4ac0d">★</text>`);
+  if (av.neck === "tie") L.push(`<path d="M56,109 L64,109 L67,116 L60,126 L53,116 Z" fill="${jersey}" stroke="#222" stroke-width="1"/><path d="M55,126 L60,145 L65,126 L60,119 Z" fill="${jersey}"/>`);
+  if (av.neck === "pearls") L.push(`<path d="M40,114 Q60,138 80,114" stroke="#fff" stroke-width="5" fill="none" stroke-dasharray="1,5" stroke-linecap="round"/>`);
+  if (av.neck === "headphones") L.push(`<path d="M39,112 Q60,139 81,112" stroke="#202833" stroke-width="6" fill="none"/><rect x="35" y="107" width="10" height="17" rx="4" fill="#4b5563"/><rect x="75" y="107" width="10" height="17" rx="4" fill="#4b5563"/>`);
   return `<svg width="${size}" height="${Math.round(size * 150 / 120)}" viewBox="0 0 120 150">${L.join("")}</svg>`;
 }
 
@@ -929,6 +1102,7 @@ function newPlayer(name, nation, pos, stage) {
     gearLevel: {},   // shop purchases: category -> tier owned
     tempBoosts: [],  // { attr, amt, games, fresh } hot-streak boosts from mini-games
     portfolio: {},   // stock holdings: id -> { shares, cost }
+    properties: {},  // real-estate holdings: id -> { units, cost }
     shorts: {},      // short positions: id -> { shares, entry }
     options: [],     // open options: { id, dir, stake, strike, left }
     coaches: {},     // hired coaches: attr -> tier (1-3)
@@ -938,14 +1112,17 @@ function newPlayer(name, nation, pos, stage) {
 }
 const freshSeasonStats = () => ({ apps:0, goals:0, assists:0, cleanSheets:0, motm:0, ratingsSum:0 });
 
-function genLeague(tier) {
-  const L = LEAGUES.find(l => l.tier === tier);
-  const clubs = CLUB_NAMES[tier].map(n => ({
-    name: n,
-    strength: Math.round(rnd(L.strength[0], L.strength[1])),
+function genLeague(tier, leagueId) {
+  const real = tier <= 5 && leagueById(leagueId || (G && G.leagueId));
+  if (real) return real.clubs.map(([name, rating]) => ({
+    name, rating, strength: ratingStrength(rating),
     pts:0, w:0, d:0, l:0, gf:0, ga:0,
   }));
-  return clubs;
+  const L = LEAGUES.find(l => l.tier === tier);
+  return CLUB_NAMES[tier].map(n => ({
+    name:n, rating:null, strength:Math.round(rnd(L.strength[0], L.strength[1])),
+    pts:0, w:0, d:0, l:0, gf:0, ga:0,
+  }));
 }
 
 function newGame(name, nation, pos, stage, clubName, difficulty) {
@@ -958,6 +1135,7 @@ function newGame(name, nation, pos, stage, clubName, difficulty) {
   G = {
     difficulty,
     player, tier, clubName: myClub, clubs,
+    homeLeague: homeLeagueId(nation), leagueId: null,
     season: 1, year: 2026, week: 1,
     totalRounds: (clubs.length - 1) * 2, // 22 rounds
     trainedThisWeek: false, lastTraining: null,
@@ -966,9 +1144,14 @@ function newGame(name, nation, pos, stage, clubName, difficulty) {
     eventCooldowns: {}, weekCount: 0,
     transferredThisSeason: false,
     scoutInterest: [],
+    academy: null, academyOffers: [], academyScoutCooldown: 0,
     stocks: initStocks(),
+    realEstate: initRealEstate(),
+    matchChallenge: null,
+    domesticCupWonSeason: 0,
     retired: false,
   };
+  G.matchChallenge = makeMatchChallenge();
   addNews(`Welcome to ${myClub}! Coach says: "Show me you belong here, kid."`, "good");
   if (stage === "college") addNews(`🎓 Tuition bill arrives: ${money(DIFFS[difficulty].tuition)}. Welcome to student debt, ${player.name}.`, "bad");
   addNews(`${player.name} (${player.age}) joins ${myClub} — ${money(player.wage)}/week ${tier >= 7 ? "allowance" : tier === 6 ? "stipend" : "wage"}.`);
@@ -977,7 +1160,132 @@ function newGame(name, nation, pos, stage, clubName, difficulty) {
 const npcName = () => pick(NPC_FIRST) + " " + pick(NPC_LAST);
 
 function myClubObj() { return G.clubs.find(c => c.name === G.clubName); }
-function leagueInfo() { return LEAGUES.find(l => l.tier === G.tier); }
+function leagueInfo() { return (G.tier <= 5 && leagueById(G.leagueId)) || LEAGUES.find(l => l.tier === G.tier); }
+
+function currentClubRating() {
+  const c = myClubObj();
+  return c && c.rating ? c.rating : Math.max(1, Math.min(10, Math.round(((c && c.strength) || 50) - 38) / 5.5));
+}
+
+function proClubPool(tier) {
+  return LEAGUE_CATALOG.filter(L => tier === undefined || L.tier === tier)
+    .flatMap(L => L.clubs.map(([name, rating]) => ({ name, rating, tier:L.tier, leagueId:L.id, league:L })));
+}
+
+function starterClubFor(leagueId, maxRating = 4) {
+  const L = leagueById(leagueId) || leagueById("eng");
+  const pool = L.clubs.filter(c => c[1] <= maxRating);
+  const [name, rating] = pick(pool.length ? pool : L.clubs.slice(-4));
+  return { name, rating, tier:L.tier, leagueId:L.id, league:L };
+}
+
+function qualificationTournament() {
+  if (G.tier <= 5 && leagueById(G.leagueId)) {
+    const L = leagueById(G.leagueId);
+    const set = continentalSet(L);
+    return { nm:set.primary, spots:L.spots, secondary:set.secondarySpots, third:set.thirdSpots };
+  }
+  return TOURNAMENTS[G.tier];
+}
+
+function qualificationMark(pos, total) {
+  if (G.tier <= 5 && leagueById(G.leagueId)) {
+    const L = leagueById(G.leagueId);
+    const set = continentalSet(L);
+    if (pos <= L.spots) return { cls:"qual-champ", ico:"U", label:set.primary };
+    if (pos <= L.spots + set.secondarySpots) return { cls:"qual-second", ico:"E", label:set.secondary };
+    if (set.third && pos <= L.spots + set.secondarySpots + set.thirdSpots) return { cls:"qual-third", ico:"C", label:set.third };
+    if (pos > total - 2) return { cls:"qual-drop", ico:"R", label:"Relegation zone" };
+  } else {
+    const t = TOURNAMENTS[G.tier];
+    if (t && pos <= t.spots) return { cls:"qual-champ", ico:"Q", label:t.nm };
+  }
+  return null;
+}
+
+// ============================== YOUTH ACADEMIES ==============================
+// Academy strength uses the same worldwide 1–10 scale as senior clubs. The
+// stronger the badge, the faster the development — and the harsher the review.
+function academyRequiredAvg(strength) {
+  const mode = G && G.difficulty;
+  return clamp(5.1 + strength * 0.30 + (mode === "hard" ? 0.2 : mode === "easy" ? -0.2 : 0), 5.2, 8.4);
+}
+function academyTrainingMult() { return G && G.academy ? 1 + G.academy.strength * 0.075 : 1; }
+function academySquadStrength(strength) { return 30 + strength * 4.5; }
+function academyMinOverall(strength) { return 26 + strength * 4; }
+function academyFee(strength) {
+  const modeMult = G && G.difficulty === "easy" ? 0.6 : G && G.difficulty === "hard" ? 1.4 : 1;
+  return Math.round(Math.pow(strength - 5, 3) * 800 * modeMult);
+}
+function seniorCutTarget() {
+  if (!G || G.difficulty !== "hard" || G.tier > 5) return null;
+  return +clamp(4.8 + currentClubRating() * 0.33, 5.1, 8.1).toFixed(1);
+}
+
+function checkAcademyScout(rating, minutes, motm) {
+  const p = G.player;
+  if (p.age < 14 || p.age > 18 || G.academy || minutes <= 0 || (G.academyScoutCooldown || 0) > G.weekCount) return;
+  G.academyOffers = (G.academyOffers || []).filter(o => o.until > G.weekCount);
+  if (G.academyOffers.length >= 3) return;
+  const offered = new Set(G.academyOffers.map(o => o.club));
+  const ovr = overall(p);
+  const eligible = proClubPool().filter(x => x.rating >= 6 && !offered.has(x.name)
+    && ovr >= academyMinOverall(x.rating) - 4
+    && rating >= academyRequiredAvg(x.rating) - 0.7);
+  if (!eligible.length) return;
+  const maxStrength = clamp(Math.floor((ovr - 22) / 4), 6, 10);
+  const realistic = eligible.filter(x => x.rating <= maxStrength);
+  const target = pick(realistic.length ? realistic : eligible.sort((a,b) => a.rating-b.rating).slice(0,3));
+  const standard = academyRequiredAvg(target.rating);
+  const chance = clamp((0.015 + Math.max(0, rating - standard + 0.6) * 0.10 + Math.max(0, ovr - academyMinOverall(target.rating) + 3) * 0.012 + (motm ? 0.07 : 0))
+    * diff().scoutMult * (1.3 - target.rating * 0.06), 0.01, 0.55);
+  if (Math.random() >= chance) return;
+  const offer = { club:target.name, leagueId:target.leagueId, strength:target.rating, fee:academyFee(target.rating), until:G.weekCount + 4 };
+  G.academyOffers.push(offer);
+  G.academyScoutCooldown = G.weekCount + 3;
+  addNews(`🏫 ACADEMY INVITE! ${target.league.flag} ${target.name} Academy (${target.rating}/10) have scouted ${p.name}. Ask your agent within 4 matchdays.`, "gold");
+}
+
+function joinAcademy(index) {
+  const p = G.player, offer = (G.academyOffers || [])[index];
+  if (!offer || offer.until <= G.weekCount || p.age < 14 || p.age > 18 || G.academy) return;
+  p.money -= offer.fee; // academy tuition can deliberately push the family into debt
+  G.academy = { club:offer.club, leagueId:offer.leagueId, strength:offer.strength, fee:offer.fee, joinedAge:p.age, ratings:[], weeks:0 };
+  G.academyOffers = [];
+  p.morale = clamp(p.morale + 8, 0, 100);
+  addNews(`🏫 ${p.name} joins ${offer.club} Academy (${offer.strength}/10). Tuition: ${money(offer.fee)} — training ×${academyTrainingMult().toFixed(2)}, review target ${academyRequiredAvg(offer.strength).toFixed(1)}.`, "gold");
+  flashModal("🏫 Academy contract signed", `<p style="line-height:1.7">${crest(offer.club,20)} <b>${offer.club} Academy</b><br>Strength: <b>${offer.strength}/10</b> · Training: <b>×${academyTrainingMult().toFixed(2)}</b> · Five-match target: <b>${academyRequiredAvg(offer.strength).toFixed(1)}</b><br><br>${money(offer.fee)} tuition has been charged. Your balance can go below zero.</p>`);
+  render(); saveGame();
+}
+
+function leaveAcademy() {
+  if (!G.academy) return;
+  const name = G.academy.club;
+  G.academy = null;
+  G.player.morale = clamp(G.player.morale - 5, 0, 100);
+  addNews(`🚪 ${G.player.name} leaves ${name} Academy. Tuition is non-refundable.`, "bad");
+  render(); saveGame();
+}
+
+function academyReview(rating, minutes) {
+  const a = G.academy, p = G.player;
+  if (!a) return null;
+  a.weeks = (a.weeks || 0) + 1;
+  a.ratings = a.ratings || [];
+  a.ratings.push(minutes > 0 ? rating : 4.5); // being left out hurts the review
+  if (a.ratings.length < 5) return null;
+  const avg = a.ratings.reduce((s,v) => s + v, 0) / a.ratings.length;
+  const target = academyRequiredAvg(a.strength);
+  const club = a.club;
+  a.ratings = [];
+  if (avg <= target) {
+    G.academy = null; p.morale = clamp(p.morale - 14,0,100); p.form = clamp(p.form - 8,0,100); rep(-1);
+    addNews(`✂️ ACADEMY RELEASE: ${club} cut ${p.name} after a ${avg.toFixed(2)} five-match average. A ${a.strength}/10 academy demands above ${target.toFixed(1)}.`, "bad");
+    return { kicked:true, club, avg, target, strength:a.strength };
+  }
+  addNews(`✅ ${club} Academy review passed: ${avg.toFixed(2)} average, above the ${target.toFixed(1)} standard.`, "good");
+  return { kicked:false, club, avg, target, strength:a.strength };
+}
 
 function addNews(text, kind) {
   G.news.unshift({ week: `S${G.season} W${G.week}`, text, kind: kind || "" });
@@ -1056,8 +1364,9 @@ function doTraining(t) {
   // school & path development bonuses
   const stageMult = G.tier >= 7 ? 1.25 : G.tier === 6 ? 1.35 : (p.path === "hs-pro" && p.age <= 21 ? 1.2 : 1);
   const coachMult = p.coaches && p.coaches[t.attr] ? COACH_TIERS[p.coaches[t.attr] - 1].mult : 1;
+  const academyMult = academyTrainingMult();
   const debuffGain = activeDebuffs(p).reduce((m, d) => m * (d.gain || 1), 1);
-  const baseGain = rnd(0.6, 1.6) * ageFactor * headroom * attrRoom * stageMult * coachMult * diff().gainMult * debuffGain * posTrainMult(t.attr);
+  const baseGain = rnd(0.6, 1.6) * ageFactor * headroom * attrRoom * stageMult * coachMult * academyMult * diff().gainMult * debuffGain * posTrainMult(t.attr);
   if (Math.random() < 0.4) { coachChallenge(t, baseGain); return; }
   applyTrainingGain(t, baseGain, 1);
   completeTraining(t);
@@ -1179,6 +1488,42 @@ function poissonish(exp) {
   let g = 0;
   for (let i = 0; i < 6; i++) if (Math.random() < exp / 6) g++;
   return g;
+}
+
+// A rotating objective gives each matchday a different little story and reward.
+function makeMatchChallenge() {
+  if (!G || !G.player) return null;
+  const p = G.player, hard = G.difficulty === "hard", easy = G.difficulty === "easy";
+  const pool = [
+    { id:"rating", ico:"⭐", label:`Earn a ${easy ? "6.8" : hard ? "8.0" : "7.4"}+ rating`, target:easy ? 6.8 : hard ? 8 : 7.4, base:700 },
+    { id:"win", ico:"🏁", label:"Help your team win", base:500 },
+    { id:"energy", ico:"🔋", label:`Finish with ${hard ? 30 : 20}+ Energy`, target:hard ? 30 : 20, base:450 },
+  ];
+  if (p.pos === "FWD" || p.pos === "MID") pool.push({ id:"involve", ico:"⚡", label:`Record ${hard ? 2 : 1}+ goal contribution${hard ? "s" : ""}`, target:hard ? 2 : 1, base:850 });
+  if (p.pos === "GK" || p.pos === "DEF") pool.push({ id:"clean", ico:"🧱", label:"Keep a clean sheet", base:850 });
+  if (p.pos === "GK") pool.push({ id:"saves", ico:"🧤", label:`Make ${hard ? 6 : 4}+ saves`, target:hard ? 6 : 4, base:800 });
+  pool.push({ id:"motm", ico:"👑", label:"Win Player of the Match", base:1200 });
+  const c = { ...pick(pool) };
+  c.reward = Math.max(100, Math.round(c.base * (1 + G.season * 0.18) * diff().moneyMult));
+  return c;
+}
+
+function resolveMatchChallenge(ctx) {
+  const c = G.matchChallenge;
+  if (!c) { G.matchChallenge = makeMatchChallenge(); return; }
+  const p = G.player;
+  const ok = c.id === "rating" ? ctx.rating >= c.target
+    : c.id === "win" ? ctx.gMe > ctx.gOpp
+    : c.id === "energy" ? p.energy >= c.target
+    : c.id === "involve" ? ctx.goals + ctx.assists >= c.target
+    : c.id === "clean" ? ctx.gOpp === 0
+    : c.id === "saves" ? ctx.saves >= c.target
+    : c.id === "motm" ? ctx.motm : false;
+  if (ok) {
+    p.money += c.reward; p.morale = clamp(p.morale + 4, 0, 100); rep(0.25);
+    addNews(`✅ MATCHDAY CHALLENGE: ${c.label} — ${money(c.reward)} earned!`, "gold");
+  } else addNews(`❌ Challenge missed: ${c.label}. A new objective awaits next match.`, "");
+  G.matchChallenge = makeMatchChallenge();
 }
 
 // ============================== SHOP ==============================
@@ -1467,6 +1812,63 @@ const STOCK_DEFS = [
   { id:"moonshot", nm:"MoonShot Energy",     ico:"🚀", base:30,  vol:0.28,  drift:0.008 },
 ];
 
+const REAL_ESTATE_DEFS = [
+  { id:"parking", nm:"Stadium Parking Space", ico:"🅿️", base:12000, rent:140, vol:0.025, drift:0.002 },
+  { id:"studio",  nm:"City Studio Rental",    ico:"🏢", base:45000, rent:520, vol:0.020, drift:0.003 },
+  { id:"duplex",  nm:"Suburban Duplex",       ico:"🏘️", base:135000, rent:1650, vol:0.018, drift:0.0035 },
+  { id:"shops",   nm:"High-Street Shops",     ico:"🏬", base:380000, rent:4900, vol:0.025, drift:0.004 },
+  { id:"tower",   nm:"Luxury Apartment Tower",ico:"🏙️", base:1100000, rent:15000, vol:0.032, drift:0.0045 },
+  { id:"resort",  nm:"Coastal Football Resort",ico:"🏝️",base:3500000, rent:52000, vol:0.045, drift:0.005 },
+];
+
+function initRealEstate() {
+  return REAL_ESTATE_DEFS.map(d => ({ ...d, price: d.base * rnd(0.92, 1.08) }));
+}
+function propertyBuyPrice(m) { return Math.round(m.price * diff().shopCost); }
+function propertyRent(m) { return Math.max(1, Math.round(m.rent * diff().moneyMult)); }
+
+function tickRealEstate() {
+  if (!G.realEstate) G.realEstate = initRealEstate();
+  const p = G.player;
+  let rent = 0;
+  G.realEstate.forEach(m => {
+    const modeDrift = G.difficulty === "easy" ? 0.003 : G.difficulty === "hard" ? -0.002 : 0;
+    m.price = Math.max(m.base * 0.45, m.price * (1 + m.drift + modeDrift + rnd(-m.vol, m.vol)));
+    const h = (p.properties || {})[m.id];
+    if (h && h.units) rent += h.units * propertyRent(m);
+  });
+  if (rent > 0) {
+    p.money += rent;
+    if (G.weekCount % 4 === 0) addNews(`🏘️ Your properties collected ${money(rent)} in rent this matchday.`, "good");
+  }
+  return rent;
+}
+
+function buyProperty(id) {
+  const p = G.player, m = (G.realEstate || []).find(x => x.id === id);
+  if (!m) return;
+  const cost = propertyBuyPrice(m);
+  if (p.money < cost) return;
+  p.money -= cost;
+  p.properties = p.properties || {};
+  const h = p.properties[id] = p.properties[id] || { units:0, cost:0 };
+  h.units++; h.cost += cost;
+  addNews(`🏠 Bought ${m.nm} for ${money(cost)} — rent starts next matchday.`, "good");
+  render(); saveGame();
+}
+
+function sellProperty(id) {
+  const p = G.player, m = (G.realEstate || []).find(x => x.id === id), h = (p.properties || {})[id];
+  if (!m || !h || !h.units) return;
+  const avgCost = h.cost / h.units;
+  const payout = Math.round(m.price * diff().shopCost * 0.95);
+  h.units--; h.cost = Math.max(0, h.cost - avgCost);
+  if (!h.units) delete p.properties[id];
+  p.money += payout;
+  addNews(`🏘️ Sold one ${m.nm} for ${money(payout)} after fees.`, payout >= avgCost ? "good" : "bad");
+  render(); saveGame();
+}
+
 function initStocks() {
   return STOCK_DEFS.map(d => {
     let price = d.base * rnd(0.8, 1.2);
@@ -1622,17 +2024,70 @@ function spark(hist, w = 90, h = 26) {
 
 // ============================== TRANSFER MARKET ==============================
 // Reputation needed to join a club. Earlier in each tier's list = more prestigious.
-function repReq(tier, idx) {
-  const base   = { 1:70,   2:45,  3:25,  4:10,  5:0   }[tier];
-  const spread = { 1:2.73, 2:1.6, 3:1.5, 4:1.2, 5:0.5 }[tier];
+function repReq(tier, idx, leagueId, clubName) {
+  const entry = clubEntry(clubName, leagueId);
+  if (entry) return ({ 10:100, 9:85, 8:70, 7:55, 6:40, 5:27, 4:15, 3:8, 2:3, 1:0 })[entry.rating];
+  const base = { 1:70, 2:45, 3:25, 4:10, 5:0 }[tier] || 0;
+  const spread = { 1:2.73, 2:1.6, 3:1.5, 4:1.2, 5:0.5 }[tier] || 0;
   return Math.min(100, base + Math.round((11 - idx) * spread));
+}
+
+function agentFit(clubName, leagueId) {
+  const entry = clubEntry(clubName, leagueId);
+  const club = entry ? { rating:entry.rating, strength:ratingStrength(entry.rating) } : (G.clubs || []).find(c => c.name === clubName);
+  const target = club ? club.strength : 60;
+  const gap = overall(G.player) - target;
+  if (gap >= 3) return { key:"great", ico:"🟢", label:"Excellent fit", text:"You are strong enough to compete for a starting place immediately." };
+  if (gap >= -5) return { key:"good", ico:"🔵", label:"Good fit", text:"You should earn useful minutes and can grow into a regular starter." };
+  if (gap >= -12) return { key:"risk", ico:"🟠", label:"Development move", text:"The level is above you right now. Expect rotation minutes and a battle for starts." };
+  return { key:"bad", ico:"🔴", label:"Poor fit", text:"This squad is far stronger than you. You would probably spend most weeks on the bench." };
+}
+
+function agentLeagueText(L) {
+  const strongest = Math.max(...L.clubs.map(c => c[1]));
+  const level = L.quality >= 9 ? "one of the world's toughest leagues" : L.quality >= 7 ? "a strong international league" : L.quality >= 5 ? "a competitive mid-level league" : "a developing professional league";
+  const set = continentalSet(L), domestic = DOMESTIC_CUPS[L.id];
+  return `${L.flag} <b>${L.name}</b> is ${level}. League quality: <b>${L.quality.toFixed(1)}/10</b>. Its strongest club is <b>${strongest}/10</b>. Top ${L.spots}: ${set.primary}; next ${set.secondarySpots}: ${set.secondary}${set.third ? `; next ${set.thirdSpots}: ${set.third}` : ""}. Domestic trophies: ${domestic.cup} and ${domestic.shield}.`;
+}
+
+function agentReply(question) {
+  const q = (question || "").trim().toLowerCase();
+  const selected = leagueById($("agent-league").value) || leagueInfo();
+  if (q.includes("academy") || q.includes("youth") || q.includes("scout me")) {
+    if (G.academy) {
+      const a = G.academy, rr = a.ratings || [], avg = rr.length ? rr.reduce((s,v)=>s+v,0)/rr.length : null;
+      return `${crest(a.club,17)} You're in <b>${a.club} Academy</b> (${a.strength}/10): training <b>×${academyTrainingMult().toFixed(2)}</b>, annual tuition <b>${money(a.fee)}</b>, review target <b>above ${academyRequiredAvg(a.strength).toFixed(1)}</b>. ${rr.length}/5 review matches logged${avg === null ? "" : ` at ${avg.toFixed(2)}`}.`;
+    }
+    if (G.player.age < 14 || G.player.age > 18) return `Academies only scout players aged 14–18. Your current age is ${G.player.age}.`;
+    return `Academies are invite-only. Strong performances and OVR open the door: 6/10 academies start around ${academyMinOverall(6)} OVR, while 10/10 academies look for roughly ${academyMinOverall(10)} OVR and ${academyRequiredAvg(10).toFixed(1)}-level match ratings.`;
+  }
+  let hit = null;
+  for (const L of LEAGUE_CATALOG) for (const [name, rating] of L.clubs) if (q.includes(name.toLowerCase())) hit = { L, name, rating };
+  if (hit) {
+    const fit = agentFit(hit.name, hit.L.id);
+    return `${crest(hit.name,18)} <b>${hit.name}</b> play in ${hit.L.flag} ${hit.L.name} and have a global team strength of <b>${hit.rating}/10</b>. ${G.difficulty === "hard" ? "On Hard mode I won't predict your fit — prove it on the pitch." : `${fit.ico} <b>${fit.label}:</b> ${fit.text}`}`;
+  }
+  const leagueHit = LEAGUE_CATALOG.find(L => q.includes(L.name.toLowerCase()) || q.includes(L.country.toLowerCase()));
+  if (leagueHit) return agentLeagueText(leagueHit);
+  if (q.includes("recommend") || q.includes("transfer") || q.includes("club")) {
+    const ovr = overall(G.player);
+    const candidates = LEAGUE_CATALOG.flatMap(L => L.clubs.map(([name,rating]) => ({L,name,rating,gap:Math.abs(ratingStrength(rating)-ovr)})))
+      .filter(x => x.name !== G.clubName && repReq(x.L.tier,0,x.L.id,x.name) <= G.player.reputation + 12)
+      .sort((a,b) => a.gap-b.gap).slice(0,3);
+    return candidates.length ? `My shortlist: ${candidates.map(x => `${crest(x.name,15)} <b>${x.name}</b> (${x.rating}/10, ${x.L.name})`).join(" · ")}. Select the league to review the full details.` : `Keep building your reputation. I don't see a realistic move yet.`;
+  }
+  if (q.includes("fit") || q.includes("ready") || q === "fit") {
+    const fit = agentFit(G.clubName, G.leagueId);
+    return G.difficulty === "hard" ? `Hard mode rule: I won't give you a fit prediction. Your five-match average and performances will decide whether you belong.` : `${fit.ico} At ${crest(G.clubName,16)} <b>${G.clubName}</b>, you are currently an <b>${fit.label.toLowerCase()}</b>. ${fit.text}`;
+  }
+  return agentLeagueText(selected);
 }
 
 // Signing for a club that has NOT scouted you demands proof: a prestige-scaled
 // objective checklist, tuned by difficulty (Easy asks less, Hard asks a lot more).
-function clubObjectives(tier, idx) {
+function clubObjectives(tier, idx, leagueId, clubName) {
   const p = G.player;
-  const prestige = repReq(tier, idx);
+  const prestige = repReq(tier, idx, leagueId, clubName);
   const dm = { easy: 0.6, normal: 1, hard: 1.6 }[G.difficulty || "normal"];
   const isDef = p.pos === "GK" || p.pos === "DEF";
   const objs = [];
@@ -1662,13 +2117,15 @@ function clubObjectives(tier, idx) {
     lvl = clamp(lvl, 0, 4);
     const stageNames = ["Qualify for", "Reach the quarter-finals of", "Reach the semi-finals of", "Reach the final of", "Win"];
     const have = p.bestContinental || 0;
-    objs.push({ label: `${stageNames[lvl]} the Continental Champions Cup`, have, done: have >= lvl + 1 });
+    const targetLeague = leagueById(leagueId);
+    const cupName = targetLeague ? continentalSet(targetLeague).primary : "UEFA Champions League";
+    objs.push({ label: `${stageNames[lvl]} the ${cupName}`, have, done: have >= lvl + 1 });
   }
   return objs;
 }
 
-function showObjectivesModal(tier, idx, clubName) {
-  const objs = clubObjectives(tier, idx);
+function showObjectivesModal(tier, idx, clubName, leagueId) {
+  const objs = clubObjectives(tier, idx, leagueId, clubName);
   const met = objs.filter(o => o.done).length;
   showModal(`<h2>🎯 Sign for ${crest(clubName, 18)} ${clubName}</h2>
     <p class="fade-muted" style="margin:10px 0;line-height:1.6">No scout has recommended you, so ${clubName} demand proof (${diff().nm} mode objectives — ${met}/${objs.length} complete):</p>
@@ -1677,27 +2134,30 @@ function showObjectivesModal(tier, idx, clubName) {
     <div style="text-align:center"><button class="btn" onclick="closeModal()">OK</button></div>`);
 }
 
-function confirmTransfer(tier, clubName) {
+function confirmTransfer(tier, clubName, leagueId) {
   const p = G.player;
-  const L = LEAGUES.find(l => l.tier === tier);
+  const L = leagueById(leagueId) || LEAGUES.find(l => l.tier === tier);
   const newWage = Math.round((200 + overall(p) * 14) * L.wageMult * agentMult() / 10) * 10;
+  const entry = clubEntry(clubName, leagueId);
+  const fit = agentFit(clubName, leagueId);
   showModal(`<h2>✈️ Join ${clubName}?</h2>
-    <p style="margin:14px 0;line-height:1.7">${L.name} (Tier ${tier}) · Estimated wage: <b style="color:var(--green-bright)">${money(newWage)}/week</b><br>
-    <span class="fade-muted">You can only transfer once per season. If the squad is much stronger than you, expect the bench.</span></p>
+    <p style="margin:14px 0;line-height:1.7">${L.flag || "🌍"} ${L.name} · Team strength: <b style="color:var(--gold)">${entry ? entry.rating + "/10" : tier}</b> · Estimated wage: <b style="color:var(--green-bright)">${money(newWage)}/week</b><br>
+    ${G.difficulty === "hard" ? `<span class="fade-muted">Hard mode: your agent cannot guarantee whether you will fit in.</span>` : `<span>${fit.ico} <b>${fit.label}:</b> ${fit.text}</span>`}<br><span class="fade-muted">You can only transfer once per season.</span></p>
     <div class="btn-row">
       <button class="btn" id="tj-yes">Sign for ${clubName}</button>
       <button class="btn secondary" id="tj-no">Stay put</button>
     </div>`);
-  $("tj-yes").onclick = () => transferNow(tier, clubName);
+  $("tj-yes").onclick = () => transferNow(tier, clubName, leagueId);
   $("tj-no").onclick = closeModal;
 }
 
-function transferNow(tier, clubName) {
+function transferNow(tier, clubName, leagueId) {
   const p = G.player;
   const r = roundsPlayed();
-  const L = LEAGUES.find(l => l.tier === tier);
-  G.tier = tier;
-  G.clubs = genLeague(tier);
+  const L = leagueById(leagueId) || LEAGUES.find(l => l.tier === tier);
+  G.tier = L.tier || tier;
+  G.leagueId = leagueId || G.leagueId;
+  G.clubs = genLeague(G.tier, G.leagueId);
   G.clubName = clubName;
   G.totalRounds = (G.clubs.length - 1) * 2;
   // simulate the rounds already played this season so the new league table is consistent
@@ -1713,7 +2173,7 @@ function transferNow(tier, clubName) {
   G.transferredThisSeason = true;
   p.recentRatings = []; // the new club judges you from scratch
   mor(8);
-  addNews(`✈️ TRANSFER! ${p.name} joins ${clubName} (${L.name}) on ${money(p.wage)}/week.`, "gold");
+  addNews(`✈️ TRANSFER! ${p.name} joins ${clubName} (${L.flag || "🌍"} ${L.name}) on ${money(p.wage)}/week.`, "gold");
   closeModal(); render(); saveGame();
 }
 
@@ -1783,7 +2243,16 @@ function beginMatch() {
   let gap = ovr + p.form * 0.08 - me.strength; // form helps selection
   if (p.path === "hs-pro" && p.age <= 20) gap -= 7; // raw prospect: coaches don't trust you yet
   let minutes;
-  if (G.tier === 6) minutes = Math.random() < 0.9 ? 90 : irnd(60, 85); // college recruits start
+  if (G.academy && p.age <= 18) {
+    // Academy selection is judged against the academy's own strength. A 10/10
+    // academy has a deep youth squad, so even elite prospects rotate.
+    gap = ovr + p.form * 0.08 - academySquadStrength(G.academy.strength);
+    if (gap >= 4) minutes = Math.random() < 0.85 ? 90 : irnd(60,85);
+    else if (gap >= -2) minutes = Math.random() < 0.68 ? irnd(60,90) : irnd(15,35);
+    else if (gap >= -8) minutes = Math.random() < 0.48 ? irnd(25,70) : 0;
+    else minutes = Math.random() < 0.20 ? irnd(10,30) : 0;
+  }
+  else if (G.tier === 6) minutes = Math.random() < 0.9 ? 90 : irnd(60, 85); // college recruits start
   else if (gap >= -4) minutes = 90;
   else if (gap >= -10) minutes = Math.random() < 0.75 ? 90 : irnd(20, 45);
   else minutes = Math.random() < 0.35 ? irnd(10, 30) : 0;
@@ -1822,7 +2291,9 @@ const ARENA = { raf: 0, keys: {} };
 
 function arena2D(mode, opts, done) {
   const p = G.player;
-  const W = 340, H = 430, GOAL_HALF = 55, GOAL_Y = 24;
+  // A roomier pitch makes movement feel deliberate instead of twitchy. The canvas
+  // still scales down responsively on phones.
+  const W = 400, H = 520, GOAL_HALF = 65, GOAL_Y = 28;
   const clubName = opts.club || G.clubName || "FC";
   let jersey = "#2ea44f";
   { let h = 0; for (let i = 0; i < clubName.length; i++) h = (h * 31 + clubName.charCodeAt(i)) >>> 0; jersey = CREST_PALETTE[h % CREST_PALETTE.length]; }
@@ -1873,13 +2344,18 @@ function arena2D(mode, opts, done) {
     defs: [],
     aimX: W / 2, aimDir: 1,
     phase: "play", // penalty: aim->fly ; save: windup->fly
-    target: 0, dive: 0, timer: (hard ? 9 : 12) * 60, // Hard gives you less time to score
+    target: 0, dive: 0, timer: (hard ? 10 : 14) * 60,
     mate: null, carrier: "me", passFlash: null,
+    countdown: 3 * 60, pickup: null, boostT: 0,
   };
   if (mode === "breakaway") {
-    S.defs = [{ x: 62, y: 175 }, { x: W - 62, y: 175 }];
-    if (hard) { S.defs.push({ x: W / 2, y: 120 }); S.defs.push({ x: W / 2 - 40, y: 205 }); }
-    S.mate = { x: W / 2 + (Math.random() < 0.5 ? -75 : 75), y: H - 70 };
+    S.defs = [{ x: 76, y: H * 0.48 }, { x: W - 76, y: H * 0.48 }];
+    if (hard) {
+      S.defs.push({ x: W / 2, y: H * 0.34 });
+      S.defs.push({ x: W / 2 - 50, y: H * 0.62 });
+    }
+    S.mate = { x: W / 2 + (Math.random() < 0.5 ? -90 : 90), y: H - 85 };
+    S.pickup = { x: rnd(70, W - 70), y: rnd(H * 0.38, H * 0.68) };
   }
   if (mode === "penalty") { S.me = { x: W / 2 - 28, y: H - 70 }; S.phase = "aim"; }
   if (mode === "save") {
@@ -1892,7 +2368,7 @@ function arena2D(mode, opts, done) {
       : hard ? W / 2 + (Math.random() < 0.5 ? -1 : 1) * (GOAL_HALF - 6 - Math.random() * 12)
       : W / 2 + (Math.random() * 2 - 1) * (GOAL_HALF - 8);
     // RFX (phy) buys you reaction frames — high reflexes make the shot feel slower
-    S.flight = (hard ? 30 : easy ? 48 : 38) + Math.round(effAttr(p, "phy") * 0.07);
+    S.flight = (hard ? 22 : easy ? 48 : 38) + Math.round(effAttr(p, "phy") * (hard ? 0.045 : 0.07));
   }
   if (mode === "match") {
     S.score = [0, 0];
@@ -1903,27 +2379,31 @@ function arena2D(mode, opts, done) {
     if (p.pos === "GK") startTeamAttack(); else resetAttack(); // hoisted helpers
   }
   // ---------- stats ARE the physics ----------
-  const pSpeed = clamp(1.5 + effAttr(p, "pac") * 0.028 + (easy ? 0.3 : 0) - (hard ? 0.3 : 0), 1.4, 4.6); // 99 PAC ≈ 2× a slow player
-  const defSpeed = 2.05 + (hard ? 0.75 : 0) - (easy ? 0.3 : 0);            // Hard defenders genuinely hunt you
-  const tackleR = clamp((hard ? 19 : 17) - effAttr(p, "dri") * 0.05, 11, 19); // and lunge from further out
+  const pSpeed = clamp(1.1 + effAttr(p, "pac") * 0.018 + (easy ? 0.18 : 0) - (hard ? 0.12 : 0), 1.15, 3.05); // realistic running pace
+  const defSpeed = 1.58 + (hard ? 0.48 : 0) - (easy ? 0.18 : 0);          // pressure without pinball speed
+  const tackleR = clamp((hard ? 22 : 17) - effAttr(p, "dri") * (hard ? 0.04 : 0.05), 11, 22); // even good dribblers need space
   const shotV = 5 + effAttr(p, "sho") * 0.02;                              // harder shots give the keeper less time
-  const gkTrack = hard ? 1.9 : 1.45;                                       // keeper shadowing while you dribble
-  const gkChase = hard ? 2.2 : 1.2;                                        // keeper closing on a struck ball
-  const lineReach = hard ? 16 : easy ? 9 : 11;                             // his reach on the line
-  const gkSpeed = clamp(1.3 + effAttr(p, "def") * 0.03 + effAttr(p, "pac") * 0.008 + (easy ? 0.3 : 0) - (hard ? 0.25 : 0), 1.3, 4.8);
-  const sweep = clamp(3.8 - effAttr(p, "sho") * 0.022 + (hard ? 1.1 : 0) - (easy ? 0.4 : 0), 1.4, 5);
+  const gkTrack = hard ? 2.35 : 1.45;                                      // keeper reads lateral runs quickly
+  const gkChase = hard ? 2.75 : 1.2;                                       // keeper attacks the shot path
+  const lineReach = hard ? 20 : easy ? 9 : 11;                             // tighter finishing window on Hard
+  const gkSpeed = clamp(1.3 + effAttr(p, "def") * 0.03 + effAttr(p, "pac") * 0.008 + (easy ? 0.3 : 0) - (hard ? 0.4 : 0), 1.2, 4.8);
+  const sweep = clamp(3.8 - effAttr(p, "sho") * 0.022 + (hard ? 1.45 : 0) - (easy ? 0.4 : 0), 1.4, 5.35);
   const mateSho = effAttr(p, "sho") * 0.6 + 15;                            // your teammate is decent, not you
 
   // ---------- full-match helpers ----------
   function resetAttack() { // you get the ball near halfway and go again
     S.phase = "attack";
-    S.me = { x: W / 2, y: H - 130 };
+    S.me = { x: W / 2, y: H - 145 };
     S.ball = null;
     S.carrier = "me"; S.passFlash = null;
-    S.mate = { x: W / 2 + (Math.random() < 0.5 ? -75 : 75), y: H - 150 };
+    S.mate = { x: W / 2 + (Math.random() < 0.5 ? -90 : 90), y: H - 165 };
     S.keeper = { x: W / 2, y: GOAL_Y + 12 };
-    S.defs = [{ x: 70, y: 150 }, { x: W - 70, y: 150 }];
-    if (hard) { S.defs.push({ x: W / 2, y: 110 }); S.defs.push({ x: W / 2 + 40, y: 185 }); }
+    S.defs = [{ x: 80, y: H * 0.43 }, { x: W - 80, y: H * 0.43 }];
+    if (hard) {
+      S.defs.push({ x: W / 2, y: H * 0.30 });
+      S.defs.push({ x: W / 2 + 50, y: H * 0.57 });
+    }
+    S.pickup = { x: rnd(70, W - 70), y: rnd(H * 0.36, H * 0.66) };
   }
   function showBanner(text, after, t) {
     S.phase = "banner"; S.bannerText = text; S.bannerT = t || 65; S.afterBanner = after;
@@ -1936,7 +2416,7 @@ function arena2D(mode, opts, done) {
       S.ball = null; S.fr = 0;
       const wide = Math.random() < 0.08;
       S.target = wide ? W / 2 + (Math.random() < .5 ? -1 : 1) * (GOAL_HALF + 16) : W / 2 + (Math.random() * 2 - 1) * (GOAL_HALF - 8);
-      S.gkFlight = (hard ? 30 : easy ? 48 : 38) + Math.round(effAttr(p, "phy") * 0.07);
+      S.gkFlight = (hard ? 22 : easy ? 48 : 38) + Math.round(effAttr(p, "phy") * (hard ? 0.045 : 0.07));
     } else {
       S.phase = "counter";
       S.runner = { x: W / 2 + (Math.random() * 2 - 1) * 80, y: H / 2 - 30 };
@@ -1944,7 +2424,7 @@ function arena2D(mode, opts, done) {
     }
   }
   function startTeamAttack() { // GK careers: your team attacks while you watch
-    const scored = Math.random() < (0.42 + (easy ? 0.06 : 0) - (hard ? 0.12 : 0));
+    const scored = Math.random() < (0.42 + (easy ? 0.06 : 0) - (hard ? 0.20 : 0));
     if (scored) S.score[0]++;
     showBanner(scored ? "YOUR TEAM SCORES!" : "ATTACK BREAKS DOWN", startCounter, 75);
   }
@@ -1965,7 +2445,7 @@ function arena2D(mode, opts, done) {
     S.ball = { x: who.x, y: who.y - 10, vx: dx / d * shotV + wobble, vy: dy / d * shotV };
   }
   function act() {
-    if (S.over) return;
+    if (S.over || S.countdown > 0) return;
     const attacking = (mode === "breakaway" && !S.ball) || (mode === "match" && S.phase === "attack" && !S.ball);
     if (attacking) shootFrom(carrierObj());
     if (mode === "penalty" && S.phase === "aim") {
@@ -1974,20 +2454,20 @@ function arena2D(mode, opts, done) {
       S.ball = { x: W / 2, y: H - 84 };
       S.fr = 0;
       S.flightP = Math.round(32 - effAttr(p, "sho") * 0.08); // 99 SHO = a rocket the keeper barely sees
-      const correct = Math.random() < (hard ? 0.82 : 0.62);
+      const correct = Math.random() < (hard ? 0.90 : 0.62);
       const side = Math.sign(S.target - W / 2) || (Math.random() < 0.5 ? -1 : 1);
       S.dive = W / 2 + (correct ? side : -side) * (18 + Math.random() * 26);
     }
   }
   function passAct() {
-    if (S.over || !S.mate || S.ball) return;
+    if (S.over || S.countdown > 0 || !S.mate || S.ball) return;
     const attacking = (mode === "breakaway") || (mode === "match" && S.phase === "attack");
     if (!attacking) return;
     const from = carrierObj(), to = S.carrier === "me" ? S.mate : S.me;
     // a defender lurking near the passing lane can pick it off — PAS threads the needle
     const midX = (from.x + to.x) / 2, midY = (from.y + to.y) / 2;
     const laneDef = S.defs.some(d => Math.hypot(d.x - midX, d.y - midY) < 34);
-    const intercept = laneDef && Math.random() < clamp(0.58 - effAttr(p, "pas") * 0.0045 + (hard ? 0.15 : 0) - (easy ? 0.1 : 0), 0.05, 0.8);
+    const intercept = laneDef && Math.random() < clamp(0.58 - effAttr(p, "pas") * 0.0045 + (hard ? 0.25 : 0) - (easy ? 0.1 : 0), 0.05, 0.9);
     S.passFlash = { x1: from.x, y1: from.y, x2: to.x, y2: to.y, t: 9, bad: intercept };
     if (intercept) {
       if (mode === "match") return showBanner("PASS PICKED OFF!", startCounter);
@@ -2012,15 +2492,21 @@ function arena2D(mode, opts, done) {
 
   function update() {
     S.frame++;
+    if (S.countdown > 0) { S.countdown--; return; }
+    if (S.boostT > 0) S.boostT--;
     const L = ARENA.keys.ArrowLeft, R = ARENA.keys.ArrowRight, U = ARENA.keys.ArrowUp, D = ARENA.keys.ArrowDown;
     if (mode === "breakaway" && !S.over) {
       if (!S.ball) {
-        S.me.x = clamp(S.me.x + (R ? pSpeed : 0) - (L ? pSpeed : 0), 16, W - 16);
-        S.me.y = clamp(S.me.y + (D ? pSpeed : 0) - (U ? pSpeed : 0), 70, H - 16);
+        const runSpeed = pSpeed * (S.boostT > 0 ? 1.18 : 1);
+        S.me.x = clamp(S.me.x + (R ? runSpeed : 0) - (L ? runSpeed : 0), 16, W - 16);
+        S.me.y = clamp(S.me.y + (D ? runSpeed : 0) - (U ? runSpeed : 0), 70, H - 16);
         // your teammate makes a supporting run on the other flank
         S.mate.y = clamp(S.mate.y - pSpeed * 0.85, 62, H);
         S.mate.x += clamp(clamp(S.me.x + (S.mate.x > S.me.x ? 72 : -72), 20, W - 20) - S.mate.x, -1.6, 1.6);
         const car = carrierObj();
+        if (S.pickup && Math.hypot(car.x - S.pickup.x, car.y - S.pickup.y) < 17) {
+          S.pickup = null; S.boostT = 150; S.passFlash = { x1:car.x - 8, y1:car.y, x2:car.x + 8, y2:car.y, t:22, good:true };
+        }
         for (const dfd of S.defs) {
           const dx = car.x - dfd.x, dy = car.y - dfd.y, d = Math.hypot(dx, dy) || 1;
           dfd.x += dx / d * defSpeed; dfd.y += dy / d * defSpeed;
@@ -2046,11 +2532,16 @@ function arena2D(mode, opts, done) {
         if (--S.bannerT <= 0 && S.afterBanner) S.afterBanner();
       } else if (S.phase === "attack") {
         if (!S.ball) {
-          S.me.x = clamp(S.me.x + (R ? pSpeed : 0) - (L ? pSpeed : 0), 16, W - 16);
-          S.me.y = clamp(S.me.y + (D ? pSpeed : 0) - (U ? pSpeed : 0), 70, H - 60);
+          const runSpeed = pSpeed * (S.boostT > 0 ? 1.18 : 1);
+          S.me.x = clamp(S.me.x + (R ? runSpeed : 0) - (L ? runSpeed : 0), 16, W - 16);
+          S.me.y = clamp(S.me.y + (D ? runSpeed : 0) - (U ? runSpeed : 0), 70, H - 60);
           S.mate.y = clamp(S.mate.y - pSpeed * 0.85, 62, H);
           S.mate.x += clamp(clamp(S.me.x + (S.mate.x > S.me.x ? 72 : -72), 20, W - 20) - S.mate.x, -1.6, 1.6);
           const car = carrierObj();
+          if (S.pickup && Math.hypot(car.x - S.pickup.x, car.y - S.pickup.y) < 17) {
+            S.pickup = null; S.boostT = 150; showBanner("MOMENTUM BOOST!", () => { S.phase = "attack"; }, 38);
+            return;
+          }
           for (const dfd of S.defs) {
             const dx = car.x - dfd.x, dy = car.y - dfd.y, d = Math.hypot(dx, dy) || 1;
             dfd.x += dx / d * defSpeed; dfd.y += dy / d * defSpeed;
@@ -2069,11 +2560,11 @@ function arena2D(mode, opts, done) {
           if (S.ball.x < 0 || S.ball.x > W) return showBanner("WIDE!", startCounter);
         }
       } else if (S.phase === "counter") {
-        S.runner.y += 2.2;
-        S.runner.x += (W / 2 - S.runner.x) * 0.006 + Math.sin(S.frame / 9) * 1.1;
+        S.runner.y += hard ? 2.75 : 2.2;
+        S.runner.x += (W / 2 - S.runner.x) * (hard ? 0.011 : 0.006) + Math.sin(S.frame / (hard ? 6 : 9)) * (hard ? 1.5 : 1.1);
         S.myKeeper.x = clamp(S.myKeeper.x + Math.sign(S.runner.x - S.myKeeper.x) * (1.2 + effAttr(p, "def") * 0.008), W / 2 - GOAL_HALF, W / 2 + GOAL_HALF);
         if (S.runner.y >= H - 60) {
-          const theyScore = Math.random() < clamp(0.42 - effAttr(p, "def") * 0.0018 + (hard ? 0.16 : 0) - (easy ? 0.06 : 0), 0.15, 0.68);
+          const theyScore = Math.random() < clamp(0.42 - effAttr(p, "def") * 0.0018 + (hard ? 0.28 : 0) - (easy ? 0.06 : 0), 0.15, 0.82);
           if (theyScore) S.score[1]++;
           return showBanner(theyScore ? "THEY SCORE!" : "DEFENCE HOLDS!", resetAttack, 75);
         }
@@ -2111,7 +2602,7 @@ function arena2D(mode, opts, done) {
         S.keeper.x += (S.dive - S.keeper.x) * 0.12;
         if (t >= 1) {
           if (Math.abs(S.target - W / 2) > GOAL_HALF - 3) return finish(false, "WIDE!");
-          const reach = hard ? 22 : easy ? 12 : 15;
+          const reach = hard ? 25 : easy ? 12 : 15;
           return Math.abs(S.keeper.x - S.target) < reach ? finish(false, "SAVED!") : finish(true, "GOAL!!");
         }
       }
@@ -2179,6 +2670,10 @@ function arena2D(mode, opts, done) {
         pr(q(S.mate.x) - 1, q(S.mate.y) - 1, 3, 1, "#ffffffcc");
       }
       dude(S.me.x, S.me.y, jersey, skin);
+      if (S.pickup) { // optional momentum star adds a short burst and a new route choice
+        pr(q(S.pickup.x) - 2, q(S.pickup.y) - 2, 5, 5, "#ffd43b");
+        ptext("★", q(S.pickup.x) + .5, q(S.pickup.y) + 2, "#7a4f00", 6);
+      }
       if (S.passFlash && S.passFlash.t > 0) { // the pass zips across
         S.passFlash.t--;
         pc.strokeStyle = S.passFlash.bad ? "#ff6b6b" : "#ffe066";
@@ -2188,6 +2683,7 @@ function arena2D(mode, opts, done) {
       if (S.ball) ball(S.ball.x, S.ball.y);
       else { const c = S.carrier === "mate" && S.mate ? S.mate : S.me; ball(c.x + 8, c.y + 6); }
       if (mode === "breakaway") ptext(Math.ceil(S.timer / 60) + "s", 10, px.height - 3, "#fff", 6);
+      if (S.boostT > 0) ptext("MOMENTUM!", px.width - 25, px.height - 3, "#ffd43b", 5);
     }
     if (mode === "match" && S.phase === "counter") {
       dude(S.runner.x, S.runner.y, "#e03131", "#d29b6c");
@@ -2219,6 +2715,11 @@ function arena2D(mode, opts, done) {
         pr(0, q(H / 2) - 7, px.width, 12, "#111827cc");
         ptext(S.bannerText, px.width / 2, q(H / 2) + 2, "#ffd43b", 7);
       }
+    }
+    if (S.countdown > 0) {
+      pr(0, 0, px.width, px.height, "#07120bbb");
+      ptext(String(Math.ceil(S.countdown / 60)), px.width / 2, px.height / 2, "#ffd43b", 20);
+      ptext("GET READY", px.width / 2, px.height / 2 + 13, "#ffffff", 6);
     }
     if (S.splash) {
       pr(0, 0, px.width, px.height, S.won ? "#0d3d1eb8" : "#3d0d0db8");
@@ -2571,6 +3072,7 @@ function finishMatch(moment) {
     else { delete p.coaches[k]; addNews(`👔 Couldn't pay the ${attrName(k)} coach's ${money(ct.cost)} weekly wage — they walked.`, "bad"); }
   }
   tickStocks();
+  tickRealEstate();
 
   // owned gear perks kick in during the week (weaker on Hard)
   const lvl = p.gearLevel || {};
@@ -2579,6 +3081,9 @@ function finishMatch(moment) {
   if (lvl.psych) p.morale = clamp(p.morale + perk(4), 0, 100);
   if (lvl.car) p.morale = clamp(p.morale + perk(SHOP.find(c => c.cat === "car").tiers[lvl.car - 1].val), 0, 100);
   if (lvl.jet) { p.energy = clamp(p.energy + perk(4), 0, 100); p.morale = clamp(p.morale + perk(2), 0, 100); }
+
+  // Finish the rotating matchday objective after recovery perks have applied.
+  resolveMatchChallenge({ rating, goals, assists, gMe, gOpp, saves, motm });
 
   // temporary boosts tick down (boosts earned this match start counting next game)
   p.tempBoosts = (p.tempBoosts || []).filter(b => { if (b.fresh) { delete b.fresh; return true; } return --b.games > 0; });
@@ -2624,12 +3129,16 @@ function finishMatch(moment) {
     motm ? "gold" : res === "W" ? "good" : res === "L" ? "bad" : "");
 
   // tournament-race updates at the halfway and three-quarter marks of the season
-  const tourn = TOURNAMENTS[G.tier];
+  const tourn = qualificationTournament();
   if (tourn) {
     const r = roundsPlayed();
     if (r === Math.floor(G.totalRounds / 2) || r === Math.floor(G.totalRounds * 3 / 4)) {
       const pos = sortedTable().findIndex(c => c.name === G.clubName) + 1;
-      if (pos <= tourn.spots) addNews(`📣 ${G.clubName} sit ${ord(pos)} — inside the ${tourn.nm} qualification spots (top ${tourn.spots})!`, "good");
+      if (G.tier <= 5) {
+        const q = qualificationMark(pos, G.clubs.length);
+        if (q && q.cls !== "qual-drop") addNews(`📣 ${G.clubName} sit ${ord(pos)} — currently qualifying for the ${q.label}!`, "good");
+        else addNews(`📣 ${G.clubName} are ${ord(pos)} — currently outside all continental qualification places.`, "bad");
+      } else if (pos <= tourn.spots) addNews(`📣 ${G.clubName} sit ${ord(pos)} — inside the ${tourn.nm} qualification spots (top ${tourn.spots})!`, "good");
       else addNews(`📣 ${G.clubName} are ${ord(pos)} — currently OUTSIDE the ${tourn.nm} spots (top ${tourn.spots} qualify).`, "bad");
     }
   }
@@ -2638,13 +3147,22 @@ function finishMatch(moment) {
   if (G.tier <= 5 && minutes > 0 && (rating >= 7.8 || motm)) {
     const chance = clamp((rating - 7.4) * 0.35 * diff().scoutMult, 0.08, 0.8);
     if (Math.random() < chance) {
-      const targetTier = Math.random() < 0.7 ? Math.max(1, G.tier - 1) : G.tier;
-      const club = pick(CLUB_NAMES[targetTier].filter(n => n !== G.clubName));
-      G.scoutInterest = (G.scoutInterest || []).filter(s => s.club !== club);
-      G.scoutInterest.push({ club, tier: targetTier, until: G.weekCount + 5 });
-      addNews(`👀 ${club} scouts were in the stands — they love what they see! Join them from the Transfer Market within 5 matchdays, no reputation needed.`, "gold");
+      const myRating = currentClubRating();
+      const targets = proClubPool().filter(x => x.name !== G.clubName && x.rating >= myRating && x.rating <= Math.min(10, myRating + 2));
+      const target = pick(targets.length ? targets : proClubPool().filter(x => x.name !== G.clubName));
+      G.scoutInterest = (G.scoutInterest || []).filter(s => s.club !== target.name);
+      G.scoutInterest.push({ club:target.name, tier:target.tier, leagueId:target.leagueId, until:G.weekCount + 5 });
+      addNews(`👀 ${target.league.flag} ${target.name} scouts were in the stands — they love what they see! Ask your agent about the move within 5 matchdays.`, "gold");
     }
   }
+
+  // Youth academy scouting and five-match reviews (ages 14–18 only).
+  if (G.academy) {
+    const review = academyReview(rating, minutes);
+    if (review) events.push(review.kicked
+      ? `✂️ ${review.club} Academy release ${p.name}: ${review.avg.toFixed(2)} average, target above ${review.target.toFixed(1)}.`
+      : `✅ Academy review passed: ${review.avg.toFixed(2)} average beats the ${review.target.toFixed(1)} target.`);
+  } else checkAcademyScout(rating, minutes, motm);
 
   G.week++;
   G.trainedThisWeek = false;
@@ -2657,20 +3175,27 @@ function finishMatch(moment) {
     p.recentRatings.push(rating);
     if (p.recentRatings.length > 5) p.recentRatings.shift();
   }
-  const cutAt = G.difficulty === "hard" ? ({ 1:5, 2:6, 3:6.5 })[G.tier] : null;
+  const cutAt = seniorCutTarget();
   const avg5 = cutAt && (p.recentRatings || []).length >= 5
     ? p.recentRatings.reduce((a, b) => a + b, 0) / p.recentRatings.length : null;
   if (cutAt && avg5 !== null && avg5 <= cutAt) {
-    const destTier = G.tier + 1;
-    const destClub = pick(CLUB_NAMES[destTier]);
+    const currentRating = currentClubRating();
+    const sameLeague = leagueById(G.leagueId);
+    const lifelines = sameLeague ? sameLeague.clubs.filter(c => c[0] !== G.clubName && c[1] < currentRating) : [];
+    const lower = lifelines.length ? { pick:pick(lifelines), league:sameLeague } : (() => {
+      let all = proClubPool().filter(x => x.name !== G.clubName && x.rating < currentRating);
+      if (!all.length) all = proClubPool().filter(x => x.name !== G.clubName && x.rating <= 2);
+      const x = pick(all); return { pick:[x.name,x.rating], league:x.league };
+    })();
+    const destClub = lower.pick[0], destRating = lower.pick[1], destTier = lower.league.tier, destLeagueId = lower.league.id;
     mor(-15); frm(-8); rep(-3);
-    addNews(`✂️ CUT! ${me.name} release ${p.name} — a ${avg5.toFixed(2)} average over 5 games (Tier ${G.tier} demands above ${cutAt} on Hard).`, "bad");
+    addNews(`✂️ CUT! ${me.name} (${currentRating}/10) release ${p.name} — a ${avg5.toFixed(2)} five-match average, below their ${cutAt.toFixed(1)} standard.`, "bad");
     showModal(`<div class="mg-wrap"><h2>✂️ YOU'VE BEEN CUT</h2>
       <p class="fade-muted" style="margin:8px 0">${me.name} ${gMe}–${gOpp} ${opp.name} · you played ${minutes} minutes</p>
-      <p style="margin:14px 0;line-height:1.7">Your last 5 matches: <b style="color:var(--red)">${p.recentRatings.map(r => r.toFixed(1)).join(" · ")}</b> — a <b style="color:var(--red)">${avg5.toFixed(2)}</b> average. On Hard mode, ${crest(me.name, 16)} <b>${me.name}</b> demand better than <b>${cutAt}</b> at Tier ${G.tier}. The club releases you.<br><br>${crest(destClub, 16)} <b>${destClub}</b> (Tier ${destTier}) offer you a lifeline.</p>
+      <p style="margin:14px 0;line-height:1.7">Your last 5 matches: <b style="color:var(--red)">${p.recentRatings.map(r => r.toFixed(1)).join(" · ")}</b> — a <b style="color:var(--red)">${avg5.toFixed(2)}</b> average. ${crest(me.name, 16)} <b>${me.name}</b> release you.<br><br>${crest(destClub, 16)} <b>${destClub}</b> (${lower.league.flag} ${lower.league.name} · ${destRating}/10) offer you a lifeline.</p>
       <button class="btn danger" id="cut-go">Accept your fate →</button></div>`);
     $("cut-go").onclick = () => {
-      transferNow(destTier, destClub);
+      transferNow(destTier, destClub, destLeagueId);
       G.transferredThisSeason = false; // a forced move doesn't burn your own transfer
       p.recentRatings = [];            // fresh slate at the new club
       saveGame();
@@ -2720,6 +3245,7 @@ function skipRound() { // used for injuries: team plays without you
   simulateOtherFixtures(me, opp);
   G.topScorerNPC.goals += Math.random() < diff().npcProb ? irnd(0, diff().npcMax) : 0;
   tickStocks();
+  tickRealEstate();
   G.week++;
 }
 
@@ -2768,9 +3294,11 @@ function endSeason() {
 
   // tournaments & cup finals happen after the league wraps up, then the season is finalized
   runSchoolTournament(headlines, myPos, () =>
-    runContinentalCup(headlines, myPos, () =>
-      runWorldCup(headlines, () =>
-        finalizeSeason(headlines, myPos, avg))));
+    runDomesticCup(headlines, () =>
+      runSuperCup(headlines, myPos, () =>
+        runContinentalCup(headlines, myPos, () =>
+          runWorldCup(headlines, () =>
+            finalizeSeason(headlines, myPos, avg))))));
 }
 
 function finalizeSeason(headlines, myPos, avg) {
@@ -2778,6 +3306,13 @@ function finalizeSeason(headlines, myPos, avg) {
 
   // aging & decline
   p.age++;
+  if (p.age >= 19 && G.academy) {
+    const academyName = G.academy.club;
+    G.academy = null;
+    G.academyOffers = [];
+    addNews(`🎓 AGE LIMIT: ${academyName} Academy release ${p.name} at 19. Youth eligibility is over; it is time for senior football.`, "gold");
+    headlines.push(`🎓 Turned 19 — automatically graduated out of ${academyName} Academy.`);
+  }
   if (p.age >= 30) {
     const decay = (p.age - 28) * rnd(0.5, 1.1) * Math.max(0.2, 1 - gearVal("nutrition") * diff().shopEff);
     p.attrs.pac = clamp(p.attrs.pac - decay, 1, 99);
@@ -2847,23 +3382,35 @@ function showAdvanceToHS() {
 function showGraduation() {
   const p = G.player;
   const ovr = overall(p);
-  const proClub = pick(CLUB_NAMES[5]);
-  const proWage = Math.round((200 + ovr * 14) * agentMult() / 10) * 10;
+  const academy = G.academy;
+  const academyLeague = academy ? leagueById(academy.leagueId) : null;
+  const academyWage = academy ? Math.round((200 + ovr * 14) * academyLeague.wageMult * agentMult() / 10) * 10 : 0;
+  const pro = starterClubFor(G.homeLeague || homeLeagueId(p.nation), 4);
+  const proClub = pro.name;
+  const proWage = Math.round((200 + ovr * 14) * pro.league.wageMult * agentMult() / 10) * 10;
   const collegeTeam = pick(CLUB_NAMES[6]);
   showModal(`<h2>🎓 Graduation Day — Decision Time</h2>
     <p style="margin:12px 0;line-height:1.7">${p.name} is 18. Scouts and college recruiters are both calling. This choice shapes everything:</p>
+    ${academy ? `<button class="event-choice" id="grad-academy"><b>🏫 Sign a professional deal with ${crest(academy.club,16)} ${academy.club}</b>
+      <small>Your ${academy.strength}/10 academy kept you through graduation · ${academyLeague.flag} ${academyLeague.name} · ${money(academyWage)}/week · senior minutes are NOT guaranteed.</small></button>` : ""}
     <button class="event-choice" id="grad-pro"><b>⚽ Turn pro with ${crest(proClub, 16)} ${proClub}</b>
-      <small>Tier 5 · ${money(proWage)}/week · thrown in the deep end: ×1.2 training growth until 21, but coaches won't trust you — expect barely any minutes at first.</small></button>
+      <small>${pro.league.flag} ${pro.league.name} · team strength ${pro.rating}/10 · ${money(proWage)}/week · thrown in the deep end: ×1.2 training growth until 21, but expect very few minutes at first.</small></button>
     <button class="event-choice" id="grad-college"><b>🎓 Scholarship at ${crest(collegeTeam, 16)} ${collegeTeam}</b>
       <small>College league · guaranteed starter minutes + ×1.35 training growth — but tuition is ${money(diff().tuition)} a year. You go straight into debt.</small></button>`);
+  if (academy) $("grad-academy").onclick = () => {
+    const club = academy.club, leagueId = academy.leagueId;
+    p.path = "academy-pro"; p.wage = academyWage; G.academy = null;
+    addNews(`🏫 ACADEMY GRADUATE! ${p.name} signs a senior contract with ${club}. Now earn those first-team minutes.`, "gold");
+    startNewSeason(club, academyLeague.tier, leagueId);
+  };
   $("grad-pro").onclick = () => {
-    p.path = "hs-pro";
+    p.path = "hs-pro"; G.academy = null;
     p.wage = proWage;
     addNews(`⚽ ${p.name} skips college and turns PRO with ${proClub}! Bold. Now earn those minutes.`, "gold");
-    startNewSeason(proClub, 5);
+    startNewSeason(proClub, pro.tier, pro.leagueId);
   };
   $("grad-college").onclick = () => {
-    p.path = "college";
+    p.path = "college"; G.academy = null;
     p.money -= diff().tuition;
     p.wage = 120;
     addNews(`🎓 ${p.name} commits to ${collegeTeam}! Starter minutes guaranteed... and a ${money(diff().tuition)} tuition bill. Ouch.`, "gold");
@@ -2875,32 +3422,46 @@ function showCollegeDecision() {
   const p = G.player;
   const ovr = overall(p);
   const forced = p.age >= 22;
-  const proClub = pick(CLUB_NAMES[5]);
-  const proWage = Math.round((200 + ovr * 14) * agentMult() / 10) * 10;
+  const academy = G.academy;
+  const academyLeague = academy ? leagueById(academy.leagueId) : null;
+  const academyWage = academy ? Math.round((200 + ovr * 14) * academyLeague.wageMult * agentMult() / 10) * 10 : 0;
+  const pro = starterClubFor(G.homeLeague || homeLeagueId(p.nation), 4);
+  const proClub = pro.name;
+  const proWage = Math.round((200 + ovr * 14) * pro.league.wageMult * agentMult() / 10) * 10;
   const star = ovr >= 62;
-  const starClub = star ? pick(CLUB_NAMES[4]) : null;
-  const starWage = Math.round((200 + ovr * 14) * 2.2 * agentMult() / 10) * 10;
+  const starPool = pro.league.clubs.filter(c => c[1] >= 5 && c[1] <= 7);
+  const starPick = star ? (starPool.length ? pick(starPool) : pro.league.clubs[Math.max(0, pro.league.clubs.length - 4)]) : null;
+  const starClub = starPick ? starPick[0] : null;
+  const starRating = starPick ? starPick[1] : 0;
+  const starWage = Math.round((200 + ovr * 14) * pro.league.wageMult * 1.25 * agentMult() / 10) * 10;
   showModal(`<h2>🎓 College Season Over${forced ? " — Final Year!" : ""}</h2>
     <p style="margin:12px 0;line-height:1.7">${forced ? `You're 22 — eligibility is up. Time to turn pro.` : `Stay in school or chase the pro dream?`}${p.money < 0 ? ` Your student debt stands at <b style="color:var(--red)">${money(p.money)}</b>.` : ""}</p>
+    ${academy ? `<button class="event-choice" id="col-academy"><b>🏫 Graduate to ${crest(academy.club,16)} ${academy.club}'s senior squad</b><small>You survived the ${academy.strength}/10 academy · ${money(academyWage)}/week · first-team minutes depend on your OVR.</small></button>` : ""}
     <button class="event-choice" id="col-pro"><b>⚽ Declare for the pros — ${crest(proClub, 16)} ${proClub}</b>
-      <small>Tier 5 · ${money(proWage)}/week · time to start paying off that debt.</small></button>
+      <small>${pro.league.flag} ${pro.league.name} · strength ${pro.rating}/10 · ${money(proWage)}/week · time to start paying off that debt.</small></button>
     ${star ? `<button class="event-choice" id="col-star"><b>🌟 College star! ${crest(starClub, 16)} ${starClub} want you</b>
-      <small>Tier 4 · ${money(starWage)}/week · your college form skipped you a whole division!</small></button>` : ""}
+      <small>${pro.league.flag} ${pro.league.name} · strength ${starRating}/10 · ${money(starWage)}/week · your college form earned a stronger first club!</small></button>` : ""}
     ${!forced ? `<button class="event-choice" id="col-stay"><b>📚 Stay another year</b>
       <small>Keep the starter minutes and ×1.35 growth — another ${money(diff().tuition)} of tuition debt.</small></button>` : ""}`);
+  if (academy) $("col-academy").onclick = () => {
+    const club = academy.club, leagueId = academy.leagueId;
+    p.path = "academy-pro"; p.wage = academyWage; G.academy = null;
+    addNews(`🏫 ACADEMY GRADUATE! ${p.name} earns a senior deal with ${club}.`, "gold");
+    startNewSeason(club, academyLeague.tier, leagueId);
+  };
   $("col-pro").onclick = () => {
-    p.wage = proWage;
+    p.wage = proWage; G.academy = null;
     addNews(`⚽ ${p.name} declares for the pros and signs with ${proClub}!`, "gold");
-    startNewSeason(proClub, 5);
+    startNewSeason(proClub, pro.tier, pro.leagueId);
   };
   if (star) $("col-star").onclick = () => {
-    p.wage = starWage;
+    p.wage = starWage; G.academy = null;
     rep(3);
-    addNews(`🌟 College standout ${p.name} skips Tier 5 entirely — straight to ${starClub} in Tier 4!`, "gold");
-    startNewSeason(starClub, 4);
+    addNews(`🌟 College standout ${p.name} earns a stronger first contract with ${starClub} (${pro.league.name})!`, "gold");
+    startNewSeason(starClub, pro.tier, pro.leagueId);
   };
   if (!forced) $("col-stay").onclick = () => {
-    p.money -= diff().tuition;
+    p.money -= diff().tuition; G.academy = null;
     addNews(`📚 One more year of college ball — and one more ${money(diff().tuition)} tuition bill.`, "bad");
     startNewSeason(G.clubName, 6);
   };
@@ -2983,42 +3544,101 @@ function runSchoolTournament(headlines, myPos, next) {
   });
 }
 
+function runDomesticCup(headlines, next) {
+  if (G.tier > 5 || !G.leagueId) { next(); return; }
+  const p = G.player, L = leagueById(G.leagueId), dc = DOMESTIC_CUPS[G.leagueId];
+  const pool = L.clubs.map(c => c[0]).filter(n => n !== G.clubName);
+  runCupCampaign({
+    name:dc.cup, stage:"domestic", home:G.clubName, pool,
+    skipGroups:true, knockouts:["Round of 16","Quarter-final","Semi-final"],
+    intro:`The league campaign pauses for ${dc.cup}. One bad night and the dream is over.`,
+    onEliminated(round) {
+      rep(1); headlines.push(`🏆 ${dc.cup}: eliminated in the ${round}.`);
+      addNews(`💔 ${G.clubName} exit the ${dc.cup} in the ${round}.`, "bad");
+    },
+    final:{
+      title:`🏆 ${dc.cup.toUpperCase()} FINAL`, stage:"domestic", home:G.clubName, opponent:pick(pool),
+      onResult(won) {
+        if (won) {
+          G.domesticCupWonSeason = G.season;
+          p.trophies.push(`🏆 ${dc.cup} Winner (S${G.season})`);
+          rep(5); mor(12); p.money += Math.round(25000 * L.quality * diff().moneyMult);
+          addBoost(HERO_ATTR[p.pos], 10, 2, `${dc.cup} hero`);
+          headlines.push(`🏆 CUP WINNERS! ${G.clubName} lift the ${dc.cup}!`);
+          addNews(`🏆 ${p.name} wins the ${dc.cup}!`, "gold");
+        } else {
+          rep(2); mor(-5); headlines.push(`💔 Beaten in the ${dc.cup} final.`);
+        }
+        next();
+      }
+    }
+  }, next);
+}
+
+function runSuperCup(headlines, myPos, next) {
+  if (G.tier > 5 || !G.leagueId || (myPos !== 1 && G.domesticCupWonSeason !== G.season)) { next(); return; }
+  const p = G.player, L = leagueById(G.leagueId), dc = DOMESTIC_CUPS[G.leagueId];
+  const opponent = [...L.clubs].filter(c => c[0] !== G.clubName).sort((a,b) => b[1]-a[1])[0][0];
+  showModal(`<div class="mg-wrap">${confettiHTML(16)}<h2 class="hype-banner">🛡️ ${dc.shield.toUpperCase()}</h2>
+    <p style="margin:14px 0;line-height:1.7">${myPos === 1 ? `As ${L.name} champions` : `As ${dc.cup} winners`}, ${crest(G.clubName,17)} <b>${G.clubName}</b> earn a place in the season's champion-vs-cup-winner showpiece.</p>
+    <button class="btn gold" id="shield-go">🛡️ Play the super cup →</button></div>`);
+  $("shield-go").onclick = () => finalShowdown({
+    title:`🛡️ ${dc.shield.toUpperCase()}`, stage:"domestic", home:G.clubName, opponent,
+    onResult(won) {
+      if (won) {
+        p.trophies.push(`🛡️ ${dc.shield} Winner (S${G.season})`);
+        rep(3); mor(8); p.money += Math.round(12000 * L.quality * diff().moneyMult);
+        headlines.push(`🛡️ ${G.clubName} win the ${dc.shield}!`);
+        addNews(`🛡️ ${p.name} adds the ${dc.shield} to the cabinet!`, "gold");
+      } else headlines.push(`💔 Lost the ${dc.shield}.`);
+      next();
+    }
+  });
+}
+
 function runContinentalCup(headlines, myPos, next) {
-  if (G.tier > 2) { next(); return; }
-  const t = TOURNAMENTS[G.tier];
-  if (myPos > t.spots) {
-    addNews(`Missed ${t.nm} qualification — finished ${ord(myPos)} (top ${t.spots} qualify).`, "bad");
+  if (G.tier > 5) { next(); return; }
+  const entry = continentalEntry(myPos), L = leagueById(G.leagueId);
+  if (!entry) {
+    addNews(`Missed continental qualification — ${ord(myPos)} in the ${L.name} was not high enough.`, "bad");
     next(); return;
   }
-  showQualifiedModal(t.nm, myPos, () => {
+  showQualifiedModal(entry.nm, myPos, () => {
     const p = G.player;
-    p.bestContinental = Math.max(p.bestContinental || 0, 1); // qualified
+    const rankedPool = LEAGUE_CATALOG.filter(x => continentalSet(x).region === entry.region)
+      .flatMap(x => x.clubs.map(([name,rating]) => ({name,rating})))
+      .filter(x => x.name !== G.clubName).sort((a,b) => b.rating-a.rating);
+    const start = entry.level === 1 ? 0 : entry.level === 2 ? 8 : 16;
+    let selectedPool = rankedPool.slice(start, start + 30);
+    if (selectedPool.length < 8) selectedPool = rankedPool; // smaller confederations still get a full draw
+    const cupPool = selectedPool.map(x => x.name);
+    if (entry.level === 1) p.bestContinental = Math.max(p.bestContinental || 0, 1);
     runCupCampaign({
-      name: "Continental Champions Cup", stage: "continental", home: G.clubName,
-      pool: CLUB_NAMES[1].filter(n => n !== G.clubName),
+      name:entry.nm, stage:"continental", home:G.clubName,
+      pool:cupPool,
       knockouts: ["Quarter-final", "Semi-final"],
-      recordStage(s) { p.bestContinental = Math.max(p.bestContinental || 0, s); },
+      recordStage(s) { if (entry.level === 1) p.bestContinental = Math.max(p.bestContinental || 0, s); },
       onEliminated(round) {
-        rep(round === "Group Stage" ? 2 : 3);
-        headlines.push(`💔 Out of the Continental Cup at the ${round}.`);
-        addNews(`💔 Continental Cup run over — out at the ${round}.`, "bad");
+        rep(round === "Group Stage" ? 2 : 3); headlines.push(`💔 Out of the ${entry.nm} at the ${round}.`);
+        addNews(`💔 ${entry.nm} run over — out at the ${round}.`, "bad");
       },
       final: {
-        title: "🏆 CONTINENTAL CUP FINAL",
+        title:`🏆 ${entry.nm.toUpperCase()} FINAL`,
         stage: "continental", home: G.clubName,
-        opponent: pick(CLUB_NAMES[1].filter(n => n !== G.clubName)),
+        opponent:pick(cupPool),
         onResult(won) {
           if (won) {
-            p.bestContinental = 5;
-            p.trophies.push(`🏆 Continental Champions Cup (S${G.season})`);
-            rep(8); mor(15); p.money += Math.round(250000 * diff().moneyMult);
-            addBoost(HERO_ATTR[p.pos], 14, 3, "Continental Cup hero");
-            headlines.push(`🏆 CHAMPIONS OF THE CONTINENT! ${G.clubName} lift the Champions Cup!`);
-            addNews(`🏆 ${p.name} wins the Continental Champions Cup!`, "gold");
+            if (entry.level === 1) p.bestContinental = 5;
+            const rewards = {1:[8,250000,14,3],2:[6,140000,11,3],3:[5,90000,9,2]}[entry.level];
+            p.trophies.push(`🏆 ${entry.nm} (S${G.season})`);
+            rep(rewards[0]); mor(15); p.money += Math.round(rewards[1] * diff().moneyMult);
+            addBoost(HERO_ATTR[p.pos], rewards[2], rewards[3], `${entry.nm} hero`);
+            headlines.push(`🏆 ${G.clubName} WIN THE ${entry.nm.toUpperCase()}!`);
+            addNews(`🏆 ${p.name} wins the ${entry.nm}!`, "gold");
           } else {
             rep(3); mor(-8);
-            headlines.push(`💔 So close — beaten in the Continental Cup final.`);
-            addNews(`💔 Lost the Continental Cup final. It stings.`, "bad");
+            headlines.push(`💔 So close — beaten in the ${entry.nm} final.`);
+            addNews(`💔 Lost the ${entry.nm} final. It stings.`, "bad");
           }
           next();
         }
@@ -3069,15 +3689,15 @@ function runCupCampaign(cfg, next) {
   const p = G.player;
   const pool = [...cfg.pool];
   const draw = () => pool.splice(irnd(0, pool.length - 1), 1)[0];
-  const groupOpps = [draw(), draw(), draw()];
+  const groupOpps = cfg.skipGroups ? [] : [draw(), draw(), draw()];
   const group = [
     { nm: cfg.home, pts: 0, gd: 0, me: true },
     ...groupOpps.map(n => ({ nm: n, pts: 0, gd: 0 })),
   ];
-  const world = cfg.stage === "world";
-  const chip = `<span class="stage-chip ${world ? "chip-world" : "chip-cont"}">${world ? "🌍 " : "⭐ "}${cfg.name}</span>`;
-  const decor = world ? `<div class="fireworks">🎆 🎇 🎆</div>` : `<div class="fireworks">⭐ 🏆 ⭐</div>`;
-  const anthem = world ? "🎵 The anthems echo around a packed stadium..." : "🎵 The famous cup anthem rings out under the lights...";
+  const world = cfg.stage === "world", domestic = cfg.stage === "domestic";
+  const chip = `<span class="stage-chip ${world ? "chip-world" : domestic ? "chip-dom" : "chip-cont"}">${world ? "🌍 " : domestic ? "🏆 " : "⭐ "}${cfg.name}</span>`;
+  const decor = world ? `<div class="fireworks">🎆 🎇 🎆</div>` : domestic ? `<div class="fireworks">🏟️ 🏆 🏟️</div>` : `<div class="fireworks">⭐ 🏆 ⭐</div>`;
+  const anthem = world ? "🎵 The anthems echo around a packed stadium..." : domestic ? "🎺 The cup anthem booms as both ends raise their colours..." : "🎵 The famous cup anthem rings out under the lights...";
   const chanceFor = stat => clamp(0.30 + effAttr(p, stat) * 0.0062 + (p.morale - 50) * 0.001 + diff().showdown, 0.1, 0.95);
 
   function groupTableHTML() {
@@ -3197,15 +3817,23 @@ function runCupCampaign(cfg, next) {
       else out();
     });
   }
-  // the draw ceremony
-  showModal(`<div class="mg-wrap">${decor}<h2 class="hype-banner">${cfg.name}</h2>
-    ${cfg.intro ? `<p style="margin:8px 0">${cfg.intro}</p>` : ""}
-    <p class="anthem">${world ? "The draw is made. The whole planet holds its breath." : "The draw is made across the continent."}</p>
-    <h3 style="margin:10px 0 2px">YOUR GROUP</h3>
-    ${groupTableHTML()}
-    <p class="fade-muted" style="font-size:13px">Top 2 advance · every match turns on two defining moments</p>
-    <button class="btn gold" id="cup-kick0">🏟️ Begin the campaign →</button></div>`);
-  $("cup-kick0").onclick = () => playGroupMatch(0);
+  // the draw ceremony — domestic cups go straight into single-elimination ties
+  if (cfg.skipGroups) {
+    showModal(`<div class="mg-wrap">${decor}<h2 class="hype-banner">${cfg.name}</h2>
+      ${cfg.intro ? `<p style="margin:10px 0;line-height:1.6">${cfg.intro}</p>` : ""}
+      <p class="anthem">The knockout bracket is drawn live. No groups, no safety net — win or go home.</p>
+      <button class="btn gold" id="cup-kick0">🏟️ Enter the ${cfg.knockouts[0]} →</button></div>`);
+    $("cup-kick0").onclick = () => playKnockout(0);
+  } else {
+    showModal(`<div class="mg-wrap">${decor}<h2 class="hype-banner">${cfg.name}</h2>
+      ${cfg.intro ? `<p style="margin:8px 0">${cfg.intro}</p>` : ""}
+      <p class="anthem">${world ? "The draw is made. The whole planet holds its breath." : "The draw is made across the continent."}</p>
+      <h3 style="margin:10px 0 2px">YOUR GROUP</h3>
+      ${groupTableHTML()}
+      <p class="fade-muted" style="font-size:13px">Top 2 advance · every match turns on two defining moments</p>
+      <button class="btn gold" id="cup-kick0">🏟️ Begin the campaign →</button></div>`);
+    $("cup-kick0").onclick = () => playGroupMatch(0);
+  }
 }
 
 // The Final Showdown: 4 stat-driven moments decide the biggest match of your life.
@@ -3437,6 +4065,11 @@ function finalShowdown(cfg) {
       halftime:"🗣️ Halftime. The captain slams a locker shut: “We did NOT come this far to blink now!”",
       ftLine:"Grown adults are weeping in the stands. The badge on your chest just became eternal.",
       winTitle:"CHAMPIONS OF THE CONTINENT!", winSub:"The biggest club prize there is — and it's yours." },
+    domestic:    { banner:"🏟️ THE NATIONAL CUP FINAL 🏟️", decor:"🎆 🏆 🎆", anthem:"🎺 The cup-final anthem rolls around the national stadium.", crowd:"Two ends, two colours, one trophy. Every town and city is watching.", tunnel:"🏟️ Walk into the national stadium →",
+      buildup:"🚌 Roads around the stadium have been packed since sunrise. Scarves hang from every bridge and your family is somewhere in the crowd.",
+      halftime:"🗣️ The manager points at the badge: “Cup finals are remembered forever. Make this one ours.”",
+      ftLine:"The winning end erupts as ribbons pour from the roof of the national stadium.",
+      winTitle:"CUP WINNERS!", winSub:"You survived every knockout round and lifted the national cup." },
     school:      { banner:"🏟️ THE CHAMPIONSHIP FINAL 🏟️", decor:"📣 🏟️ 📣", anthem:"📣 The marching band plays. The bleachers are shaking.", crowd:"The whole town shut down to be here tonight. Everyone you know is in those stands.", tunnel:"🎺 Run out of the locker room →",
       buildup:"🏫 The pep rally spilled into the streets. Your name is painted on half the shop windows in town.",
       halftime:"🗣️ Coach kneels in the huddle: “Look around. Remember this forever. Now go finish it.”",
@@ -3567,24 +4200,25 @@ function generateOffers(myPos, avg) {
   const p = G.player;
   const ovr = overall(p);
   const offers = [];
-  // which tiers would want you?
-  for (const L of LEAGUES) {
-    if (L.tier === G.tier || L.tier > 5) continue; // schools don't make contract offers
-    const targetStr = (L.strength[0] + L.strength[1]) / 2;
+  // Clubs from every country can approach you; global strength controls realism.
+  for (const L of LEAGUE_CATALOG) {
+    const suitable = L.clubs.filter(([name,rating]) => name !== G.clubName && Math.abs(ratingStrength(rating) - (ovr + p.reputation * .12)) <= 15);
+    if (!suitable.length) continue;
+    const [clubName, rating] = pick(suitable);
+    const targetStr = ratingStrength(rating);
     const appeal = ovr + p.reputation * 0.25 - targetStr;
     let chance = clamp((0.5 + appeal * 0.06) * diff().offerMult, 0, 0.9);
-    if (L.tier > G.tier) chance = ovr < targetStr - 5 ? 0.3 : 0.05; // lower league fallback
+    if (targetStr < ovr - 10) chance *= .55;
     if (p.age >= 33 && L.tier < G.tier) chance *= 0.4;
     if (Math.random() < chance && offers.length < 3) {
-      const clubName = pick(CLUB_NAMES[L.tier].filter(n => n !== G.clubName));
       const wage = Math.round((200 + ovr * 14) * L.wageMult * agentMult() / 10) * 10;
-      offers.push({ tier: L.tier, league: L.name, club: clubName, wage });
+      offers.push({ tier:L.tier, league:L.name, leagueId:L.id, club:clubName, rating, wage });
     }
   }
   // current club renewal (always available unless you were terrible)
   const renewWage = Math.round(p.wage * (avg >= 7 ? 1.35 : avg >= 6 ? 1.1 : 0.95) / 10) * 10;
-  offers.unshift({ tier: G.tier, league: leagueInfo().name, club: G.clubName, wage: renewWage, renew: true });
-  return offers.sort((a,b) => a.tier - b.tier);
+  offers.unshift({ tier:G.tier, league:leagueInfo().name, leagueId:G.leagueId, club:G.clubName, rating:currentClubRating(), wage:renewWage, renew:true });
+  return offers.sort((a,b) => (b.rating || 0) - (a.rating || 0));
 }
 
 function acceptOffer(idx) {
@@ -3599,16 +4233,20 @@ function acceptOffer(idx) {
     addNews(`🖊️ Contract renewed at ${o.club}: ${money(o.wage)}/week.`, "good");
   }
   p.wage = o.wage;
-  startNewSeason(o.club, o.tier);
+  startNewSeason(o.club, o.tier, o.leagueId);
 }
 
-function startNewSeason(clubName, tier) {
+function startNewSeason(clubName, tier, leagueId) {
   const p = G.player;
   G.tier = tier;
-  G.clubs = genLeague(tier);
+  if (tier <= 5) G.leagueId = leagueId || G.leagueId || G.homeLeague || homeLeagueId(p.nation);
+  else G.leagueId = null;
+  G.clubs = genLeague(tier, G.leagueId);
   // make sure our club is in the league list
   if (!G.clubs.some(c => c.name === clubName)) {
-    G.clubs[0] = { name: clubName, strength: Math.round((LEAGUES.find(l=>l.tier===tier).strength[0] + LEAGUES.find(l=>l.tier===tier).strength[1]) / 2), pts:0,w:0,d:0,l:0,gf:0,ga:0 };
+    const entry = clubEntry(clubName, G.leagueId);
+    const legacy = LEAGUES.find(l=>l.tier===tier);
+    G.clubs[0] = { name:clubName, rating:entry ? entry.rating : null, strength:entry ? ratingStrength(entry.rating) : Math.round((legacy.strength[0] + legacy.strength[1]) / 2), pts:0,w:0,d:0,l:0,gf:0,ga:0 };
   }
   G.clubName = clubName;
   G.totalRounds = (G.clubs.length - 1) * 2;
@@ -3620,7 +4258,12 @@ function startNewSeason(clubName, tier) {
   G.topScorerNPC = { name: npcName(), goals: 0 };
   G.pendingOffers = null;
   G.transferredThisSeason = false;
-  for (let i = 0; i < 4; i++) tickStocks(); // the market keeps moving over the off-season
+  if (G.academy && tier > 5 && p.age <= 18) {
+    G.academy.fee = academyFee(G.academy.strength);
+    p.money -= G.academy.fee;
+    addNews(`💸 ${G.academy.club} Academy tuition renewed: ${money(G.academy.fee)}. Balance may remain in debt.`, p.money < 0 ? "bad" : "");
+  }
+  for (let i = 0; i < 4; i++) { tickStocks(); tickRealEstate(); } // investments keep moving over the off-season
   addNews(`— Season ${G.season} (${G.year}) kicks off with ${clubName} in the ${leagueInfo().name}. —`);
   closeModal();
   if (G.pendingRetire || p.age >= 40) { retire(true); return; }
@@ -3659,6 +4302,11 @@ function retire(forced) {
   p.shorts = {};
   (p.options || []).forEach(o => { p.money += optionValue(o); });
   p.options = [];
+  for (const id in p.properties || {}) {
+    const m = (G.realEstate || []).find(x => x.id === id);
+    if (m && p.properties[id].units) p.money += Math.round(p.properties[id].units * m.price * diff().shopCost * 0.95);
+  }
+  p.properties = {};
   const [title, sub] = legacyRank(p);
   // bank this career's trophies into the account, then close the save slot
   const accs = loadAccounts();
@@ -3711,8 +4359,9 @@ function render() {
   $("pc-boosts").innerHTML = (p.tempBoosts || []).map(b =>
     `<div class="boost-line">🔥 +${b.amt} ${attrName(b.attr)} · ${b.games} game${b.games > 1 ? "s" : ""} left</div>`).join("")
     + activeDebuffs(p).map(d => `<div class="debuff-line">${d.ico} ${d.label}</div>`).join("")
+    + (G.academy ? `<div class="boost-line">🏫 ${G.academy.club} Academy ${G.academy.strength}/10 · training ×${academyTrainingMult().toFixed(2)} · target ${academyRequiredAvg(G.academy.strength).toFixed(1)}</div>` : "")
     + (() => { // Hard-mode form watch: your rolling 5-game average vs the cut line
-        const cutAt = G.difficulty === "hard" ? ({ 1:5, 2:6, 3:6.5 })[G.tier] : null;
+        const cutAt = seniorCutTarget();
         const rr = p.recentRatings || [];
         if (!cutAt || rr.length < 3) return "";
         const avg = rr.reduce((a, b) => a + b, 0) / rr.length;
@@ -3732,7 +4381,8 @@ function render() {
 
   // topbar
   $("tb-club-label").innerHTML = crest(G.clubName, 20) + " " + G.clubName;
-  $("tb-league").textContent = leagueInfo().name + (G.tier <= 5 ? " (Tier " + G.tier + ")" : " · 🎓");
+  const liveLeague = leagueInfo();
+  $("tb-league").textContent = G.tier <= 5 && G.leagueId ? `${liveLeague.flag} ${liveLeague.name} · quality ${liveLeague.quality.toFixed(1)}/10` : liveLeague.name + " · 🎓";
   $("tb-season").innerHTML = `Season ${G.season} · ${G.year} <span style="color:${G.difficulty === "hard" ? "var(--red)" : G.difficulty === "easy" ? "var(--green-bright)" : "var(--muted)"}">· ${diff().nm}</span>`;
   const r = roundsPlayed();
   $("tb-week").textContent = r < G.totalRounds ? `Matchday ${r + 1} of ${G.totalRounds}` : "Season complete";
@@ -3743,7 +4393,7 @@ function render() {
     const pm = t.attr ? posTrainMult(t.attr) : 1;
     const posTag = pm > 1 ? ` · <b style="color:var(--gold)">★ key stat ×1.4</b>` : pm < 1 ? ` · <span style="color:var(--red)">off-position ×0.5</span>` : "";
     return `<div class="action-card ${G.lastTraining === t.id ? "done" : ""}" data-train="${t.id}">
-      <div class="ico">${d.ico}</div><div class="nm">${d.nm}</div><div class="fx">${d.fx}${t.cost ? " · −" + t.cost + " NRG" : ""}${posTag}${t.attr && p.coaches && p.coaches[t.attr] ? ` · 👔×${COACH_TIERS[p.coaches[t.attr]-1].mult}` : ""}</div>
+      <div class="ico">${d.ico}</div><div class="nm">${d.nm}</div><div class="fx">${d.fx}${t.cost ? " · −" + t.cost + " NRG" : ""}${posTag}${t.attr && p.coaches && p.coaches[t.attr] ? ` · 👔×${COACH_TIERS[p.coaches[t.attr]-1].mult}` : ""}${G.academy && t.attr ? ` · 🏫×${academyTrainingMult().toFixed(2)}` : ""}</div>
     </div>`;
   }).join("");
   $("act-hint").textContent = G.trainedThisWeek ? "Activity done — time for the match!" : "Pick one activity, then play your match";
@@ -3758,9 +4408,16 @@ function render() {
   const me = myClubObj();
   if (opp) {
     const fav = me.strength + (overall(p) - me.strength) * .25 > opp.strength;
-    $("next-match-info").innerHTML = `${crest(G.clubName, 18)} <b>${G.clubName}</b> <span class="fade-muted">(str ${me.strength})</span> vs ${crest(opp.name, 18)} <b>${opp.name}</b> <span class="fade-muted">(str ${opp.strength})</span> ${fav ? "— you're favourites." : "— tough one."}`;
+    const meRate = me.rating ? `<span class="strength-chip">${me.rating}/10</span>` : `<span class="fade-muted">(squad ${me.strength})</span>`;
+    const oppRate = opp.rating ? `<span class="strength-chip">${opp.rating}/10</span>` : `<span class="fade-muted">(squad ${opp.strength})</span>`;
+    $("next-match-info").innerHTML = `${crest(G.clubName, 18)} <b>${G.clubName}</b> ${meRate} vs ${crest(opp.name, 18)} <b>${opp.name}</b> ${oppRate} ${fav ? "— you're favourites." : "— tough one."}`;
+    if (!G.matchChallenge) G.matchChallenge = makeMatchChallenge();
+    const c = G.matchChallenge;
+    $("match-challenge").style.display = "block";
+    $("match-challenge").innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><span><b>${c.ico} MATCHDAY CHALLENGE</b><br><span class="fade-muted">${c.label}</span></span><b style="color:var(--gold)">+${money(c.reward)}</b></div>`;
   } else {
     $("next-match-info").innerHTML = `<span class="fade-muted">The season is over. Time to talk contracts...</span>`;
+    $("match-challenge").style.display = "none";
   }
   $("btn-play").classList.toggle("hidden", seasonOver);
   $("btn-endseason").classList.toggle("hidden", !seasonOver);
@@ -3770,9 +4427,21 @@ function render() {
     `<div class="news-item ${n.kind}"><span class="wk">${n.week}</span>${n.text}</div>`).join("") || `<span class="fade-muted">No news yet.</span>`;
 
   // table
-  $("table-title").textContent = leagueInfo().name;
-  $("league-table-body").innerHTML = sortedTable().map((c, i) =>
-    `<tr class="${c.name === G.clubName ? "me" : ""}"><td>${i+1}</td><td>${crest(c.name, 15)} ${c.name}</td><td class="num">${c.w+c.d+c.l}</td><td class="num">${c.w}</td><td class="num">${c.d}</td><td class="num">${c.l}</td><td class="num">${c.gf - c.ga}</td><td class="num">${c.pts}</td></tr>`).join("");
+  $("table-title").textContent = `${liveLeague.flag || "🎓"} ${liveLeague.name}`;
+  if (G.tier <= 5 && G.leagueId) {
+    const liveSet = continentalSet(liveLeague), domestic = DOMESTIC_CUPS[G.leagueId];
+    $("table-league-summary").innerHTML = `<div><b>${liveLeague.quality.toFixed(1)}/10</b><br><span class="fade-muted">League difficulty</span></div><div><b>${currentClubRating()}/10</b><br><span class="fade-muted">Your team strength</span></div><div><b>Top ${liveLeague.spots}</b><br><span class="fade-muted">${liveSet.primary}</span></div>`;
+    $("table-qualification").innerHTML = `<span><i class="qual-dot qual-champ">U</i>${liveSet.primary}</span><span><i class="qual-dot qual-second">E</i>${liveSet.secondary}</span>${liveSet.third ? `<span><i class="qual-dot qual-third">C</i>${liveSet.third}</span>` : ""}<span>🏆 All clubs enter ${domestic.cup}</span><span><i class="qual-dot qual-drop">R</i>Relegation zone</span>`;
+  } else {
+    const tq = TOURNAMENTS[G.tier];
+    $("table-league-summary").innerHTML = `<div><b>School</b><br><span class="fade-muted">Development league</span></div><div><b>${Math.round(me.strength)}</b><br><span class="fade-muted">Your squad strength</span></div><div><b>${tq ? "Top " + tq.spots : "—"}</b><br><span class="fade-muted">Tournament places</span></div>`;
+    $("table-qualification").innerHTML = tq ? `<span><i class="qual-dot qual-champ">Q</i>Qualifies for ${tq.nm}</span>` : `<span class="fade-muted">No postseason tournament at this level.</span>`;
+  }
+  const rankedClubs = sortedTable();
+  $("league-table-body").innerHTML = rankedClubs.map((c, i) => {
+    const q = qualificationMark(i + 1, rankedClubs.length);
+    return `<tr class="${c.name === G.clubName ? "me" : ""}"><td>${q ? `<i class="qual-dot ${q.cls}" title="${q.label}">${q.ico}</i>` : ""}${i+1}</td><td>${crest(c.name, 15)} ${c.name}${c.rating ? `<span class="strength-chip">${c.rating}/10</span>` : ""}</td><td class="num">${c.w+c.d+c.l}</td><td class="num">${c.w}</td><td class="num">${c.d}</td><td class="num">${c.l}</td><td class="num">${c.gf - c.ga}</td><td class="num">${c.pts}</td></tr>`;
+  }).join("");
 
   // stats
   const s = p.seasonStats;
@@ -3894,6 +4563,29 @@ function render() {
   document.querySelectorAll("[data-short]").forEach(el => el.onclick = () => openShort(el.dataset.short));
   document.querySelectorAll("[data-cover]").forEach(el => el.onclick = () => coverShort(el.dataset.cover));
 
+  // real estate — slower than stocks, but produces rent every matchday
+  if (!G.realEstate) G.realEstate = initRealEstate();
+  p.properties = p.properties || {};
+  let reValue = 0, reRent = 0;
+  $("realestate-grid").innerHTML = G.realEstate.map(m => {
+    const h = p.properties[m.id] || { units:0, cost:0 };
+    const quote = propertyBuyPrice(m);
+    const value = h.units * quote;
+    const rent = h.units * propertyRent(m);
+    reValue += value; reRent += rent;
+    const profit = value - h.cost;
+    return `<div class="shop-card">
+      <div class="ico">${m.ico}</div><div class="nm">${m.nm}</div>
+      <div class="owned">${h.units ? `<b>${h.units} owned</b> · value ${money(value)} <span style="color:${profit >= 0 ? "var(--green-bright)" : "var(--red)"}">(${profit >= 0 ? "+" : "−"}${money(Math.abs(profit))})</span>` : "No property owned"}</div>
+      <div class="next"><b>${money(quote)}</b><br><span>${money(propertyRent(m))} rent per matchday · value moves with the market</span></div>
+      <div class="btn-row" style="margin-top:auto"><button class="btn" data-rebuy="${m.id}" ${p.money < quote ? "disabled" : ""}>Buy</button>
+      <button class="btn secondary" data-resell="${m.id}" ${!h.units ? "disabled" : ""}>Sell 1</button></div></div>`;
+  }).join("");
+  $("re-value").textContent = money(reValue);
+  $("re-rent").textContent = money(reRent);
+  document.querySelectorAll("[data-rebuy]").forEach(el => el.onclick = () => buyProperty(el.dataset.rebuy));
+  document.querySelectorAll("[data-resell]").forEach(el => el.onclick = () => sellProperty(el.dataset.resell));
+
   // options desk
   const optSel = $("opt-stock");
   const optCur = optSel.value;
@@ -3909,42 +4601,70 @@ function render() {
   }).join("") || `<span class="fade-muted">No open options. Pick a stock, type a premium, choose your direction.</span>`;
   document.querySelectorAll("[data-optout]").forEach(el => el.onclick = () => cashOutOption(+el.dataset.optout));
 
+  // invite-only youth academy network
+  G.academyOffers = (G.academyOffers || []).filter(o => o.until > G.weekCount);
+  if (G.academy) {
+    const a = G.academy, rr = a.ratings || [], aAvg = rr.length ? rr.reduce((s,v)=>s+v,0)/rr.length : 0;
+    $("academy-status").innerHTML = `<div class="academy-card"><div>${crest(a.club,20)} <b>${a.club} Academy</b><span class="strength-chip">${a.strength}/10</span>
+      <div class="tr-req">Training boost <b style="color:var(--green-bright)">×${academyTrainingMult().toFixed(2)}</b> · squad level ${Math.round(academySquadStrength(a.strength))} · five-match target <b>${academyRequiredAvg(a.strength).toFixed(1)}</b></div>
+      <div class="academy-meter"><i style="width:${rr.length/5*100}%"></i></div><div class="tr-req">Review progress: ${rr.length}/5 matches${rr.length ? ` · current average ${aAvg.toFixed(2)}` : ""} · annual tuition ${money(a.fee)}</div></div>
+      <button class="btn danger" id="academy-leave">Leave</button></div>`;
+    $("academy-offers").innerHTML = "";
+    $("academy-leave").onclick = leaveAcademy;
+  } else {
+    const ageOK = p.age >= 14 && p.age <= 18;
+    $("academy-status").innerHTML = ageOK
+      ? `<div class="agent-bubble">Your OVR is <b>${overall(p)}</b>. Academy scouts watch match ratings, potential and development. A 6/10 academy usually wants about <b>${academyMinOverall(6)} OVR</b> and a <b>${academyRequiredAvg(6).toFixed(1)}</b> rating; a 10/10 academy expects around <b>${academyMinOverall(10)} OVR</b> and <b>${academyRequiredAvg(10).toFixed(1)}</b>.</div>`
+      : `<div class="agent-bubble">Academy scouting is only open from age <b>14 through 18</b>. ${p.age < 14 ? "Your window opens next year." : "Your academy window has closed; senior transfers now run through your agent."}</div>`;
+    $("academy-offers").innerHTML = ageOK && G.academyOffers.length ? G.academyOffers.map((o,i) => `<div class="academy-card"><div>${crest(o.club,19)} <b>${o.club} Academy</b><span class="strength-chip">${o.strength}/10</span>
+      <div class="tr-req">🏃 Training ×${(1+o.strength*.075).toFixed(2)} · 📋 must average above ${academyRequiredAvg(o.strength).toFixed(1)} every 5 matches · 💸 ${money(o.fee)} annual tuition</div>
+      <div class="tr-req">Invite expires in ${o.until-G.weekCount} matchday${o.until-G.weekCount===1?"":"s"}. Minutes are not guaranteed and tuition can put you in debt.</div></div>
+      <button class="btn" data-academy-join="${i}">Join</button></div>`).join("") : (ageOK ? `<p class="fade-muted" style="margin-top:10px">No invitation yet. Academies cannot be purchased directly — perform well enough to be scouted.</p>` : "");
+    document.querySelectorAll("[data-academy-join]").forEach(el => el.onclick = () => joinAcademy(+el.dataset.academyJoin));
+  }
+
   // transfer market
   G.scoutInterest = (G.scoutInterest || []).filter(s => s.until > G.weekCount);
   const myRep = Math.round(p.reputation);
   const inSchool = G.tier > 5;
   $("tm-rep").textContent = inSchool ? "🎓 in school — market locked until you turn pro" : myRep + " / 100";
-  $("transfer-list").innerHTML = LEAGUES.filter(L => L.tier <= 5).map(L => {
-    const rows = CLUB_NAMES[L.tier].map((n, i) => {
-      const isCurrent = n === G.clubName;
-      const scout = (G.scoutInterest || []).find(s => s.club === n);
-      const objs = isCurrent ? [] : clubObjectives(L.tier, i);
-      const met = objs.filter(o => o.done).length;
-      const allMet = met === objs.length;
-      const unlocked = !!scout || allMet;
-      const can = !isCurrent && unlocked && !G.transferredThisSeason && !inSchool;
-      return `<div class="transfer-row${isCurrent ? " current" : ""}">
-        <div class="tr-club">${crest(n, 16)} ${n}
-          <span class="tr-req ${unlocked ? "ok" : ""}">${L.name} · ${isCurrent ? "" : scout ? `🔥 SCOUTING YOU — objectives waived, ${scout.until - G.weekCount} matchday${scout.until - G.weekCount > 1 ? "s" : ""} left` : allMet ? "✓ All objectives complete" : `🎯 ${met}/${objs.length} objectives met`}</span>
-        </div>
-        ${isCurrent
-          ? `<span class="badge t1">YOUR CLUB</span>`
-          : can
-            ? `<button class="btn" data-join="${L.tier}|${n}">Join</button>`
-            : unlocked
-              ? `<button class="btn secondary" disabled>${inSchool ? "In school" : "Next season"}</button>`
-              : `<button class="btn secondary" data-obj="${L.tier}|${i}|${n}" ${inSchool ? "disabled" : ""}>🎯 View</button>`}
-      </div>`;
-    }).join("");
-    return `<div class="tm-league">Tier ${L.tier} — ${L.name}</div>${rows}`;
+  const leagueSel = $("agent-league");
+  const oldLeague = leagueSel.value;
+  leagueSel.innerHTML = LEAGUE_CATALOG.map(L => `<option value="${L.id}">${L.flag} ${L.country} — ${L.name}</option>`).join("");
+  leagueSel.value = leagueById(oldLeague) ? oldLeague : (G.leagueId || G.homeLeague || "eng");
+  const marketLeague = leagueById(leagueSel.value) || LEAGUE_CATALOG[0];
+  const high = Math.max(...marketLeague.clubs.map(c => c[1])), low = Math.min(...marketLeague.clubs.map(c => c[1]));
+  const marketSet = continentalSet(marketLeague), marketDomestic = DOMESTIC_CUPS[marketLeague.id];
+  $("agent-league-summary").innerHTML = `<div><b>${marketLeague.quality.toFixed(1)}/10</b><br><span class="fade-muted">League quality</span></div><div><b>${low}–${high}/10</b><br><span class="fade-muted">Club strengths</span></div><div><b>${marketSet.primary}</b><br><span class="fade-muted">${marketDomestic.cup} · ${marketDomestic.shield}</span></div>`;
+  $("transfer-list").innerHTML = marketLeague.clubs.map(([n, rating], i) => {
+    const isCurrent = n === G.clubName;
+    const scout = (G.scoutInterest || []).find(s => s.club === n);
+    const objs = isCurrent ? [] : clubObjectives(marketLeague.tier, i, marketLeague.id, n);
+    const met = objs.filter(o => o.done).length;
+    const allMet = met === objs.length;
+    const unlocked = !!scout || allMet;
+    const can = !isCurrent && unlocked && !G.transferredThisSeason && !inSchool;
+    const fit = agentFit(n, marketLeague.id);
+    const fitLine = G.difficulty === "hard" ? "Agent fit hidden on Hard" : `${fit.ico} ${fit.label}`;
+    return `<div class="transfer-row${isCurrent ? " current" : ""}">
+      <div class="tr-club">${crest(n, 16)} ${n}<span class="strength-chip">${rating}/10</span>
+        <span class="tr-req ${unlocked ? "ok" : ""}">${fitLine} · ${isCurrent ? "current club" : scout ? `🔥 SCOUTING YOU — objectives waived, ${scout.until - G.weekCount} matchdays left` : allMet ? "✓ Objectives complete" : `🎯 ${met}/${objs.length} objectives met`}</span>
+      </div>
+      ${isCurrent ? `<span class="badge t1">YOUR CLUB</span>` : can ? `<button class="btn" data-join="${marketLeague.tier}|${marketLeague.id}|${n}">Join</button>` : unlocked ? `<button class="btn secondary" disabled>${inSchool ? "In school" : "Next season"}</button>` : `<button class="btn secondary" data-obj="${marketLeague.tier}|${marketLeague.id}|${i}|${n}" ${inSchool ? "disabled" : ""}>🎯 View</button>`}
+    </div>`;
   }).join("");
+  if (!$("agent-message").dataset.ready) {
+    $("agent-message").innerHTML = inSchool ? `You're on the ${leagueById(G.homeLeague).flag} <b>${leagueById(G.homeLeague).name}</b> pathway. Once you turn pro, that is where your first club will be.` : agentLeagueText(marketLeague);
+    $("agent-message").dataset.ready = "1";
+  }
+  leagueSel.onchange = () => { $("agent-message").innerHTML = agentLeagueText(leagueById(leagueSel.value)); render(); };
   document.querySelectorAll("[data-join]").forEach(el => el.onclick = () => {
-    const [t, n] = el.dataset.join.split("|");
-    confirmTransfer(+t, n);
+    const [t, lid, n] = el.dataset.join.split("|");
+    confirmTransfer(+t, n, lid);
   });
   document.querySelectorAll("[data-obj]").forEach(el => el.onclick = () => {
-    const [t, i, n] = el.dataset.obj.split("|");
-    showObjectivesModal(+t, +i, n);
+    const [t, lid, i, n] = el.dataset.obj.split("|");
+    showObjectivesModal(+t, +i, n, lid);
   });
 
   // history
@@ -3986,12 +4706,15 @@ function showMatchModal(me, opp, gMe, gOpp, events, minutes, rating, motm) {
 function showSeasonModal(headlines, myPos, avg, offers) {
   const p = G.player;
   const s = p.seasonStats;
-  const offerHtml = offers.map((o, i) => `
+  const offerHtml = offers.map((o, i) => {
+    const fit = agentFit(o.club, o.leagueId);
+    return `
     <div class="offer-card">
-      <div class="oc-club">${o.renew ? "🖊️ " : "✈️ "}${crest(o.club, 17)} ${o.renew ? "Stay at " : ""}${o.club}<span class="badge ${o.tier<=1?"t1":o.tier<=2?"t2":""}">Tier ${o.tier}</span></div>
-      <div class="oc-details">${o.league} · Wage: <b style="color:var(--green-bright)">${money(o.wage)}/week</b>${o.renew ? " (contract renewal)" : ""}</div>
+      <div class="oc-club">${o.renew ? "🖊️ " : "✈️ "}${crest(o.club, 17)} ${o.renew ? "Stay at " : ""}${o.club}<span class="strength-chip">${o.rating || "?"}/10</span></div>
+      <div class="oc-details">${o.league} · Wage: <b style="color:var(--green-bright)">${money(o.wage)}/week</b>${o.renew ? " (contract renewal)" : ""}<br>${G.difficulty === "hard" ? `<span class="fade-muted">Agent fit hidden on Hard mode</span>` : `${fit.ico} <b>${fit.label}</b> — ${fit.text}`}</div>
       <button class="btn" style="padding:8px 18px;font-size:13px" onclick="acceptOffer(${i})">${o.renew ? "Renew" : "Sign"}</button>
-    </div>`).join("");
+    </div>`;
+  }).join("");
   showModal(`
     <h2>Season ${G.season} Review — ${G.year}</h2>
     <div style="margin:12px 0;font-size:14px;line-height:1.6">
@@ -4031,6 +4754,18 @@ async function hashPass(user, pass) {
 }
 
 function migrateState(g) {
+  if (!g.homeLeague) g.homeLeague = homeLeagueId(g.player.nation);
+  if (g.tier <= 5 && !g.leagueId) {
+    g.leagueId = g.homeLeague;
+    const L = leagueById(g.leagueId);
+    const oldMe = (g.clubs || []).find(c => c.name === g.clubName);
+    const oldRating = oldMe ? Math.max(1, Math.min(10, Math.round((oldMe.strength - 38) / 5.5))) : Math.max(2, 6 - g.tier);
+    const closest = [...L.clubs].sort((a,b) => Math.abs(a[1]-oldRating)-Math.abs(b[1]-oldRating))[0];
+    g.clubName = closest[0];
+    g.tier = L.tier;
+    g.clubs = genLeague(g.tier, g.leagueId);
+    g.totalRounds = (g.clubs.length - 1) * 2;
+  }
   if (g.player.morale === undefined) g.player.morale = 70;
   if (!g.eventCooldowns) g.eventCooldowns = {};
   if (!g.weekCount) g.weekCount = 0;
@@ -4038,8 +4773,19 @@ function migrateState(g) {
   if (!g.player.tempBoosts) g.player.tempBoosts = [];
   if (g.transferredThisSeason === undefined) g.transferredThisSeason = false;
   if (!g.scoutInterest) g.scoutInterest = [];
+  if (!g.academyOffers) g.academyOffers = [];
+  if (g.academyScoutCooldown === undefined) g.academyScoutCooldown = 0;
+  if (g.academy) { if (!g.academy.ratings) g.academy.ratings = []; if (g.academy.weeks === undefined) g.academy.weeks = 0; }
+  if (g.academy && g.player.age >= 19) {
+    const academyName = g.academy.club;
+    g.academy = null; g.academyOffers = [];
+    g.news = g.news || [];
+    g.news.unshift({ week:`S${g.season} W${g.week}`, text:`🎓 AGE LIMIT: ${academyName} Academy released ${g.player.name} at 19. Youth eligibility is over.`, kind:"gold" });
+  }
   if (!g.stocks) g.stocks = initStocks();
+  if (!g.realEstate) g.realEstate = initRealEstate();
   if (!g.player.portfolio) g.player.portfolio = {};
+  if (!g.player.properties) g.player.properties = {};
   if (!g.player.coaches) g.player.coaches = {};
   if (!g.difficulty) g.difficulty = "normal";
   if (g.player.shaken === undefined) g.player.shaken = 0;
@@ -4049,6 +4795,8 @@ function migrateState(g) {
   if (!g.player.recentRatings) g.player.recentRatings = [];
   if (!g.player.shorts) g.player.shorts = {};
   if (!g.player.options) g.player.options = [];
+  if (!g.matchChallenge) g.matchChallenge = makeMatchChallenge();
+  if (g.domesticCupWonSeason === undefined) g.domesticCupWonSeason = 0;
   return g;
 }
 
@@ -4350,6 +5098,10 @@ let selectedStage = "hs";
 function fillSchoolSelect() {
   $("inp-club").innerHTML = CLUB_NAMES[STAGE_CFG[selectedStage].tier].map(n => `<option>${n}</option>`).join("");
 }
+function updateHomeLeaguePreview() {
+  const L = leagueById(homeLeagueId($("inp-nation").value));
+  $("home-league-preview").innerHTML = `${L.flag} <b>${L.country} pathway: ${L.name}</b><br><span class="fade-muted">When you turn professional, your first offers will come from this league. League quality ${L.quality.toFixed(1)}/10 · club strength ${Math.min(...L.clubs.map(c=>c[1]))}–${Math.max(...L.clubs.map(c=>c[1]))}/10.</span>`;
+}
 document.querySelectorAll("#stage-grid .pos-btn").forEach(b => b.onclick = () => {
   document.querySelectorAll("#stage-grid .pos-btn").forEach(x => x.classList.remove("selected"));
   b.classList.add("selected");
@@ -4357,6 +5109,8 @@ document.querySelectorAll("#stage-grid .pos-btn").forEach(b => b.onclick = () =>
   fillSchoolSelect();
 });
 fillSchoolSelect();
+$("inp-nation").onchange = updateHomeLeaguePreview;
+updateHomeLeaguePreview();
 
 $("btn-start").onclick = () => {
   const name = $("inp-name").value.trim() || "Alex Doe";
@@ -4399,6 +5153,16 @@ document.querySelectorAll(".tab-btn").forEach(b => b.onclick = () => {
   b.classList.add("active");
   $(b.dataset.tab).classList.remove("hidden");
 });
+
+function askAgent(q) {
+  const question = q || $("agent-question").value;
+  $("agent-message").innerHTML = agentReply(question);
+  $("agent-message").dataset.ready = "1";
+  $("agent-question").value = "";
+}
+$("btn-agent-ask").onclick = () => askAgent();
+$("agent-question").addEventListener("keydown", e => { if (e.key === "Enter") askAgent(); });
+document.querySelectorAll(".agent-quick").forEach(b => b.onclick = () => askAgent(b.dataset.agentq));
 
 $("btn-save").onclick = () => { saveGame(); flashModal("Saved 💾", "<p>Your career is safe in this browser.</p>"); };
 $("btn-retire-now").onclick = () => {
