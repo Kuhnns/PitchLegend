@@ -161,6 +161,7 @@
   .arena-controls { flex: 0 0 auto; display: grid; grid-template-columns: repeat(4, 50px) repeat(2, minmax(82px, 1fr)); gap: 5px; justify-content: center; margin-top: 8px; }
   .arena-controls .cz-btn, .arena-controls .btn { width: 100% !important; min-width: 0; height: 46px !important; padding: 0 8px; white-space: nowrap; }
   .arena-tools { flex: 0 0 auto; }
+  .arena-gesture { flex: 0 0 auto; color: #9bd2ff; font-size: 11.5px; font-weight: 800; letter-spacing: .25px; margin: 3px 0 5px; }
   @media (max-width: 520px), (max-height: 650px) {
     .modal.arena-modal { padding: 8px; max-height: 100dvh; border-radius: 10px; }
     .arena-wrap { height: calc(100dvh - 16px); }
@@ -530,6 +531,8 @@
           <div id="next-match-info" style="font-size:15px;margin-bottom:14px;"></div>
           <div id="match-challenge" style="margin:-2px 0 14px;padding:11px 13px;border:1px solid var(--border);border-radius:10px;background:rgba(255,193,7,.06)"></div>
           <button class="btn" id="btn-play">▶ &nbsp;Play Match</button>
+          <button class="btn secondary" id="btn-practice">🎯 Practice 2D Attack</button>
+          <button class="btn secondary" id="btn-setpiece-practice">🚩 Practice Set Pieces</button>
           <button class="btn secondary hidden" id="btn-endseason">Finish Season →</button>
         </div>
         <div class="panel">
@@ -2873,14 +2876,16 @@ function beginMatch() {
     runLiveSituation(forced.id,forced);
     return;
   }
-  if (minutes >= 45 && Math.random() < 0.42) { runBigMoment(); return; }
+  // Playable football moments should be a regular part of a career, not a rare
+  // interruption. Longer appearances now produce a live situation more often.
+  if (minutes >= 45 && Math.random() < 0.56) { runBigMoment(); return; }
   finishMatch(null);
 }
 
 // ---------- big-moment mini-games ----------
 function runBigMoment() {
   const pos = G.player.pos;
-  if (Math.random() < 0.74) { runLiveSituation(); return; }
+  if (Math.random() < 0.82) { runLiveSituation(); return; }
   let pool;
   if (pos === "GK") pool = [gkPenaltyMoment, crossClaimMoment, crossClaimMoment];
   else if (pos === "DEF") pool = [tackleMoment, tackleMoment, headerMoment, penaltyMoment, crossClaimMoment];
@@ -2895,9 +2900,9 @@ const LIVE_SITUATIONS = [
   { id:"through", pos:["FWD","MID"], ico:"🧵", title:"THROUGH-BALL MOVE", objective:"Complete at least one pass, then finish the move", type:"attack", defenders:3, timer:12, requirePass:true, assists:1, rating:1.15 },
   { id:"halftime", pos:["FWD","MID","DEF"], ico:"🕧", title:"SCORE BEFORE HALFTIME", objective:"Create a goal before the halftime whistle", type:"attack", defenders:3, timer:9, goals:1, rating:1.25 },
   { id:"stoppage", pos:["FWD","MID","DEF"], ico:"⏱️", title:"STOPPAGE-TIME ATTACK", objective:"Score the winner before time expires", type:"attack", defenders:4, timer:7, goals:1, rating:1.5 },
-  { id:"freekick", pos:["FWD","MID"], ico:"🎯", title:"DANGEROUS FREE KICK", objective:"Beat the wall and hit the target", type:"freekick", goals:1, rating:1.2 },
-  { id:"corner", pos:["FWD","MID","DEF"], ico:"🚩", title:"LATE CORNER", objective:"Time the run and attack the delivery", type:"timing", stat:"phy", goals:1, rating:1.1 },
-  { id:"cross", pos:["FWD","MID","DEF"], ico:"📐", title:"CROSSING CHANCE", objective:"Deliver or meet the cross in the danger area", type:"timing", stat:"pas", assists:1, rating:1.0 },
+  { id:"freekick", pos:["FWD","MID"], ico:"🎯", title:"DANGEROUS FREE KICK", objective:"Drag over or around the wall and beat the goalkeeper", type:"freekick", goals:1, rating:1.2 },
+  { id:"corner", pos:["FWD","MID","DEF"], ico:"🚩", title:"LATE CORNER", objective:"Aim the cross, then attack the ball at the perfect moment", type:"corner", stat:"phy", goals:1, rating:1.1 },
+  { id:"cross", pos:["FWD","MID","DEF"], ico:"📐", title:"CROSSING CHANCE", objective:"Pick a marked runner and time the finish from the delivery", type:"cross", stat:"pas", assists:1, rating:1.0 },
   { id:"marking", pos:["DEF","MID"], ico:"🛡️", title:"DEFENSIVE MARKING", objective:"Stay with the runner and protect the lead", type:"timing", stat:"def", rating:1.15, concede:1 },
   { id:"keepersave", pos:["GK"], ico:"🧤", title:"PROTECT THE LEAD", objective:"Make the save before the final whistle", type:"save", rating:1.3, concede:1 },
   { id:"assistmate", pos:["FWD","MID"], ico:"🤝", title:"TEAMMATE COMBINATION", objective:"Complete the one-two and create the decisive goal", type:"attack", defenders:3, timer:11, requirePass:true, assists:1, rating:1.35, storyOnly:true },
@@ -2941,9 +2946,13 @@ function playLiveSituation(cfg) {
   const p = G.player;
   if (cfg.type === "attack") {
     arena2D("breakaway", { title:`${cfg.ico} ${cfg.title}`, objective:cfg.objective, timer:cfg.timer, defenders:cfg.defenders, requirePass:cfg.requirePass,
-      hint:cfg.requirePass ? "WASD/arrows move · X opens the through-ball lane · SPACE shoots after the pass" : "WASD/arrows move · X passes · SPACE shoots · beat the clock" }, ok => finishLiveSituation(cfg, ok));
+      hint:cfg.requirePass ? "Drag from the ball carrier to a teammate or into space, then drag at goal to finish." : "Drag from the ball carrier to aim every pass and shot. WASD/arrows remain optional." }, ok => finishLiveSituation(cfg, ok));
   } else if (cfg.type === "freekick") {
-    arena2D("penalty", { title:`${cfg.ico} ${cfg.title}`, objective:cfg.objective, shotContext:"shot", hint:"The regular aim arrow is your free-kick target — time SPACE to bend it beyond the keeper." }, ok => finishLiveSituation(cfg, ok));
+    arena2D("freekick", { title:`${cfg.ico} ${cfg.title}`, objective:cfg.objective, shotContext:"shot",
+      hint:"Drag from the ball into the goal. Longer swipes add lift; bend it around the jumping wall and away from the keeper." }, ok => finishLiveSituation(cfg, ok));
+  } else if (cfg.type === "corner" || cfg.type === "cross") {
+    arena2D("corner", { title:`${cfg.ico} ${cfg.title}`, objective:cfg.objective, deliveryType:cfg.type,
+      hint:"Drag the delivery toward a blue runner. As it drops, tap ATTACK BALL inside the green contact window." }, ok => finishLiveSituation(cfg, ok));
   } else if (cfg.type === "save") {
     arena2D("save", { title:`${cfg.ico} ${cfg.title}`, objective:cfg.objective }, ok => finishLiveSituation(cfg, ok));
   } else {
@@ -2965,8 +2974,8 @@ const PEN_ZONES = [
   { nm:"↙ Bottom Left", miss:.08, save:.60 }, { nm:"🥄 Panenka", miss:.10, save:.85, panenka:true }, { nm:"↘ Bottom Right", miss:.08, save:.60 },
 ];
 // ============================== 2D ARENA ==============================
-// Real playable 2D gameplay on a canvas: breakaways you dribble yourself,
-// penalties with a sweeping aim arrow, and reflex saves as a goalkeeper.
+// Real playable 2D gameplay on a canvas: open play, direct free kicks with a
+// jumping wall, corners/crosses, classic penalties and goalkeeper reflex saves.
 const ARENA = { raf: 0, keys: {} };
 
 function arena2D(mode, opts, done) {
@@ -2981,24 +2990,28 @@ function arena2D(mode, opts, done) {
   const hard = G.difficulty === "hard", easy = G.difficulty === "easy";
   const shotContext = opts.shotContext || (mode==="penalty" ? "penalty" : "shot");
   const isGKp = p.pos === "GK";
-  const title = opts.title || { breakaway: "💨 BREAKAWAY — beat them and score!", penalty: "⚽ PENALTY — time your kick", save: "🧤 SAVE IT — block the shot!", match: "🕹️ THE FULL MATCH — 3:00 on the clock" }[mode];
-  const hint = opts.hint || { breakaway: "Move with arrows/WASD · Tap PASS (X) or SHOOT (SPACE) to enter slow motion, then choose your action within 5 seconds!", penalty: "The aim arrow sweeps across the goal — kick when it's on target. The edges risk going wide!", save: "◀ ▶ move your keeper — get in front of the shot!", match: isGKp ? "Your team attacks up top — then YOU make the saves. Pause or sim the remaining match at any time." : "WASD/arrows move · In attack: X passes, SPACE shoots · In defence: X tackles, SPACE slide-tackles. Fouls can earn cards!" }[mode];
+  const title = opts.title || { breakaway: "💨 BREAKAWAY — beat them and score!", freekick:"🎯 DIRECT FREE KICK — beat the wall!", corner:"🚩 CORNER KICK — find your runner!", penalty: "⚽ PENALTY — time your kick", save: "🧤 SAVE IT — block the shot!", match: "🕹️ THE FULL MATCH — 3:00 on the clock" }[mode];
+  const hint = opts.hint || { breakaway: "Drag from the player with the ball: release near a runner to pass, or inside the goal to shoot. WASD is optional.", freekick:"Drag from the ball into the goal. Swipe farther for more lift over the wall.", corner:"Drag the cross to a blue runner, then tap ATTACK BALL as it drops into the green zone.", penalty: "The regular aim arrow is unchanged — kick when it reaches your target.", save: "◀ ▶ move your keeper — read the striker and cover the shot!", match: isGKp ? "Your team attacks up top — then YOU make the saves. Pause or sim at any time." : "Attack: drag from the ball to aim. Defence: move with WASD/arrows, X tackles and SPACE slides." }[mode];
   const controls = mode === "penalty"
     ? `<div class="arena-controls" style="grid-template-columns:minmax(180px,340px)"><button class="btn gold" id="ar-act">⚽ KICK (or SPACE)</button></div>`
     : mode === "save"
       ? `<div class="arena-controls" style="grid-template-columns:repeat(2,minmax(100px,150px))"><button class="cz-btn" style="font-size:18px" data-ak="ArrowLeft">◀</button><button class="cz-btn" style="font-size:18px" data-ak="ArrowRight">▶</button></div>`
+      : mode === "freekick"
+        ? `<div class="arena-controls" style="grid-template-columns:minmax(180px,340px)"><button class="btn gold" id="ar-act">🎯 AIM FREE KICK</button></div>`
+      : mode === "corner"
+        ? `<div class="arena-controls" style="grid-template-columns:minmax(180px,340px)"><button class="btn gold" id="ar-act">📐 AIM DELIVERY</button></div>`
       : `<div class="arena-controls">
           <button class="cz-btn" data-ak="ArrowLeft">◀</button>
           <button class="cz-btn" data-ak="ArrowUp">▲</button>
           <button class="cz-btn" data-ak="ArrowDown">▼</button>
           <button class="cz-btn" data-ak="ArrowRight">▶</button>
-          <button class="btn" id="ar-pass">🤝 PASS</button>
-          <button class="btn gold" id="ar-act">⚽ SHOOT</button></div>`;
+          <button class="btn" id="ar-pass">🤝 QUICK PASS ⚠</button>
+          <button class="btn gold" id="ar-act">⚽ QUICK SHOT ⚠</button></div>`;
   const matchTools = mode === "match" ? `<div class="arena-tools" style="display:flex;gap:7px;justify-content:center;margin-top:7px;flex-wrap:wrap">
       <button class="btn secondary" id="ar-pause">⏸ PAUSE (P)</button>
       <button class="btn secondary" id="ar-sim">⏩ SIM REMAINING</button></div>` : "";
-  const chipStats = { breakaway: ["pac", "dri", "pas", "sho"], penalty: ["sho"], save: ["def", "phy", "pac"], match: isGKp ? ["def", "phy", "pac"] : ["pac", "dri", "pas", "sho", "def", "phy"] }[mode];
-  const arenaContext=k=>mode==="penalty"?shotContext:mode==="save"?(k==="phy"?"":"keeper"):k==="pac"?"run":k==="pas"?"pass":k==="sho"?"shot":k==="def"||k==="phy"?"tackle":"";
+  const chipStats = { breakaway: ["pac", "dri", "pas", "sho"], freekick:["sho","pas"], corner:["pas","phy","sho"], penalty: ["sho"], save: ["def", "phy", "pac"], match: isGKp ? ["def", "phy", "pac"] : ["pac", "dri", "pas", "sho", "def", "phy"] }[mode];
+  const arenaContext=k=>mode==="penalty"||mode==="freekick"?shotContext:mode==="corner"?(k==="pas"?"pass":k==="phy"?"aerial":k==="sho"?"shot":""):mode==="save"?(k==="phy"?"":"keeper"):k==="pac"?"run":k==="pas"?"pass":k==="sho"?"shot":k==="def"||k==="phy"?"tackle":"";
   const arenaValue=k=>arenaContext(k)?masteryAttr(p,k,arenaContext(k)):effAttr(p,k);
   const statChips = chipStats.map(k => {const base=Math.round(effAttr(p,k)),v=Math.round(arenaValue(k));return `${attrName(k)} <b style="color:var(--gold)">${base}${v>base?`→${v}🌟`:""}</b>`;}).join(" · ");
   const activeMasteries=abilityState(p).equipped.map(id=>ABILITIES.find(a=>a.id===id)).filter(Boolean);
@@ -3006,6 +3019,7 @@ function arena2D(mode, opts, done) {
     ${opts.objective ? `<div class="arena-objective" style="margin:7px 0;padding:8px 10px;border:1px solid var(--gold);border-radius:9px;color:var(--gold);font-size:12px"><b>LIVE OBJECTIVE:</b> ${opts.objective}</div>` : ""}
     <p class="fade-muted arena-stats" style="font-size:12px;margin:2px 0 8px">Powered by your stats: ${statChips}</p>
     ${activeMasteries.length?`<div class="arena-active" style="font-size:11px;color:var(--gold);margin:-3px 0 7px">ACTIVE: ${activeMasteries.map(a=>`${a.ico} ${a.nm}`).join(" · ")}</div>`:""}
+    ${(mode==="breakaway"||mode==="match"||mode==="freekick"||mode==="corner")&&!isGKp?`<div class="arena-gesture">☝️ DRAG = ACCURATE AIM · QUICK BUTTONS = RUSHED</div>`:""}
     <div class="arena-pitch"><canvas id="arena" width="${W}" height="${H}" tabindex="0" style="background:#1e7d3c;border-radius:10px;touch-action:none;outline:none"></canvas></div>
     ${controls}
     ${matchTools}
@@ -3038,17 +3052,20 @@ function arena2D(mode, opts, done) {
   // ---------- state ----------
   const S = {
     splash: null, won: false, over: false, frame: 0,
-    me: { x: W / 2, y: H - 52 },
+    me: { id:"me", lane:"centre", x: W / 2, y: H - 52 },
     keeper: { x: W / 2, y: GOAL_Y + 12 },
     ball: null, // { x, y, vx, vy } once shot / in flight
     defs: [],
     aimX: W / 2, aimDir: 1,
     phase: "play", // penalty: aim->fly ; save: windup->fly
     target: 0, dive: 0, timer: (opts.timer || (hard ? 10 : 14)) * 60,
-    mate: null, carrier: "me", passFlash: null,
+    mate: null, supports: [], carrier: "me", passFlash: null,
     passes: 0,
     countdown: 3 * 60, countdownLabel: "GET READY", pickup: null, boostT: 0,
     slowMo: null, // { intent, left, total } — five real-time seconds max
+    drag: null, trail: [], combo: 0, tackleGrace: 0, gkReact: 0, shotTargetX: W / 2,
+    setBall:null, wall:[], attackers:[], markers:[], setTarget:null, wallJump:0,
+    contactTap:null, contactWindow:false, deliveryType:opts.deliveryType||"corner",
     paused: false, possessions: 0,
     keyTap: null,
     defender: null, tackleCooldown: 0, eventFlash: null,
@@ -3064,9 +3081,15 @@ function arena2D(mode, opts, done) {
       const spots = [{x:76,y:H*.48},{x:W-76,y:H*.48},{x:W/2,y:H*.34},{x:W/2-50,y:H*.62}];
       S.defs = spots.slice(0, clamp(opts.defenders, 1, 4));
     }
+    S.defs.forEach((d,i)=>{d.x=clamp(d.x+rnd(-24,24),34,W-34);d.y=clamp(d.y+rnd(-28,28),105,H-115);d.role=i===0?"press":"mark";});
     if (opts.startY) S.me.y = opts.startY;
-    S.mate = { x: W / 2 + (Math.random() < 0.5 ? -90 : 90), y: H - 85 };
-    S.pickup = { x: rnd(70, W - 70), y: rnd(H * 0.38, H * 0.68) };
+    const firstLane = Math.random() < 0.5 ? "left" : "right";
+    S.mate = { id:"mate", lane:firstLane, x:firstLane==="left"?92:W-92, y:H-102 };
+    S.supports = [
+      { id:"runner", lane:firstLane==="left"?"right":"left", x:firstLane==="left"?W-68:68, y:H-156 },
+      { id:"striker", lane:"centre", x:W/2, y:H-205 },
+    ];
+    S.pickup = null;
   }
   if (mode === "penalty") { S.me = { x: W / 2 - 28, y: H - 70 }; S.phase = "aim"; }
   if (mode === "save") {
@@ -3081,6 +3104,36 @@ function arena2D(mode, opts, done) {
     // RFX (phy) buys you reaction frames — high reflexes make the shot feel slower
     S.flight = (hard ? 22 : easy ? 48 : 38) + Math.round(effAttr(p, "phy") * (hard ? 0.045 : 0.07)) + (hasAbility("sweeper",p)?8:0);
   }
+  if (mode === "freekick") {
+    const ballX = W / 2 + rnd(-58, 58), ballY = rnd(270, 310);
+    S.setBall = { x:ballX, y:ballY };
+    S.me = { id:"me", x:ballX + (ballX < W / 2 ? -18 : 18), y:ballY + 34 };
+    S.phase = "setaim";
+    S.timer = (hard ? 8 : easy ? 13 : 10) * 60;
+    const wallY = 154;
+    const wallCentre = ballX + (W / 2 - ballX) * ((ballY - wallY) / (ballY - GOAL_Y));
+    const wallCount = hard ? 5 : 4;
+    S.wall = Array.from({length:wallCount},(_,i)=>({x:wallCentre+(i-(wallCount-1)/2)*17,y:wallY}));
+    S.wallY = wallY;
+    S.countdownLabel = "SET THE BALL";
+  }
+  if (mode === "corner") {
+    const left = Math.random() < .5;
+    const openPlay = opts.deliveryType === "cross";
+    S.setSide = left ? "left" : "right";
+    S.setBall = { x:left ? 13 : W-13, y:openPlay ? 188 : 54 };
+    S.me = { id:"me", x:left ? 22 : W-22, y:S.setBall.y + (openPlay ? 34 : 24) };
+    S.keeper = { x:W/2, y:GOAL_Y+12 };
+    S.phase = "setaim";
+    S.timer = (hard ? 8 : easy ? 14 : 11) * 60;
+    S.attackers = [
+      {id:"near",x:left?148:W-148,y:86,lane:"near"},
+      {id:"centre",x:W/2,y:118,lane:"centre"},
+      {id:"far",x:left?W-112:112,y:146,lane:"far"},
+    ];
+    S.markers = S.attackers.map((a,i)=>({x:a.x+(left?8:-8)+rnd(-5,5),y:a.y-12-rnd(0,10),mark:i}));
+    S.countdownLabel = openPlay ? "CROSSING CHANCE" : "CORNER KICK";
+  }
   if (mode === "match") {
     S.score = [0, 0];
     S.clock = 180 * 62; // ≈ three minutes of ticks
@@ -3089,6 +3142,26 @@ function arena2D(mode, opts, done) {
     S.runner = null; S.shooter = null;
     if (p.pos === "GK") startTeamAttack(); else resetAttack(); // hoisted helpers
   }
+  // World-Soccer-Champs-inspired direct control: drag from the active ball carrier
+  // toward a teammate/space to pass, or release inside the goal area to shoot.
+  const pointerPoint = e => {
+    const r = cv.getBoundingClientRect();
+    return { x:clamp((e.clientX-r.left)*W/r.width,0,W), y:clamp((e.clientY-r.top)*H/r.height,0,H) };
+  };
+  cv.onpointerdown = e => {
+    if (S.over || S.paused || S.countdown > 0) return;
+    if (mode === "corner" && S.phase === "flight") { e.preventDefault(); attackDelivery(); return; }
+    if (!attackingNow() && !setPieceNow()) return;
+    e.preventDefault();
+    const pt = pointerPoint(e), car = setPieceNow() ? S.setBall : carrierObj();
+    const lock = S.slowMo && (S.slowMo.intent==="pass" || S.slowMo.intent==="shoot") ? S.slowMo.intent : null;
+    S.drag = { startX:car.x, startY:car.y, x:pt.x, y:pt.y, lock };
+    if (!S.slowMo) setPieceNow() ? startSetPieceSlowMo() : startSlowMo("aim");
+    try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+  };
+  cv.onpointermove = e => { if (S.drag) { e.preventDefault(); const pt=pointerPoint(e); S.drag.x=pt.x; S.drag.y=pt.y; } };
+  cv.onpointerup = e => { if (S.drag) { e.preventDefault(); const pt=pointerPoint(e); finishDrag(pt); } };
+  cv.onpointercancel = () => { S.drag=null; if (S.slowMo&&(S.slowMo.intent==="aim"||setPieceNow())) clearSlowMo(); };
   // ---------- stats ARE the physics ----------
   const pSpeed = clamp(1.1 + masteryAttr(p, "pac", "run") * 0.018 + (easy ? 0.18 : 0) - (hard ? 0.12 : 0), 1.15, 3.25); // realistic running pace
   const defSpeed = 1.58 + (hard ? 0.48 : 0) - (easy ? 0.18 : 0);          // pressure without pinball speed
@@ -3109,17 +3182,24 @@ function arena2D(mode, opts, done) {
     S.possessions++;
     S.countdown = 3 * 60;
     S.countdownLabel = S.possessions === 1 ? "KICK OFF" : "YOUR BALL";
-    S.me = { x: W / 2, y: H - 145 };
+    S.me = { id:"me", lane:"centre", x: W / 2, y: H - 145 };
     S.ball = null;
     S.carrier = "me"; S.passFlash = null;
-    S.mate = { x: W / 2 + (Math.random() < 0.5 ? -90 : 90), y: H - 165 };
+    const firstLane = Math.random() < 0.5 ? "left" : "right";
+    S.mate = { id:"mate", lane:firstLane, x:firstLane==="left"?90:W-90, y:H-175 };
+    S.supports = [
+      { id:"runner", lane:firstLane==="left"?"right":"left", x:firstLane==="left"?W-64:64, y:H-220 },
+      { id:"striker", lane:"centre", x:W/2, y:H-270 },
+    ];
+    S.drag=null; S.trail=[]; S.combo=0; S.tackleGrace=35;
     S.keeper = { x: W / 2, y: GOAL_Y + 12 };
     S.defs = [{ x: 80, y: H * 0.43 }, { x: W - 80, y: H * 0.43 }];
     if (hard) {
       S.defs.push({ x: W / 2, y: H * 0.30 });
       S.defs.push({ x: W / 2 + 50, y: H * 0.57 });
     }
-    S.pickup = { x: rnd(70, W - 70), y: rnd(H * 0.36, H * 0.66) };
+    S.defs.forEach((d,i)=>{d.x=clamp(d.x+rnd(-25,25),34,W-34);d.y=clamp(d.y+rnd(-30,30),100,H-125);d.role=i===0?"press":"mark";});
+    S.pickup = null;
     syncDecisionButtons();
   }
   function showBanner(text, after, t) {
@@ -3183,32 +3263,202 @@ function arena2D(mode, opts, done) {
     matchEnd();
   }
 
-  const carrierObj = () => S.carrier === "mate" ? S.mate : S.me;
+  const attackTeam = () => [S.me, S.mate, ...(S.supports||[])].filter(Boolean);
+  const carrierObj = () => attackTeam().find(a => a.id === S.carrier) || S.me;
+  const availableMates = () => attackTeam().filter(a => a.id !== S.carrier);
+  const nearestMate = point => availableMates().reduce((best,a) => {
+    const d=Math.hypot(a.x-point.x,a.y-point.y); return !best||d<best.d?{player:a,d}:best;
+  }, null);
   const attackingNow = () => !S.ball && ((mode === "breakaway") || (mode === "match" && S.phase === "attack"));
+  const setPieceNow = () => (mode === "freekick" || mode === "corner") && S.phase === "setaim";
   const defendingNow = () => mode === "match" && S.phase === "defend";
   function syncDecisionButtons() {
+    if (mode === "freekick") {
+      if ($("ar-act")) $("ar-act").textContent = S.slowMo ? "⚽ STRIKE NOW" : "🎯 AIM FREE KICK";
+      return;
+    }
+    if (mode === "corner") {
+      if ($("ar-act")) $("ar-act").textContent = S.phase === "flight" ? "🦅 ATTACK BALL" : S.slowMo ? "📐 CROSS NOW" : "📐 AIM DELIVERY";
+      return;
+    }
     if (mode === "match" && S.phase === "defend") {
       if ($("ar-pass")) $("ar-pass").textContent = "🛡️ TACKLE (X)";
       if ($("ar-act")) $("ar-act").textContent = "🦵 SLIDE (SPACE)";
     } else {
-      if ($("ar-pass")) $("ar-pass").textContent = S.slowMo ? "🤝 PASS NOW" : "🤝 PASS";
-      if ($("ar-act") && mode !== "penalty") $("ar-act").textContent = S.slowMo ? "⚽ SHOOT NOW" : "⚽ SHOOT";
+      if ($("ar-pass")) $("ar-pass").textContent = S.slowMo ? "🤝 PASS NOW" : "🤝 QUICK PASS ⚠";
+      if ($("ar-act") && mode !== "penalty") $("ar-act").textContent = S.slowMo ? "⚽ SHOOT NOW" : "⚽ QUICK SHOT ⚠";
     }
   }
-  function clearSlowMo() { S.slowMo = null; syncDecisionButtons(); }
+  function clearSlowMo() { S.slowMo = null; S.drag = null; syncDecisionButtons(); }
   function startSlowMo(intent) {
-    if (!attackingNow() || (intent === "pass" && !S.mate)) return;
+    if (!attackingNow() || (intent === "pass" && !availableMates().length)) return;
     S.slowMo = { intent, left:5 * 60, total:5 * 60 };
     syncDecisionButtons();
   }
-  function shootFrom(who) {
-    // the shot goes across goal to the far post — drag the keeper one way, finish the other
-    const shSkill = who === S.mate ? mateSho : masteryAttr(p, "sho", "shot");
-    const targetX = clamp(W / 2 + (W / 2 - who.x) * 0.9, W / 2 - GOAL_HALF + 8, W / 2 + GOAL_HALF - 8);
-    const dx = targetX - who.x, dy = 12 - who.y;
-    const d = Math.hypot(dx, dy) || 1;
-    const wobble = (Math.random() - 0.5) * clamp(3.2 - shSkill * 0.028, 0.3, 3.2);
-    S.ball = { x: who.x, y: who.y - 10, vx: dx / d * shotV + wobble, vy: dy / d * shotV };
+  function startSetPieceSlowMo() {
+    if (!setPieceNow()) return;
+    S.slowMo = { intent:mode === "freekick" ? "shoot" : "cross", left:5*60, total:5*60 };
+    syncDecisionButtons();
+  }
+  function launchFreeKick(point, power) {
+    if (mode !== "freekick" || S.phase !== "setaim") return;
+    const skill = masteryAttr(p,"sho","shot"), pas = masteryAttr(p,"pas","pass");
+    const pwr = clamp(power || .78,.45,1.18);
+    const targetX = clamp(point&&Number.isFinite(point.x)?point.x:W/2,W/2-GOAL_HALF-20,W/2+GOAL_HALF+20);
+    const pressure = hard ? 1 : 0;
+    const error = (Math.random()-.5)*clamp(25-skill*.19+pressure*4,2,28);
+    const finalX = targetX + error;
+    const lift = clamp(18+pwr*31+pas*.06,25,58);
+    const duration = Math.round(clamp(48-skill*.13+(hard?5:0),31,52));
+    S.ball = {kind:"freekick",x:S.setBall.x,y:S.setBall.y,z:0,startX:S.setBall.x,startY:S.setBall.y,targetX:finalX,targetY:GOAL_Y+2,lift,duration,t:0};
+    S.setTarget = {x:finalX,y:GOAL_Y+2};
+    S.phase = "flight"; S.wallChecked=false; S.wallJump=0; S.gkReact=hard?4:easy?13:9;
+    S.slowMo=null; S.drag=null; S.trail=[]; syncDecisionButtons();
+  }
+  function launchDelivery(point, power) {
+    if (mode !== "corner" || S.phase !== "setaim") return;
+    const pas=masteryAttr(p,"pas","pass"),pwr=clamp(power||.72,.42,1.16);
+    const aimed={x:clamp(point&&Number.isFinite(point.x)?point.x:W/2,74,W-74),y:clamp(point&&Number.isFinite(point.y)?point.y:105,58,190)};
+    const recv=S.attackers.reduce((best,a)=>{const d=Math.hypot(a.x-aimed.x,a.y-aimed.y);return !best||d<best.d?{a,d}:best;},null).a;
+    const error=(Math.random()-.5)*clamp(30-pas*.22+(hard?6:0),2,32);
+    const tx=clamp(aimed.x+error,62,W-62),ty=clamp(aimed.y+(Math.random()-.5)*Math.abs(error)*.45,58,190);
+    // Give the player enough time to read the dropping ball and attack it. The
+    // delivery still accelerates slightly with elite Passing, but never flashes
+    // through the box before the contact button can be used.
+    const distance=Math.hypot(tx-S.setBall.x,ty-S.setBall.y),duration=Math.round(clamp(distance/(2+pas*.006),100,140));
+    S.ball={kind:"delivery",x:S.setBall.x,y:S.setBall.y,z:0,startX:S.setBall.x,startY:S.setBall.y,targetX:tx,targetY:ty,lift:42+pwr*25,duration,t:0,receiverId:recv.id};
+    S.setTarget={x:tx,y:ty}; S.phase="flight"; S.contactTap=null; S.contactWindow=false;
+    S.slowMo=null;S.drag=null;S.trail=[];syncDecisionButtons();
+  }
+  function attackDelivery() {
+    if (mode!=="corner"||S.phase!=="flight"||!S.ball||S.contactTap!==null)return;
+    const progress=S.ball.t/S.ball.duration;
+    S.contactTap=progress;
+    S.eventFlash={text:progress>=.72&&progress<=.96?"PERFECT ATTACK!":progress<.72?"TOO EARLY!":"TOO LATE!",t:42,color:progress>=.72&&progress<=.96?"#7dff9e":"#ffb4ab"};
+  }
+  function shootFrom(who, aimed, power, quick) {
+    const shSkill = who.id && who.id !== "me" ? mateSho : masteryAttr(p, "sho", shotContext);
+    const fallback = W / 2 + (W / 2 - who.x) * 0.78;
+    const targetX = clamp(aimed&&Number.isFinite(aimed.x)?aimed.x:fallback, W / 2-GOAL_HALF-12, W/2+GOAL_HALF+12);
+    const pwr=clamp(power||(quick ? .68 : .75),.45,1.15), speed=shotV*(.83+pwr*.34);
+    const pressure=S.defs.filter(df=>Math.hypot(df.x-who.x,df.y-who.y)<52).length;
+    // A gesture supplies a real target. The quick button is a rushed first-time
+    // action: useful under pressure, but it carries a permanent accuracy cost.
+    const quickPenalty=quick?clamp(20-shSkill*.06,11,20):0;
+    const error=(Math.random()-.5)*clamp(30-shSkill*.24+pressure*3+(hard?5:0)+quickPenalty,1.5,48);
+    const finalX=targetX+error,dx=finalX-who.x,dy=12-who.y,d=Math.hypot(dx,dy)||1;
+    S.ball={x:who.x,y:who.y-8,vx:dx/d*speed,vy:dy/d*speed,kind:"shot",power:pwr};
+    S.shotTargetX=finalX;
+    S.gkReact=hard?3:easy?12:8;
+    S.trail=[];
+  }
+  const laneX = lane => lane==="left"?62:lane==="right"?W-62:W/2;
+  function updateSupportRuns(car) {
+    const team=attackTeam();
+    for (const tm of team) {
+      if (tm.id===S.carrier) continue;
+      let tx,ty;
+      if (tm.runTarget) { tx=tm.runTarget.x; ty=tm.runTarget.y; }
+      else {
+        tx=laneX(tm.lane||"centre");
+        const depth=tm.id==="striker"?108:tm.id==="runner"?78:62;
+        ty=clamp(car.y-depth,64,H-74);
+        // Runners bend inward near the box instead of staying glued to a rail.
+        if (ty<185) tx+=(W/2-tx)*.34;
+      }
+      const dx=tx-tm.x,dy=ty-tm.y,d=Math.hypot(dx,dy)||1;
+      const speed = pSpeed * (tm.runTarget?.boost ? 1.02 : .70);
+      if (d>2) { tm.x+=dx/d*Math.min(speed,d); tm.y+=dy/d*Math.min(speed,d); }
+    }
+  }
+  function loseAttack(label) {
+    S.combo=0; S.drag=null;
+    if (mode==="match") showBanner(label,startCounter,65); else finish(false,label);
+  }
+  function scoreAttack() {
+    const call=S.combo>=2?"BRILLIANT TEAM GOAL!":"GOOOAL!";
+    if (mode==="match") { S.score[0]++; showBanner(call,startCounter,88); }
+    else finish(true,S.combo>=2?"TEAM GOAL!!":"GOAL!!");
+  }
+  function updateSmartDefenders(car) {
+    if (S.tackleGrace>0) S.tackleGrace--;
+    const runners=availableMates();
+    for (let i=0;i<S.defs.length;i++) {
+      const dfd=S.defs[i];
+      let mark,speed;
+      if (i===0) { mark=car; speed=defSpeed; }
+      else if (runners[i-1]) { mark=runners[i-1]; speed=defSpeed*.78; }
+      else { mark={x:W/2+(i%2?38:-38),y:clamp(car.y-62,86,H-90)}; speed=defSpeed*.72; }
+      const dx=mark.x-dfd.x,dy=mark.y-dfd.y,d=Math.hypot(dx,dy)||1;
+      dfd.x=clamp(dfd.x+dx/d*speed,18,W-18);
+      dfd.y=clamp(dfd.y+dy/d*speed,62,H-28);
+      // The nearest defender presses; the others hold passing lanes and mark runs.
+      if (i===0 && d<tackleR && S.tackleGrace<=0) {
+        const control=masteryAttr(p,"dri","")+effAttr(p,"phy")*.32;
+        const keep = clamp(.12 + control * .0044 + (easy ? .10 : 0) - (hard ? .16 : 0), .08, .73);
+        if (Math.random()<keep) {
+          const awayX=(car.x-dfd.x)/(d||1),awayY=(car.y-dfd.y)/(d||1);
+          dfd.x-=awayX*18; dfd.y-=awayY*18; S.tackleGrace=48; S.combo++;
+          S.eventFlash={text:"SKILL MOVE!",t:42,color:"#ffe066"};
+        } else { loseAttack("CLEAN TACKLE!"); return true; }
+      }
+    }
+    return false;
+  }
+  function updateAttackBall() {
+    const b=S.ball;if(!b)return false;
+    b.x+=b.vx;b.y+=b.vy;
+    S.trail.push({x:b.x,y:b.y});if(S.trail.length>7)S.trail.shift();
+    if(b.kind==="pass"){
+      b.ttl--;
+      const receiver=attackTeam().find(a=>a.id===b.receiverId);
+      for(let i=0;i<S.defs.length;i++){
+        const df=S.defs[i],mark=i===0?b:(receiver||b),dx=mark.x-df.x,dy=mark.y-df.y,d=Math.hypot(dx,dy)||1;
+        const chase = defSpeed * (i === 0 ? .62 : .48); df.x += dx / d * chase; df.y += dy / d * chase;
+      }
+      const interceptR=opts.practice?7:hard?14:easy?9:11;
+      if(S.defs.some(df=>Math.hypot(df.x-b.x,df.y-b.y)<interceptR)){loseAttack("PASS INTERCEPTED!");return true;}
+      const remaining=Math.hypot(b.targetX-b.x,b.targetY-b.y);
+      if(remaining<Math.hypot(b.vx,b.vy)+3||b.ttl<=0){
+        const recv=attackTeam().find(a=>a.id===b.receiverId),control=recv?Math.hypot(recv.x-b.x,recv.y-b.y):999;
+        const firstTouch = opts.practice ? .98 : clamp(.72 + masteryAttr(p,"pas","pass") * .002 + effAttr(p,"dri") * .0015 - (hard ? .08 : 0), .58, .96);
+        if(recv&&control<44&&Math.random()<firstTouch){
+          recv.runTarget=null;S.carrier=recv.id;S.ball=null;S.trail=[];S.passes++;S.combo++;S.tackleGrace=34;
+          S.passFlash={x1:b.fromX,y1:b.fromY,x2:recv.x,y2:recv.y,t:16,good:true};
+          if(opts.requirePass&&S.passes===1&&!opts.practice)recordMastery("throughBalls");
+          S.eventFlash={text:S.combo>1?`PASS COMBO x${S.combo}`:"PASS COMPLETE",t:44,color:"#9bd2ff"};
+        }else loseAttack(control<60?"HEAVY TOUCH!":"PASS RUNS AWAY!");
+        return true;
+      }
+      if(b.x<5||b.x>W-5||b.y<8||b.y>H-8){loseAttack("PASS OUT OF PLAY!");return true;}
+      return true;
+    }
+    // Shots can be blocked before the keeper reacts; power and SHO reduce that risk.
+    const blockR=(hard?13:10)-Math.min(3,(b.power||.7)*2);
+    if(b.y>GOAL_Y+28&&S.defs.some(df=>Math.hypot(df.x-b.x,df.y-b.y)<blockR)){loseAttack("SHOT BLOCKED!");return true;}
+    if(S.gkReact>0)S.gkReact--;else S.keeper.x=clamp(S.keeper.x+Math.sign(S.shotTargetX-S.keeper.x)*gkChase,W/2-GOAL_HALF,W/2+GOAL_HALF);
+    if(b.y<=GOAL_Y){
+      if(Math.abs(b.x-S.keeper.x)<lineReach)return loseAttack("GREAT SAVE!");
+      if(Math.abs(b.x-W/2)<GOAL_HALF-3)return scoreAttack();
+      loseAttack("JUST WIDE!");return true;
+    }
+    if(b.x<0||b.x>W){loseAttack("WIDE!");return true;}
+    return true;
+  }
+  function finishDrag(point) {
+    if(!S.drag||(!attackingNow()&&!setPieceNow()))return;
+    const drag={...S.drag,x:point.x,y:point.y},car=setPieceNow()?S.setBall:carrierObj();
+    const length=Math.hypot(drag.x-car.x,drag.y-car.y);
+    if(length<18){clearSlowMo();return;}
+    if(mode==="freekick") { S.drag=null;S.slowMo=null;syncDecisionButtons();launchFreeKick(drag,clamp(length/285,.45,1.18));return; }
+    if(mode==="corner") { S.drag=null;S.slowMo=null;syncDecisionButtons();launchDelivery(drag,clamp(length/250,.42,1.16));return; }
+    const inGoal=drag.y<GOAL_Y+72&&drag.x>W/2-GOAL_HALF-16&&drag.x<W/2+GOAL_HALF+16;
+    const kind=drag.lock||(inGoal&&length>62?"shoot":"pass");
+    S.drag=null;S.slowMo=null;syncDecisionButtons();
+    if(kind==="shoot"){
+      if(opts.requirePass&&S.passes<1)return finish(false,"COMPLETE THE PASS FIRST!");
+      shootFrom(car,drag,clamp(length/175,.45,1.15));
+    }else executePass(drag);
   }
   function opponentSetPiece() {
     const scored = Math.random() < clamp(0.18 + (hard ? 0.12 : 0) - (easy ? 0.05 : 0) - effAttr(p, "def") * 0.0008, 0.08, 0.38);
@@ -3252,6 +3502,16 @@ function arena2D(mode, opts, done) {
   }
   function act() {
     if (S.over || S.paused || S.countdown > 0) return;
+    if (mode === "corner" && S.phase === "flight") { attackDelivery(); return; }
+    if (setPieceNow()) {
+      if (S.slowMo) {
+        const fallback=mode==="freekick"?{x:W/2+(S.setBall.x<W/2?30:-30),y:GOAL_Y}:{x:W/2,y:108};
+        const distance=Math.hypot(fallback.x-S.setBall.x,fallback.y-S.setBall.y);
+        clearSlowMo();
+        mode==="freekick"?launchFreeKick(fallback,clamp(distance/280,.45,1.18)):launchDelivery(fallback,clamp(distance/250,.42,1.16));
+      } else startSetPieceSlowMo();
+      return;
+    }
     if (defendingNow()) { tackleAttempt(true); return; }
     if (attackingNow()) {
       if (S.slowMo) commitDecision("shoot"); else startSlowMo("shoot");
@@ -3268,28 +3528,40 @@ function arena2D(mode, opts, done) {
       S.dive = W / 2 + (correct ? side : -side) * (18 + Math.random() * 26);
     }
   }
-  function executePass() {
-    if (!attackingNow() || !S.mate) return;
-    const from = carrierObj(), to = S.carrier === "me" ? S.mate : S.me;
-    // a defender lurking near the passing lane can pick it off — PAS threads the needle
-    const midX = (from.x + to.x) / 2, midY = (from.y + to.y) / 2;
-    const laneDef = S.defs.some(d => Math.hypot(d.x - midX, d.y - midY) < 34);
-    const intercept = laneDef && Math.random() < clamp(0.58 - masteryAttr(p, "pas", "pass") * 0.0045 + (hard ? 0.25 : 0) - (easy ? 0.1 : 0) - (hasAbility("throughball",p) ? .08 : 0), 0.025, 0.9);
-    S.passFlash = { x1: from.x, y1: from.y, x2: to.x, y2: to.y, t: 9, bad: intercept };
-    if (intercept) {
-      if (mode === "match") return showBanner("PASS PICKED OFF!", startCounter);
-      return finish(false, "INTERCEPTED!");
+  function defaultPassTarget() {
+    const car=carrierObj();let best=null;
+    for(const tm of availableMates()){
+      const nearestDef=S.defs.reduce((m,d)=>Math.min(m,Math.hypot(d.x-tm.x,d.y-tm.y)),999);
+      const score=(car.y-tm.y)*1.15+nearestDef*.48-Math.abs(car.x-tm.x)*.08;
+      if(!best||score>best.score)best={player:tm,score};
     }
-    S.carrier = S.carrier === "me" ? "mate" : "me";
-    S.passes++;
-    if (opts.requirePass && S.passes===1) recordMastery("throughBalls");
+    const tm=best?.player||availableMates()[0];
+    return tm?{x:tm.x,y:clamp(tm.y-18,58,H-24)}:{x:W/2,y:car.y-70};
+  }
+  function executePass(targetPoint, quick) {
+    if(!attackingNow()||!availableMates().length)return;
+    const from=carrierObj(),point=targetPoint||defaultPassTarget(),choice=nearestMate(point),recv=choice?.player;
+    if(!recv)return;
+    const pas=masteryAttr(p,"pas","pass"),errorScale=(hard?25:easy?11:17)*clamp(1-pas/125,.15,.82);
+    // Quick passing chooses a sensible runner automatically, but the hurried
+    // touch scatters the ball much more than a player-aimed drag.
+    const scatter=quick?Math.max(34,errorScale*2.25):errorScale;
+    const tx=clamp(point.x+(Math.random()-.5)*scatter,14,W-14);
+    const ty=clamp(point.y+(Math.random()-.5)*scatter,54,H-18);
+    const dx=tx-from.x,dy=ty-from.y,d=Math.hypot(dx,dy)||1,speed=4.15+pas*.026;
+    recv.runTarget={x:tx,y:ty,boost:true};
+    S.ball={x:from.x,y:from.y-5,vx:dx/d*speed,vy:dy/d*speed,kind:"pass",targetX:tx,targetY:ty,receiverId:recv.id,ttl:Math.ceil(d/speed)+10,fromX:from.x,fromY:from.y};
+    S.passFlash={x1:from.x,y1:from.y,x2:tx,y2:ty,t:12,bad:false};
+    S.trail=[];
   }
   function commitDecision(kind) {
     if (!S.slowMo || !attackingNow()) { clearSlowMo(); return; }
+    const car=carrierObj();
     clearSlowMo();
-    if (kind === "pass") executePass();
+    if(kind==="aim")return;
+    if (kind === "pass") executePass(defaultPassTarget(),true);
     else if (opts.requirePass && S.passes < 1) finish(false, "THROUGH BALL REQUIRED!");
-    else shootFrom(carrierObj());
+    else shootFrom(car,null,.68,true);
   }
   function passAct() {
     if (S.over || S.paused || S.countdown > 0) return;
@@ -3313,6 +3585,73 @@ function arena2D(mode, opts, done) {
     }, mode === "match" ? 1500 : 950);
   }
 
+  function updateFreeKick() {
+    if (S.phase === "setaim") {
+      if (--S.timer <= 0) finish(false,"FREE KICK WASTED!");
+      return;
+    }
+    if (S.phase !== "flight" || !S.ball) return;
+    const b=S.ball,t=clamp(++b.t/b.duration,0,1),curve=Math.sin(Math.PI*t)*(b.targetX-b.startX)*.13;
+    b.x=b.startX+(b.targetX-b.startX)*t+curve;
+    b.y=b.startY+(b.targetY-b.startY)*t;
+    b.z=Math.sin(Math.PI*t)*b.lift;
+    S.trail.push({x:b.x,y:b.y,z:b.z});if(S.trail.length>9)S.trail.shift();
+    S.wallJump=t>.30&&t<.62?Math.sin(Math.PI*clamp((t-.30)/.32,0,1))*9:0;
+    if(!S.wallChecked&&b.y<=S.wallY){
+      S.wallChecked=true;
+      const inWall=S.wall.some(w=>Math.abs(w.x-b.x)<9+(hard?3:0));
+      const clears=b.z>(hard?40:easy?30:35);
+      if(inWall&&!clears)return finish(false,"BLOCKED BY THE WALL!");
+    }
+    if(t>.55){
+      if(S.gkReact>0)S.gkReact--;
+      else S.keeper.x=clamp(S.keeper.x+Math.sign(b.targetX-S.keeper.x)*(hard?2.9:easy?1.7:2.25),W/2-GOAL_HALF,W/2+GOAL_HALF);
+    }
+    if(t>=1){
+      if(Math.abs(b.targetX-W/2)>GOAL_HALF-3)return finish(false,"FREE KICK WIDE!");
+      const reach=hard?25:easy?13:18;
+      if(Math.abs(S.keeper.x-b.targetX)<reach)return finish(false,"TIPPED AWAY!");
+      finish(true,"FREE-KICK GOAL!");
+    }
+  }
+
+  function updateDelivery() {
+    if (S.eventFlash && --S.eventFlash.t <= 0) S.eventFlash=null;
+    if (S.phase === "setaim") {
+      if (--S.timer <= 0) finish(false,"DELIVERY WASTED!");
+      return;
+    }
+    if (S.phase !== "flight" || !S.ball) return;
+    const b=S.ball,t=clamp(++b.t/b.duration,0,1);
+    b.x=b.startX+(b.targetX-b.startX)*t;
+    b.y=b.startY+(b.targetY-b.startY)*t;
+    b.z=Math.sin(Math.PI*t)*b.lift;
+    S.trail.push({x:b.x,y:b.y,z:b.z});if(S.trail.length>10)S.trail.shift();
+    const recv=S.attackers.find(a=>a.id===b.receiverId)||S.attackers[0];
+    for(const a of S.attackers){
+      const tx=a===recv?b.targetX:a.x+(W/2-a.x)*.003,ty=a===recv?b.targetY:a.y-0.12;
+      const dx=tx-a.x,dy=ty-a.y,d=Math.hypot(dx,dy)||1,run=(a===recv ? 1.22 : .34)+(easy ? .1 : 0);
+      a.x+=dx/d*Math.min(run,d);a.y+=dy/d*Math.min(run,d);
+    }
+    for(const m of S.markers){
+      const mark=S.attackers[m.mark]||recv,dx=mark.x-m.x,dy=mark.y-m.y,d=Math.hypot(dx,dy)||1,chase=hard ? 1.16 : easy ? .72 : .92;
+      m.x+=dx/d*Math.min(chase,d);m.y+=dy/d*Math.min(chase,d);
+    }
+    const wasWindow=S.contactWindow;
+    S.contactWindow=t>=.70&&t<=.96;
+    if(S.contactWindow&&!wasWindow)S.eventFlash={text:"ATTACK THE BALL NOW!",t:55,color:"#7dff9e"};
+    if(t>=1){
+      if(S.contactTap===null)return finish(false,"NOBODY ATTACKED IT!");
+      const timing=Math.abs(S.contactTap-.86),timingBonus=timing<.09 ? .28 : timing<.18 ? .10 : -.16;
+      const marker=S.markers.find(m=>m.mark===S.attackers.indexOf(recv));
+      const pressure=marker?Math.max(0,28-Math.hypot(marker.x-recv.x,marker.y-recv.y))/28:0;
+      const pas=masteryAttr(p,"pas","pass"),aerial=masteryAttr(p,"phy","aerial"),shoot=masteryAttr(p,"sho","shot");
+      const chance=clamp(.18+pas*.002+aerial*.0022+shoot*.0012+timingBonus-pressure*.18+(easy ? .10 : 0)-(hard ? .16 : 0),.05,.93);
+      if(Math.random()<chance)return finish(true,S.deliveryType==="cross"?"CROSS CONVERTED!":"THUMPING HEADER!");
+      finish(false,timing>.18?"HEADER WIDE!":"DEFENDER CLEARS!");
+    }
+  }
+
   function update() {
     if (S.paused) return;
     S.frame++;
@@ -3321,42 +3660,34 @@ function arena2D(mode, opts, done) {
     // one fifth speed. A second PASS/SHOOT input ends slow motion immediately;
     // waiting five seconds automatically performs the action that opened it.
     if (S.slowMo) {
-      if (--S.slowMo.left <= 0) commitDecision(S.slowMo.intent);
+      if (--S.slowMo.left <= 0) {
+        if(S.drag)finishDrag({x:S.drag.x,y:S.drag.y});else if(setPieceNow())act();else commitDecision(S.slowMo.intent);
+      }
       if (S.over) return;
       if (S.slowMo && S.frame % 5 !== 0) return;
     }
     if (S.boostT > 0) S.boostT--;
     const L = ARENA.keys.ArrowLeft || S.keyTap === "ArrowLeft", R = ARENA.keys.ArrowRight || S.keyTap === "ArrowRight", U = ARENA.keys.ArrowUp || S.keyTap === "ArrowUp", D = ARENA.keys.ArrowDown || S.keyTap === "ArrowDown";
     S.keyTap = null;
+    if (mode === "freekick" && !S.over) { updateFreeKick(); return; }
+    if (mode === "corner" && !S.over) { updateDelivery(); return; }
     if (mode === "breakaway" && !S.over) {
       if (!S.ball) {
         const runSpeed = pSpeed * (S.boostT > 0 ? 1.18 : 1);
-        S.me.x = clamp(S.me.x + (R ? runSpeed : 0) - (L ? runSpeed : 0), 16, W - 16);
-        S.me.y = clamp(S.me.y + (D ? runSpeed : 0) - (U ? runSpeed : 0), 70, H - 16);
-        // your teammate makes a supporting run on the other flank
-        S.mate.y = clamp(S.mate.y - pSpeed * 0.85, 62, H);
-        S.mate.x += clamp(clamp(S.me.x + (S.mate.x > S.me.x ? 72 : -72), 20, W - 20) - S.mate.x, -1.6, 1.6);
         const car = carrierObj();
+        car.x=clamp(car.x+(R?runSpeed:0)-(L?runSpeed:0),16,W-16);
+        car.y=clamp(car.y+(D?runSpeed:0)-(U?runSpeed:0)-(!L&&!R&&!U&&!D&&!S.slowMo?runSpeed*.16:0),66,H-16);
+        updateSupportRuns(car);
         if (S.pickup && Math.hypot(car.x - S.pickup.x, car.y - S.pickup.y) < 17) {
           S.pickup = null; S.boostT = 150; S.passFlash = { x1:car.x - 8, y1:car.y, x2:car.x + 8, y2:car.y, t:22, good:true };
         }
-        for (const dfd of S.defs) {
-          const dx = car.x - dfd.x, dy = car.y - dfd.y, d = Math.hypot(dx, dy) || 1;
-          dfd.x += dx / d * defSpeed; dfd.y += dy / d * defSpeed;
-          if (d < (S.carrier === "mate" ? tackleR + 2 : tackleR)) return finish(false, "TACKLED!");
-        }
-        // the keeper shades toward the CARRIER — a pass makes him scramble across
+        if(updateSmartDefenders(car))return;
         const guard = W / 2 + (car.x - W / 2) * 0.55;
         S.keeper.x = clamp(S.keeper.x + Math.sign(guard - S.keeper.x) * gkTrack, W / 2 - GOAL_HALF, W / 2 + GOAL_HALF);
         if (--S.timer <= 0) return finish(false, "TOO SLOW!");
       } else {
-        S.ball.x += S.ball.vx; S.ball.y += S.ball.vy;
-        S.keeper.x = clamp(S.keeper.x + Math.sign(S.ball.x - S.keeper.x) * gkChase, W / 2 - GOAL_HALF, W / 2 + GOAL_HALF);
-        if (S.ball.y <= GOAL_Y) { // the save happens on the line — dive or despair
-          if (Math.abs(S.ball.x - S.keeper.x) < lineReach) return finish(false, "SAVED!");
-          return Math.abs(S.ball.x - W / 2) < GOAL_HALF - 4 ? finish(true, "GOAL!!") : finish(false, "WIDE!");
-        }
-        if (S.ball.x < 0 || S.ball.x > W) return finish(false, "WIDE!");
+        updateSupportRuns(carrierObj());
+        if(updateAttackBall())return;
       }
     }
     if (mode === "match" && !S.over) {
@@ -3368,31 +3699,20 @@ function arena2D(mode, opts, done) {
       } else if (S.phase === "attack") {
         if (!S.ball) {
           const runSpeed = pSpeed * (S.boostT > 0 ? 1.18 : 1);
-          S.me.x = clamp(S.me.x + (R ? runSpeed : 0) - (L ? runSpeed : 0), 16, W - 16);
-          S.me.y = clamp(S.me.y + (D ? runSpeed : 0) - (U ? runSpeed : 0), 70, H - 60);
-          S.mate.y = clamp(S.mate.y - pSpeed * 0.85, 62, H);
-          S.mate.x += clamp(clamp(S.me.x + (S.mate.x > S.me.x ? 72 : -72), 20, W - 20) - S.mate.x, -1.6, 1.6);
           const car = carrierObj();
+          car.x=clamp(car.x+(R?runSpeed:0)-(L?runSpeed:0),16,W-16);
+          car.y=clamp(car.y+(D?runSpeed:0)-(U?runSpeed:0)-(!L&&!R&&!U&&!D&&!S.slowMo?runSpeed*.13:0),66,H-60);
+          updateSupportRuns(car);
           if (S.pickup && Math.hypot(car.x - S.pickup.x, car.y - S.pickup.y) < 17) {
             S.pickup = null; S.boostT = 150; showBanner("MOMENTUM BOOST!", () => { S.phase = "attack"; }, 38);
             return;
           }
-          for (const dfd of S.defs) {
-            const dx = car.x - dfd.x, dy = car.y - dfd.y, d = Math.hypot(dx, dy) || 1;
-            dfd.x += dx / d * defSpeed; dfd.y += dy / d * defSpeed;
-            if (d < (S.carrier === "mate" ? tackleR + 2 : tackleR)) return showBanner("DISPOSSESSED!", startCounter);
-          }
+          if(updateSmartDefenders(car))return;
           const guard = W / 2 + (car.x - W / 2) * 0.55;
           S.keeper.x = clamp(S.keeper.x + Math.sign(guard - S.keeper.x) * gkTrack, W / 2 - GOAL_HALF, W / 2 + GOAL_HALF);
         } else {
-          S.ball.x += S.ball.vx; S.ball.y += S.ball.vy;
-          S.keeper.x = clamp(S.keeper.x + Math.sign(S.ball.x - S.keeper.x) * gkChase, W / 2 - GOAL_HALF, W / 2 + GOAL_HALF);
-          if (S.ball.y <= GOAL_Y) {
-            if (Math.abs(S.ball.x - S.keeper.x) < lineReach) return showBanner("SAVED!", startCounter);
-            if (Math.abs(S.ball.x - W / 2) < GOAL_HALF - 4) { S.score[0]++; return showBanner("GOOOAL!", startCounter, 80); }
-            return showBanner("WIDE!", startCounter);
-          }
-          if (S.ball.x < 0 || S.ball.x > W) return showBanner("WIDE!", startCounter);
+          updateSupportRuns(carrierObj());
+          if(updateAttackBall())return;
         }
       } else if (S.phase === "defend") {
         S.defender.x = clamp(S.defender.x + (R ? defControlSpeed : 0) - (L ? defControlSpeed : 0), 16, W - 16);
@@ -3474,11 +3794,12 @@ function arena2D(mode, opts, done) {
   const pr = (x, y, w, h, c) => { pc.fillStyle = c; pc.fillRect(x, y, w, h); };
   function ball(x, y) { pr(q(x) - 1, q(y) - 1, 2, 2, "#ffffff"); pr(q(x) - 1, q(y) - 1, 1, 1, "#cfcfcf"); }
   function dude(x, y, col, sk) {
-    const sx = q(x), sy = q(y);
-    pr(sx - 2, sy + 2, 1, 2, "#1c2028"); pr(sx + 1, sy + 2, 1, 2, "#1c2028"); // legs
-    pr(sx - 2, sy - 2, 5, 4, col);                                            // shirt
-    pr(sx - 1, sy - 5, 3, 3, sk);                                             // head
-    pr(sx - 1, sy - 6, 3, 1, "#241a10");                                      // hair
+    const sx=q(x),bob=S.countdown>0||S.paused?0:Math.floor((S.frame+x+y)/7)%2,sy=q(y)-bob;
+    pr(sx-2,sy+4,5,1,"#10251866");
+    pr(sx-2,sy+2,1,2,"#1c2028");pr(sx+1,sy+2+(bob?1:0),1,2,"#1c2028");
+    pr(sx-2,sy-2,5,4,col);
+    pr(sx-1,sy-5,3,3,sk);
+    pr(sx-1,sy-6,3,1,"#241a10");
   }
   function goalAt(gy, topGoal) {
     const gx = q(W / 2 - GOAL_HALF), gw = q(GOAL_HALF * 2);
@@ -3504,11 +3825,13 @@ function arena2D(mode, opts, done) {
     if (mode === "breakaway" || (mode === "match" && S.phase === "attack")) {
       dude(S.keeper.x, S.keeper.y, "#ffd43b", "#eab98c");
       for (const dfd of S.defs) dude(dfd.x, dfd.y, "#e03131", "#d29b6c");
-      if (S.mate) { // your teammate: same shirt, white chest stripe
-        dude(S.mate.x, S.mate.y, jersey, skin);
-        pr(q(S.mate.x) - 1, q(S.mate.y) - 1, 3, 1, "#ffffffcc");
+      const car=carrierObj();
+      pc.strokeStyle="#ffe066";pc.lineWidth=1;pc.beginPath();pc.arc(q(car.x),q(car.y),4.5,0,Math.PI*2);pc.stroke();
+      for(const tm of attackTeam()){
+        dude(tm.x,tm.y,jersey,skin);
+        if(tm.id!=="me")pr(q(tm.x)-1,q(tm.y)-1,3,1,"#ffffffcc");
+        if(tm.id!==S.carrier)ptext("▾",q(tm.x),q(tm.y)-7,"#9bd2ff",5);
       }
-      dude(S.me.x, S.me.y, jersey, skin);
       if (S.pickup) { // optional momentum star adds a short burst and a new route choice
         pr(q(S.pickup.x) - 2, q(S.pickup.y) - 2, 5, 5, "#ffd43b");
         ptext("★", q(S.pickup.x) + .5, q(S.pickup.y) + 2, "#7a4f00", 6);
@@ -3519,10 +3842,41 @@ function arena2D(mode, opts, done) {
         pc.lineWidth = 1;
         pc.beginPath(); pc.moveTo(q(S.passFlash.x1), q(S.passFlash.y1)); pc.lineTo(q(S.passFlash.x2), q(S.passFlash.y2)); pc.stroke();
       }
+      if(S.trail.length){for(let i=0;i<S.trail.length;i++){const t=S.trail[i];pc.globalAlpha=(i+1)/S.trail.length*.42;pr(q(t.x)-1,q(t.y)-1,2,2,"#ffffff");}pc.globalAlpha=1;}
       if (S.ball) ball(S.ball.x, S.ball.y);
-      else { const c = S.carrier === "mate" && S.mate ? S.mate : S.me; ball(c.x + 8, c.y + 6); }
+      else ball(car.x+7,car.y+5);
       if (mode === "breakaway") ptext(Math.ceil(S.timer / 60) + "s", 10, px.height - 3, "#fff", 6);
       if (S.boostT > 0) ptext("MOMENTUM!", px.width - 25, px.height - 3, "#ffd43b", 5);
+      if(S.combo>0)ptext(`COMBO x${S.combo}`,px.width-19,12,"#9bd2ff",5);
+    }
+    if (mode === "freekick") {
+      dude(S.keeper.x,S.keeper.y,"#ffd43b","#eab98c");
+      for(const w of S.wall)dude(w.x,w.y-S.wallJump,"#e03131","#d29b6c");
+      dude(S.me.x,S.me.y,jersey,skin);
+      if(S.setBall&&!S.ball)ball(S.setBall.x,S.setBall.y);
+      if(S.trail.length){for(let i=0;i<S.trail.length;i++){const t=S.trail[i];pc.globalAlpha=(i+1)/S.trail.length*.35;pr(q(t.x)-1,q(t.y-(t.z||0))-1,2,2,"#ffffff");}pc.globalAlpha=1;}
+      if(S.ball){pr(q(S.ball.x)-1,q(S.ball.y)-1,2,1,"#10251855");ball(S.ball.x,S.ball.y-(S.ball.z||0));}
+      if(S.phase==="setaim")ptext(Math.ceil(S.timer/60)+"s",10,px.height-3,"#fff",6);
+      ptext("WALL",q(S.wall.reduce((n,w)=>n+w.x,0)/S.wall.length),q(S.wallY)-9,"#ffffff",5);
+    }
+    if (mode === "corner") {
+      // Corner flag and box traffic make the situation read immediately.
+      const flagX=q(S.setSide==="left"?8:W-8);pr(flagX,q(35),1,8,"#f4f4f4");pr(flagX+(S.setSide==="left"?1:-3),q(35),3,2,"#ffd43b");
+      dude(S.keeper.x,S.keeper.y,"#ffd43b","#eab98c");
+      dude(S.me.x,S.me.y,jersey,skin);
+      for(const a of S.attackers){dude(a.x,a.y,jersey,skin);ptext("▾",q(a.x),q(a.y)-7,"#9bd2ff",5);}
+      for(const m of S.markers)dude(m.x,m.y,"#e03131","#d29b6c");
+      if(S.setTarget){pc.strokeStyle="#9bd2ff";pc.beginPath();pc.arc(q(S.setTarget.x),q(S.setTarget.y),4,0,Math.PI*2);pc.stroke();}
+      if(S.setBall&&!S.ball)ball(S.setBall.x,S.setBall.y);
+      if(S.trail.length){for(let i=0;i<S.trail.length;i++){const t=S.trail[i];pc.globalAlpha=(i+1)/S.trail.length*.35;pr(q(t.x)-1,q(t.y-(t.z||0))-1,2,2,"#ffffff");}pc.globalAlpha=1;}
+      if(S.ball){pr(q(S.ball.x)-1,q(S.ball.y)-1,2,1,"#10251855");ball(S.ball.x,S.ball.y-(S.ball.z||0));}
+      if(S.phase==="setaim")ptext(Math.ceil(S.timer/60)+"s",10,px.height-3,"#fff",6);
+      if(S.phase==="flight"&&S.ball){
+        const progress=clamp(S.ball.t/S.ball.duration,0,1),barX=px.width/2-24,barY=px.height-8;
+        pr(barX,barY,48,4,"#162019dd");pr(barX+34,barY,12,4,"#2fbd64");pr(barX+Math.round(progress*46),barY-1,2,6,"#ffe066");
+        ptext("CONTACT",px.width/2,barY-3,"#ffffff",5);
+      }
+      if(S.eventFlash){pr(16,px.height-22,px.width-32,10,"#111827bb");ptext(S.eventFlash.text,px.width/2,px.height-15,S.eventFlash.color||"#fff",6);}
     }
     if (mode === "match" && S.phase === "defend") {
       dude(S.runner.x, S.runner.y, "#e03131", "#d29b6c");
@@ -3546,26 +3900,25 @@ function arena2D(mode, opts, done) {
         pr(q(S.aimX) - 1, q(GOAL_Y) + 1, 3, 3, Math.abs(S.aimX - W / 2) > GOAL_HALF - 3 ? "#e03131" : "#ffd43b");
       }
     }
-    if (S.slowMo && attackingNow()) {
+    if (S.slowMo && (attackingNow() || setPieceNow())) {
       // Cinematic pixel slow motion: cool tint, scan lines, focus ring and both
       // available passing/shooting lanes. It is deliberately drawn in the tiny
       // retro buffer so the effect stays crisp when enlarged.
       pr(0, 0, px.width, px.height, "#07132666");
       for (let sy = 1; sy < px.height; sy += 3) pr(0, sy, px.width, 1, "#b9dcff12");
       pr(0, 0, px.width, 2, "#69b7ff99"); pr(0, px.height - 2, px.width, 2, "#69b7ff99");
-      const car = carrierObj();
-      pc.setLineDash([2, 2]); pc.lineWidth = 1;
-      if (S.mate) {
-        pc.strokeStyle = S.slowMo.intent === "pass" ? "#ffe066" : "#d9efff99";
-        pc.beginPath(); pc.moveTo(q(car.x), q(car.y)); pc.lineTo(q(S.mate.x), q(S.mate.y)); pc.stroke();
-      }
-      const shotX = clamp(W / 2 + (W / 2 - car.x) * 0.9, W / 2 - GOAL_HALF + 8, W / 2 + GOAL_HALF - 8);
-      pc.strokeStyle = S.slowMo.intent === "shoot" ? "#ffe066" : "#d9efff99";
-      pc.beginPath(); pc.moveTo(q(car.x), q(car.y)); pc.lineTo(q(shotX), q(GOAL_Y)); pc.stroke();
+      const setPlay=setPieceNow();
+      const car=setPlay?S.setBall:carrierObj();
+      const fallback=mode==="freekick"?{x:clamp(W/2+(W/2-car.x)*.48,W/2-GOAL_HALF+4,W/2+GOAL_HALF-4),y:GOAL_Y}:mode==="corner"?{x:W/2,y:108}:S.slowMo.intent==="shoot"?{x:clamp(W/2+(W/2-car.x)*.78,W/2-GOAL_HALF+4,W/2+GOAL_HALF-4),y:GOAL_Y}:defaultPassTarget();
+      const aim=S.drag?{x:S.drag.x,y:S.drag.y}:fallback;
+      const aimShot=mode==="freekick"||(mode!=="corner"&&(S.drag?(S.drag.lock==="shoot"||(S.drag.lock!=="pass"&&aim.y<GOAL_Y+72&&aim.x>W/2-GOAL_HALF-16&&aim.x<W/2+GOAL_HALF+16)):S.slowMo.intent==="shoot"));
+      pc.setLineDash([2,2]);pc.lineWidth=1;pc.strokeStyle=aimShot?"#ffdf70":"#9bd2ff";
+      pc.beginPath();pc.moveTo(q(car.x),q(car.y));pc.lineTo(q(aim.x),q(aim.y));pc.stroke();
       pc.setLineDash([]);
+      pc.strokeStyle=aimShot?"#ffdf70":"#9bd2ff";pc.beginPath();pc.arc(q(aim.x),q(aim.y),3,0,Math.PI*2);pc.stroke();
       pc.strokeStyle = "#ffe066"; pc.beginPath(); pc.arc(q(car.x), q(car.y), 5 + Math.sin(S.frame / 7), 0, Math.PI * 2); pc.stroke();
       ptext("SLOW MOTION", px.width / 2, mode === "match" ? 14 : 8, "#9bd2ff", 7);
-      ptext(`PASS OR SHOOT  ${(S.slowMo.left / 60).toFixed(1)}s`, px.width / 2, px.height - 5, "#ffffff", 5);
+      ptext(`${mode==="corner"?"CROSS":aimShot?"SHOT":"PASS"} · RELEASE  ${(S.slowMo.left/60).toFixed(1)}s`,px.width/2,px.height-5,"#ffffff",5);
     }
     if (mode === "match") { // retro scoreboard strip
       pr(0, 0, px.width, 8, "#111827dd");
@@ -3666,31 +4019,21 @@ function penaltyMoment() {
 
 function freekickMoment() {
   const p = G.player;
-  timingMiniGame({
-    title: "🎯 Free kick, dangerous range!",
-    desc: "Stop the marker in the green zone to find the top corner.",
-    btn: "🦵 STRIKE",
-    stat: masteryAttr(p, "sho", "shot"),
-    onGrade(grade, min) {
-      if (grade === "perfect") {
-        mor(6);
-        addBoost("sho", 6, 2, "Free-kick screamer");
-        momentResultScreen("🚀 TOP BINS!", "An unstoppable strike. Pure class.",
-          { goals:1, concede:0, ratingDelta:1.3, line:`🚀 ${min}' — ${p.name} whips the free kick into the top corner!` });
-      } else if (grade === "good") {
-        if (Math.random() < 0.35 + masteryAttr(p, "sho", "shot") * 0.004) {
-          addBoost("sho", 4, 2, "Set-piece confidence");
-          momentResultScreen("⚽ GOAL!", "Not the cleanest hit, but they all count!",
-            { goals:1, concede:0, ratingDelta:1.0, line:`⚽ ${min}' — ${p.name}'s free kick squeezes past the keeper!` });
-        } else {
-          momentResultScreen("🧤 Tipped over", "So close! Great save by the keeper.",
-            { goals:0, concede:0, ratingDelta:0.2, line:`🧤 ${min}' — ${p.name}'s free kick is tipped over the bar.` });
-        }
-      } else {
-        mor(-3);
-        momentResultScreen("🎈 Row Z", "You leaned back. It's still rising...",
-          { goals:0, concede:0, ratingDelta:-0.3, line:`🎈 ${min}' — ${p.name} sends the free kick into row Z.` });
-      }
+  const min=irnd(18,88);
+  arena2D("freekick",{
+    title:"🎯 FREE KICK — dangerous range!",
+    objective:"Drag the strike over or around the wall",
+    shotContext:"shot",
+    hint:"Drag from the ball into a corner of the goal. Swipe farther for lift; the wall jumps and the goalkeeper reacts."
+  },ok=>{
+    if(ok){
+      mor(6);addBoost("sho",6,2,"Free-kick screamer");
+      momentResultScreen("🚀 FREE-KICK GOAL!","You beat the wall and the goalkeeper with a perfect strike.",
+        {goals:1,concede:0,ratingDelta:1.3,line:`🚀 ${min}' — ${p.name} bends a free kick beyond the wall and into the net!`});
+    }else{
+      mor(-2);
+      momentResultScreen("🧱 NO GOAL","The wall or goalkeeper wins the set-piece duel.",
+        {goals:0,concede:0,ratingDelta:-.2,line:`🧱 ${min}' — ${p.name}'s free kick is kept out.`});
     }
   });
 }
@@ -5107,8 +5450,10 @@ function finalShowdown(cfg) {
       else { pips.push("🔴"); finish(false, "It never quite clicked on the day."); }
     };
   }
+  const finalHighlightPool=p.pos==="GK"?["save","save","save"]:["breakaway","freekick","corner","penalty"];
+  const finalHighlightSeq=[];
+  while(finalHighlightSeq.length<3){const n=irnd(0,finalHighlightPool.length-1);finalHighlightSeq.push(finalHighlightPool.splice(n,1)[0]);}
   function playHighlight(i, w) {
-    const seq = p.pos === "GK" ? ["save", "save", "save"] : ["breakaway", "penalty", "breakaway"];
     if (i >= 3) {
       if (w >= 2) return finish(true, `You owned ${w} of the 3 defining highlights.`);
       if (w === 1) return goToShootout();
@@ -5117,7 +5462,7 @@ function finalShowdown(cfg) {
     showModal(`<div class="mg-wrap"><h2>🎬 HIGHLIGHT ${i + 1} OF 3</h2>
       <p class="fade-muted" style="margin:10px 0">${pips.join(" ") || "The broadcast cuts to the key moment..."}</p>
       <button class="btn gold" id="fs-hl">▶ Play it</button></div>`);
-    $("fs-hl").onclick = () => arena2D(seq[i], { club: cfg.home }, ok => {
+    $("fs-hl").onclick = () => arena2D(finalHighlightSeq[i], { club: cfg.home }, ok => {
       pips.push(ok ? "🟢" : "🔴");
       playHighlight(i + 1, w + (ok ? 1 : 0));
     });
@@ -5873,8 +6218,8 @@ const TUTORIAL_STEPS = [
   },
   {
     ico:"🏆", title:"Tournaments & 2D Matches",
-    body:`League position can qualify your club for domestic cups, continental competitions and special finals. Finals can be simulated, played as 2D highlights or played as a full three-minute retro match.`,
-    tips:["Use arrows/WASD to move, X to pass and Space to shoot.","The first PASS or SHOOT input starts slow motion; choose either action again within five seconds to play the ball.","Cup ties can reach player-controlled penalty shootouts — goalkeepers dive instead of shooting."]
+    body:`League position can qualify your club for domestic cups, continental competitions and special finals. Finals can be simulated, played as 2D highlights or played as a full three-minute retro match. Open play and set pieces use direct, top-down gesture control.`,
+    tips:["Drag from the player with the ball and release near a runner or into space to pass.","Free kicks have jumping walls; corners and crosses require an aimed delivery followed by a timed attack on the ball.","Use Practice 2D Attack or Practice Set Pieces at any time. WASD, X, Space and the classic penalty shootout remain available."]
   },
   {
     ico:"💀", title:"Difficulty, Saves & Ranked Play",
@@ -6463,6 +6808,36 @@ $("btn-board-refresh").onclick = openBoard;
 $("btn-play").onclick = () => {
   if (nextOpponent()) startMatchday();
 };
+function practice2D() {
+  arena2D("breakaway",{
+    practice:true,requirePass:true,timer:45,defenders:1,
+    title:"🎯 TRAINING GROUND — build the move",
+    objective:"Complete at least one aimed pass, then score",
+    hint:"Drag from the ball carrier to a blue-marked runner. After receiving it, drag into the goal mouth to shoot. No career stats are affected."
+  },ok=>{
+    showModal(`<div class="mg-wrap"><div style="font-size:44px">${ok?"⚽✨":"📋"}</div><h2>${ok?"TRAINING MOVE COMPLETE!":"KEEP WORKING THE PATTERN"}</h2><p class="fade-muted" style="margin:10px 0 16px">${ok?"The pass, run and finish all connected.":"Try a safer passing lane, then aim your finish away from the goalkeeper."}</p><div class="btn-row" style="justify-content:center"><button class="btn gold" id="practice-again">↻ Try Again</button><button class="btn secondary" id="practice-back">Back to Career</button></div></div>`);
+    $("practice-again").onclick=practice2D;$("practice-back").onclick=closeModal;
+  });
+}
+$("btn-practice").onclick = practice2D;
+function runSetPiecePractice(kind) {
+  const isFree=kind==="freekick",isCross=kind==="cross";
+  arena2D(isFree?"freekick":"corner",{
+    practice:true,deliveryType:isCross?"cross":"corner",
+    title:isFree?"🎯 FREE-KICK TRAINING":isCross?"📐 CROSSING TRAINING":"🚩 CORNER-KICK TRAINING",
+    objective:isFree?"Beat the wall and goalkeeper":isCross?"Find a runner and time the finish":"Deliver into the box and attack the header",
+    hint:isFree?"Drag from the ball toward a goal corner. A longer swipe gives the shot enough lift to clear the wall.":"Drag to a blue runner, then tap ATTACK BALL while the contact marker is green. No career stats are affected."
+  },ok=>{
+    showModal(`<div class="mg-wrap"><div style="font-size:44px">${ok?"⚽✨":"📋"}</div><h2>${ok?"SET PIECE COMPLETE!":"TRY THAT ROUTINE AGAIN"}</h2><p class="fade-muted" style="margin:10px 0 16px">${ok?"The delivery, movement and finish all came together.":isFree?"Try aiming farther from the keeper and give the swipe enough power to clear the wall.":"Pick a runner with more separation and wait for the green contact window."}</p><div class="btn-row" style="justify-content:center"><button class="btn gold" id="setpiece-again">↻ Try Again</button><button class="btn secondary" id="setpiece-menu">Set-Piece Menu</button></div></div>`);
+    $("setpiece-again").onclick=()=>runSetPiecePractice(kind);$("setpiece-menu").onclick=practiceSetPieces;
+  });
+}
+function practiceSetPieces(){
+  showModal(`<div class="mg-wrap"><div style="font-size:42px">🚩⚽</div><h2>SET-PIECE TRAINING</h2><p class="fade-muted" style="margin:10px 0 16px">Practice each situation without affecting your career.</p><div class="btn-row" style="justify-content:center"><button class="btn gold" data-sp-practice="freekick">🎯 Direct Free Kick</button><button class="btn" data-sp-practice="corner">🚩 Corner Kick</button><button class="btn" data-sp-practice="cross">📐 Open-Play Cross</button><button class="btn secondary" id="setpiece-back">Back</button></div></div>`);
+  document.querySelectorAll("[data-sp-practice]").forEach(b=>b.onclick=()=>runSetPiecePractice(b.dataset.spPractice));
+  $("setpiece-back").onclick=closeModal;
+}
+$("btn-setpiece-practice").onclick = practiceSetPieces;
 $("btn-endseason").onclick = endSeason;
 
 document.querySelectorAll(".tab-btn").forEach(b => b.onclick = () => activateGameTab(b.dataset.tab));
