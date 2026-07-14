@@ -165,7 +165,7 @@
   .modal.arena-modal { padding: 12px; max-height: 96dvh; overflow: hidden; }
   .arena-wrap { height: min(760px, calc(96dvh - 24px)); display: flex; flex-direction: column; min-height: 0; }
   .arena-pitch { flex: 1 1 auto; min-height: 120px; display: grid; place-items: center; overflow: hidden; }
-  .arena-pitch canvas { display: block; width: auto; height: auto; max-width: 100%; max-height: 100%; aspect-ratio: 400 / 520; object-fit: contain; }
+  .arena-pitch canvas { display: block; width: auto; height: auto; max-width: 100%; max-height: 100%; aspect-ratio: 400 / 520; object-fit: contain; image-rendering: pixelated; image-rendering: crisp-edges; }
   .arena-controls { flex: 0 0 auto; display: grid; grid-template-columns: repeat(4, 44px) repeat(3, minmax(78px, 1fr)); gap: 5px; justify-content: center; margin-top: 8px; }
   .arena-controls .cz-btn, .arena-controls .btn {
     width: 100% !important; min-width: 0; min-height: 48px; height: auto !important; padding: 6px 5px;
@@ -176,6 +176,7 @@
   .arena-controls.arena-main-controls { grid-template-columns: repeat(12, minmax(0, 1fr)); }
   .arena-main-controls [data-ak] { grid-column: span 3; }
   .arena-main-controls #ar-sprint, .arena-main-controls #ar-pass, .arena-main-controls #ar-act { grid-column: span 4; }
+  .drag-move-note { grid-column:span 12;padding:8px 10px;border:1px dashed #58a6ff;border-radius:9px;background:#10233a;color:#9bd2ff;font-size:11.5px;font-weight:900;letter-spacing:.4px;text-align:center; }
   .arena-tools { flex: 0 0 auto; }
   .arena-gesture { flex: 0 0 auto; color: #9bd2ff; font-size: 11.5px; font-weight: 800; letter-spacing: .25px; margin: 3px 0 5px; }
   @media (max-width: 520px), (max-height: 650px) {
@@ -189,6 +190,7 @@
   @media (max-width: 390px) {
     .arena-main-controls #ar-sprint { grid-column: span 12; }
     .arena-main-controls #ar-pass, .arena-main-controls #ar-act { grid-column: span 6; }
+    .arena-main-controls.drag-move-controls #ar-sprint, .arena-main-controls.drag-move-controls #ar-pass, .arena-main-controls.drag-move-controls #ar-act { grid-column:span 4; }
   }
   @media (max-height: 520px) {
     .arena-pitch { min-height: 62px; }
@@ -383,8 +385,10 @@
   .tutorial-card li { margin:7px 0; }
   .setting-row { display:flex;align-items:center;justify-content:space-between;gap:18px;padding:13px;border:1px solid var(--border);border-radius:11px;background:var(--panel2); }
   .setting-row input[type="checkbox"] { width:22px;height:22px;accent-color:var(--green-bright);flex:0 0 auto; }
+  .setting-row select { min-width:190px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:#101821;color:var(--text);font-size:13px;font-weight:700; }
   .scout-alert { text-align:center;border:1px solid rgba(255,193,7,.55);border-radius:14px;padding:16px;background:radial-gradient(circle at 50% 0,rgba(255,193,7,.16),transparent 65%); }
   @media(max-width:700px){ .agent-tools{grid-template-columns:1fr}.league-summary{grid-template-columns:1fr}.agent-hero{grid-template-columns:48px 1fr}.agent-face{width:44px;height:44px;font-size:24px}.story-cast{grid-template-columns:1fr} }
+  @media(max-width:560px){ .setting-row.movement-setting{align-items:stretch;flex-direction:column}.setting-row select{width:100%;min-width:0} }
 
   /* ---------- Installable app shell ---------- */
   #app-loader { position:fixed;inset:0;z-index:10000;display:grid;place-items:center;background:radial-gradient(circle at 50% 28%,#1c6339 0,#10261b 34%,#090e13 78%);transition:opacity .42s ease,visibility .42s ease; }
@@ -438,7 +442,7 @@
   </div>
 </div>
 <script>
-  const APP_VERSION = "2026.07.14.1";
+  const APP_VERSION = "2026.07.14.3";
   window.PITCH_LEGEND_VERSION = APP_VERSION;
   // This tiny independent fallback guarantees the loading curtain never traps the player.
   const finishAppLoading = () => document.getElementById("app-loader")?.classList.add("loader-done");
@@ -819,6 +823,13 @@
           <div class="setting-row" style="margin-bottom:12px">
             <div><b>🏫 Academy scouting pop-ups</b><br><span class="fade-muted" style="font-size:12.5px">Show an on-screen alert whenever a youth academy scouts you. Invitations always remain in the Agent tab.</span></div>
             <input id="setting-academy-popups" type="checkbox" aria-label="Academy scouting pop-ups">
+          </div>
+          <div class="setting-row movement-setting" style="margin-bottom:12px">
+            <div><b>🎮 2D movement controls</b><br><span class="fade-muted" style="font-size:12.5px">Choose how you move your controlled player in every 2D highlight and full match. On a keyboard, hold Shift while moving to sprint in either mode.</span></div>
+            <select id="setting-2d-movement" aria-label="2D movement controls">
+              <option value="drag">☝️ Drag on the pitch</option>
+              <option value="wasd">⌨️ WASD / arrows</option>
+            </select>
           </div>
           <div class="btn-row" style="margin:0 0 12px">
             <button class="btn gold" id="btn-tutorial">📖 Play Tutorial</button>
@@ -3217,21 +3228,30 @@ function arena2D(mode, opts, done) {
   const teammateFx=teammateStyle(teammateProfile);
   const shotContext = opts.shotContext || (mode==="penalty" ? "penalty" : "shot");
   const isGKp = p.pos === "GK";
+  const dragMovement = movement2DMode() === "drag";
   const title = opts.title || { breakaway: "💨 BREAKAWAY — beat them and score!", freekick:"🎯 DIRECT FREE KICK — beat the wall!", corner:"🚩 CORNER KICK — find your runner!", penalty: "⚽ PENALTY — time your kick", save: "🧤 SAVE IT — block the shot!", defense:"🛡️ DEFENSIVE MOMENT — protect your goal!", match: "🕹️ THE FULL MATCH — 3:00 on the clock" }[mode];
-  const hint = opts.hint || { breakaway: "Drag from the player with the ball: release near a runner to pass, or inside the goal to shoot. WASD is optional.", freekick:"Drag from the ball into the goal. Swipe farther for more lift over the wall.", corner:"Drag the cross to a blue runner, then tap ATTACK BALL as it drops into the green zone.", penalty: "The regular aim arrow is unchanged — kick when it reaches your target.", save: "◀ ▶ move your keeper — read the striker and cover the shot!", defense:"Move with WASD/arrows. Read the danger, then use TACKLE, CLEAR or JUMP at the right moment.", match: isGKp ? "Your team attacks up top — then YOU make the saves. Pause or sim at any time." : "Attack: drag from the ball to aim. Defence: move with WASD/arrows, X tackles and SPACE slides." }[mode];
+  const baseHint = opts.hint || { breakaway: "Build the move, beat the defenders and finish.", freekick:"Drag from the ball into the goal. Swipe farther for more lift over the wall.", corner:"Drag the cross to a blue runner, then tap ATTACK BALL as it drops into the green zone.", penalty: "The regular aim arrow is unchanged — kick when it reaches your target.", save: "Read the striker and cover the shot!", defense:"Read the danger, then use TACKLE, CLEAR or JUMP at the right moment.", match: isGKp ? "Your team attacks up top — then YOU make the saves. Pause or sim at any time." : "Attack and defend every possession. Pause or sim at any time." }[mode];
+  const movementHelp = dragMovement
+    ? "Drag on the pitch to move. Hold Shift or HOLD SPRINT for a burst. Tap Pass or Shoot to enter slow motion, then drag to aim accurately."
+    : "Move with WASD or the arrow buttons and hold Shift to sprint. Drag from the ball carrier to aim an accurate pass or shot.";
+  const hint = dragMovement && (mode==="breakaway"||mode==="match")
+    ? `${opts.requirePass ? "Complete the required pass before shooting." : "Follow the live objective and watch your stamina."} ${movementHelp}`
+    : ["breakaway","match","defense","save"].includes(mode) ? `${baseHint} ${movementHelp}` : baseHint;
   const controls = mode === "penalty"
     ? `<div class="arena-controls" style="grid-template-columns:minmax(180px,340px)"><button class="btn gold" id="ar-act">⚽ KICK (or SPACE)</button></div>`
     : mode === "save"
-      ? `<div class="arena-controls" style="grid-template-columns:repeat(2,minmax(100px,150px))"><button class="cz-btn" style="font-size:18px" data-ak="ArrowLeft">◀</button><button class="cz-btn" style="font-size:18px" data-ak="ArrowRight">▶</button></div>`
+      ? dragMovement
+        ? `<div class="arena-controls" style="grid-template-columns:minmax(220px,340px)"><div class="drag-move-note" style="grid-column:1">☝️ DRAG ON THE PITCH TO MOVE</div></div>`
+        : `<div class="arena-controls" style="grid-template-columns:repeat(2,minmax(100px,150px))"><button class="cz-btn" style="font-size:18px" data-ak="ArrowLeft">◀</button><button class="cz-btn" style="font-size:18px" data-ak="ArrowRight">▶</button></div>`
       : mode === "freekick"
         ? `<div class="arena-controls" style="grid-template-columns:minmax(180px,340px)"><button class="btn gold" id="ar-act">🎯 AIM FREE KICK</button></div>`
       : mode === "corner"
         ? `<div class="arena-controls" style="grid-template-columns:minmax(180px,340px)"><button class="btn gold" id="ar-act">📐 AIM DELIVERY</button></div>`
-      : `<div class="arena-controls arena-main-controls">
-          <button class="cz-btn" data-ak="ArrowLeft">◀</button>
+      : `<div class="arena-controls arena-main-controls ${dragMovement ? "drag-move-controls" : ""}">
+          ${dragMovement ? `<div class="drag-move-note">☝️ DRAG ON THE PITCH TO MOVE</div>` : `<button class="cz-btn" data-ak="ArrowLeft">◀</button>
           <button class="cz-btn" data-ak="ArrowUp">▲</button>
           <button class="cz-btn" data-ak="ArrowDown">▼</button>
-          <button class="cz-btn" data-ak="ArrowRight">▶</button>
+          <button class="cz-btn" data-ak="ArrowRight">▶</button>`}
           <button class="btn secondary" id="ar-sprint">⚡ HOLD SPRINT</button>
           <button class="btn" id="ar-pass">🤝 QUICK PASS ⚠</button>
           <button class="btn gold" id="ar-act">⚽ QUICK SHOT ⚠</button></div>`;
@@ -3247,7 +3267,7 @@ function arena2D(mode, opts, done) {
     ${opts.objective ? `<div class="arena-objective" style="margin:7px 0;padding:8px 10px;border:1px solid var(--gold);border-radius:9px;color:var(--gold);font-size:12px"><b>LIVE OBJECTIVE:</b> ${opts.objective}</div>` : ""}
     <p class="fade-muted arena-stats" style="font-size:12px;margin:2px 0 8px">Powered by your stats: ${statChips}</p>
     ${activeMasteries.length?`<div class="arena-active" style="font-size:11px;color:var(--gold);margin:-3px 0 7px">ACTIVE: ${activeMasteries.map(a=>`${a.ico} ${a.nm}`).join(" · ")}</div>`:""}
-    ${(mode==="breakaway"||mode==="match"||mode==="freekick"||mode==="corner")&&!isGKp?`<div class="arena-gesture">☝️ DRAG = ACCURATE AIM · QUICK BUTTONS = RUSHED</div>`:""}
+    ${(mode==="breakaway"||mode==="match"||mode==="freekick"||mode==="corner")&&!isGKp?`<div class="arena-gesture">${dragMovement && (mode==="breakaway"||mode==="match") ? "☝️ DRAG = MOVE · TAP ACTION, THEN DRAG = ACCURATE AIM" : "☝️ DRAG = ACCURATE AIM · QUICK BUTTONS = RUSHED"}</div>`:""}
     <div class="arena-pitch"><canvas id="arena" width="${W}" height="${H}" tabindex="0" style="background:#1e7d3c;border-radius:10px;touch-action:none;outline:none"></canvas></div>
     ${controls}
     ${matchTools}
@@ -3296,7 +3316,7 @@ function arena2D(mode, opts, done) {
     passes: 0,
     countdown: 3 * 60, countdownLabel: "GET READY", pickup: null, boostT: 0,
     slowMo: null, // { intent, left, total } — five real-time seconds max
-    drag: null, trail: [], combo: 0, tackleGrace: 0, gkReact: 0, shotTargetX: W / 2,
+    drag: null, moveDrag:null, trail: [], combo: 0, tackleGrace: 0, gkReact: 0, shotTargetX: W / 2,
     setBall:null, wall:[], attackers:[], markers:[], setTarget:null, wallJump:0,
     contactTap:null, contactWindow:false, deliveryType:opts.deliveryType||"corner",
     paused: false, possessions: 0,
@@ -3309,6 +3329,12 @@ function arena2D(mode, opts, done) {
     playerGoals:0,playerAssists:0,playerSaves:0,lastShooter:null,lastPasser:null,
     enforcerChecked:false,
   };
+  // Losing focus should never leave the player stuck sprinting or moving.
+  const releaseHeldControls = () => {
+    ARENA.keys = {};
+    S.sprinting = false;
+  };
+  window.addEventListener("blur", releaseHeldControls);
   if (mode === "breakaway") {
     S.defs = [{ x: 76, y: H * 0.48 }, { x: W - 76, y: H * 0.48 }];
     if (hard) {
@@ -3407,9 +3433,29 @@ function arena2D(mode, opts, done) {
     const r = cv.getBoundingClientRect();
     return { x:clamp((e.clientX-r.left)*W/r.width,0,W), y:clamp((e.clientY-r.top)*H/r.height,0,H) };
   };
+  const supportsDragMovement = dragMovement && ["breakaway","match","defense","save"].includes(mode);
+  function movementActor() {
+    if (mode === "breakaway") return carrierObj();
+    if (mode === "defense") return S.defender;
+    if (mode === "save") return S.me;
+    if (mode === "match" && S.phase === "attack") return carrierObj();
+    if (mode === "match" && S.phase === "defend") return S.defender;
+    if (mode === "match" && S.phase === "gksave") return S.me;
+    return null;
+  }
   cv.onpointerdown = e => {
     if (S.over || S.paused || S.countdown > 0) return;
     if (mode === "corner" && S.phase === "flight") { e.preventDefault(); attackDelivery(); return; }
+    if (supportsDragMovement && !S.slowMo && !setPieceNow()) {
+      const actor = movementActor();
+      if (actor) {
+        e.preventDefault();
+        const pt = pointerPoint(e);
+        S.moveDrag = { pointerId:e.pointerId, x:pt.x, y:pt.y };
+        try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+        return;
+      }
+    }
     if (!attackingNow() && !setPieceNow()) return;
     e.preventDefault();
     const pt = pointerPoint(e), car = setPieceNow() ? S.setBall : carrierObj();
@@ -3418,9 +3464,15 @@ function arena2D(mode, opts, done) {
     if (!S.slowMo) setPieceNow() ? startSetPieceSlowMo() : startSlowMo("aim");
     try { cv.setPointerCapture(e.pointerId); } catch (_) {}
   };
-  cv.onpointermove = e => { if (S.drag) { e.preventDefault(); const pt=pointerPoint(e); S.drag.x=pt.x; S.drag.y=pt.y; } };
-  cv.onpointerup = e => { if (S.drag) { e.preventDefault(); const pt=pointerPoint(e); finishDrag(pt); } };
-  cv.onpointercancel = () => { S.drag=null; if (S.slowMo&&(S.slowMo.intent==="aim"||setPieceNow())) clearSlowMo(); };
+  cv.onpointermove = e => {
+    if (S.moveDrag && S.moveDrag.pointerId === e.pointerId) { e.preventDefault(); const pt=pointerPoint(e); S.moveDrag.x=pt.x; S.moveDrag.y=pt.y; return; }
+    if (S.drag) { e.preventDefault(); const pt=pointerPoint(e); S.drag.x=pt.x; S.drag.y=pt.y; }
+  };
+  cv.onpointerup = e => {
+    if (S.moveDrag && S.moveDrag.pointerId === e.pointerId) { e.preventDefault(); S.moveDrag=null; return; }
+    if (S.drag) { e.preventDefault(); const pt=pointerPoint(e); finishDrag(pt); }
+  };
+  cv.onpointercancel = () => { S.moveDrag=null; S.drag=null; if (S.slowMo&&(S.slowMo.intent==="aim"||setPieceNow())) clearSlowMo(); };
   // ---------- stats ARE the physics ----------
   const teamEdge=clamp((ownSquad-oppSquad)/30,-.5,.5),oppQuality=clamp((oppSquad-45)/45,0,1);
   const pSpeed = clamp(1.05 + masteryAttr(p, "pac", "run") * 0.015 + teamEdge*.08 + (easy ? 0.16 : 0) - (hard ? 0.10 : 0), 1.12, 2.75); // realistic running pace
@@ -3523,7 +3575,9 @@ function arena2D(mode, opts, done) {
     if (mode !== "match" || S.over) return;
     S.paused = !S.paused;
     ARENA.keys = {};
+    S.sprinting = false;
     S.keyTap = null;
+    S.moveDrag = null;
     if ($("ar-pause")) $("ar-pause").textContent = S.paused ? "▶ RESUME (P)" : "⏸ PAUSE (P)";
   }
   function simRemaining(sentOff) {
@@ -3577,6 +3631,7 @@ function arena2D(mode, opts, done) {
   function clearSlowMo() { S.slowMo = null; S.drag = null; syncDecisionButtons(); }
   function startSlowMo(intent) {
     if (!attackingNow() || (intent === "pass" && !availableMates().length)) return;
+    S.moveDrag = null;
     S.slowMo = { intent, left:5 * 60, total:5 * 60 };
     syncDecisionButtons();
   }
@@ -3910,6 +3965,7 @@ function arena2D(mode, opts, done) {
       ARENA.tick = null;
       window.removeEventListener("keydown", kd);
       window.removeEventListener("keyup", ku);
+      window.removeEventListener("blur", releaseHeldControls);
       done(result);
     }, mode === "match" ? 1500 : 950);
   }
@@ -4020,7 +4076,15 @@ function arena2D(mode, opts, done) {
       if (S.slowMo && S.frame % 5 !== 0) return;
     }
     if (S.boostT > 0) S.boostT--;
-    const L = ARENA.keys.ArrowLeft || S.keyTap === "ArrowLeft", R = ARENA.keys.ArrowRight || S.keyTap === "ArrowRight", U = ARENA.keys.ArrowUp || S.keyTap === "ArrowUp", D = ARENA.keys.ArrowDown || S.keyTap === "ArrowDown";
+    let L = ARENA.keys.ArrowLeft || S.keyTap === "ArrowLeft", R = ARENA.keys.ArrowRight || S.keyTap === "ArrowRight", U = ARENA.keys.ArrowUp || S.keyTap === "ArrowUp", D = ARENA.keys.ArrowDown || S.keyTap === "ArrowDown";
+    if (S.moveDrag) {
+      const actor = movementActor();
+      if (actor) {
+        const dx=S.moveDrag.x-actor.x,dy=S.moveDrag.y-actor.y,dead=7;
+        if (dx < -dead) L=true; else if (dx > dead) R=true;
+        if (dy < -dead) U=true; else if (dy > dead) D=true;
+      }
+    }
     const moving=!!(L||R||U||D);updateStamina(moving);
     S.keyTap = null;
     if (mode === "freekick" && !S.over) { updateFreeKick(); return; }
@@ -4169,6 +4233,58 @@ function arena2D(mode, opts, done) {
   function ptext(t, x, y, c, size) {
     pc.font = "bold " + (size || 7) + "px monospace"; pc.textAlign = "center"; pc.fillStyle = c;
     pc.fillText(t, x, y);
+  }
+  function hudTag(text, x, y, color="#ffffff") {
+    const label=String(text||"").toUpperCase().slice(0,16);
+    ctx.font="900 14px ui-monospace, SFMono-Regular, Menlo, monospace";
+    ctx.textAlign="center";ctx.textBaseline="middle";
+    const tw=Math.ceil(ctx.measureText(label).width),cx=clamp(Math.round(x),tw/2+10,W-tw/2-10),cy=clamp(Math.round(y),18,H-18);
+    ctx.fillStyle="#071019e8";ctx.fillRect(Math.round(cx-tw/2-6),cy-12,tw+12,23);
+    ctx.strokeStyle=color;ctx.lineWidth=2;ctx.strokeRect(Math.round(cx-tw/2-6)+.5,cy-11.5,tw+11,22);
+    ctx.fillStyle=color;ctx.fillText(label,cx,cy);
+  }
+  function hudText(text,x,y,color="#fff",size=16,align="left") {
+    ctx.font=`900 ${size}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.textAlign=align;ctx.textBaseline="middle";ctx.lineWidth=Math.max(3,size*.18);ctx.strokeStyle="#071019";ctx.strokeText(String(text),x,y);ctx.fillStyle=color;ctx.fillText(String(text),x,y);
+  }
+  function drawReadableHUD() {
+    ctx.save();ctx.imageSmoothingEnabled=false;
+    // Full-resolution nametags remain legible even when the retro pitch is scaled
+    // to a non-integer phone size.
+    if (mode==="breakaway" || (mode==="match"&&S.phase==="attack")) {
+      const car=carrierObj();
+      hudTag(car.id==="me"?(p.name||"YOU"):(car.name||"TEAMMATE"),car.x,car.y-45,car.id==="me"?"#ffffff":"#ffe066");
+      if(S.mate&&S.mate.star&&S.mate!==car)hudTag(`★ ${(S.mate.name||"TEAMMATE").split(" ").pop()}`,S.mate.x,S.mate.y-45,"#ffe066");
+    } else if(mode==="defense"&&S.defender) hudTag(p.name||"YOU",S.defender.x,S.defender.y-43,"#9bd2ff");
+    else if(mode==="match"&&S.phase==="defend"&&S.defender) hudTag(p.name||"YOU",S.defender.x,S.defender.y-43,"#9bd2ff");
+    else if((mode==="save"||(mode==="match"&&S.phase==="gksave"))&&S.me)hudTag(`🧤 ${(p.name||"YOU").split(" ").pop()}`,S.me.x,S.me.y+35,"#9bd2ff");
+
+    if (S.moveDrag) {
+      const actor=movementActor();
+      if(actor){ctx.setLineDash([7,6]);ctx.strokeStyle="#9bd2ff";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(actor.x,actor.y);ctx.lineTo(S.moveDrag.x,S.moveDrag.y);ctx.stroke();ctx.setLineDash([]);ctx.beginPath();ctx.arc(S.moveDrag.x,S.moveDrag.y,12,0,Math.PI*2);ctx.stroke();hudText("MOVE",S.moveDrag.x,clamp(S.moveDrag.y-20,15,H-15),"#9bd2ff",12,"center");}
+    }
+
+    if(mode==="match"){
+      ctx.fillStyle="#071019f2";ctx.fillRect(0,0,W,38);ctx.fillStyle="#2d3748";ctx.fillRect(0,36,W,2);
+      const secs=Math.max(0,Math.ceil(S.clock/62)),cardTag=S.cards.red?"  🟥":S.cards.yellow?`  🟨×${S.cards.yellow}`:"";
+      hudText(`YOU  ${S.score[0]}  –  ${S.score[1]}  OPP${cardTag}`,10,19,"#ffe066",17,"left");
+      hudText(`${Math.floor(secs/60)}:${String(secs%60).padStart(2,"0")}`,W-10,19,"#ffffff",17,"right");
+    }
+    if(mode==="match"||mode==="breakaway"||mode==="defense"){
+      const y=mode==="match"?44:8,bw=116;
+      ctx.fillStyle="#071019e8";ctx.fillRect(7,y,bw,25);ctx.strokeStyle="#ffffff66";ctx.lineWidth=1;ctx.strokeRect(7.5,y+.5,bw-1,24);
+      ctx.fillStyle="#26313c";ctx.fillRect(13,y+14,102,6);ctx.fillStyle=S.stamina>55?"#7dff9e":S.stamina>25?"#ffe066":"#ff6b6b";ctx.fillRect(13,y+14,Math.round(102*S.stamina/100),6);
+      hudText(`${S.sprinting?"SPRINT":"STAMINA"} ${Math.round(S.stamina)}`,13,y+8,"#ffffff",11,"left");
+    }
+    if(S.slowMo&&(attackingNow()||setPieceNow())){
+      const y=mode==="match"?76:42;ctx.fillStyle="#071a30e8";ctx.fillRect(W/2-88,y-13,176,26);hudText(`SLOW-MO  ${(S.slowMo.left/60).toFixed(1)}s`,W/2,y,"#9bd2ff",14,"center");
+    }
+    if(mode==="match"&&S.phase==="banner"&&S.bannerText){ctx.fillStyle="#071019ed";ctx.fillRect(0,H/2-27,W,54);hudText(S.bannerText,W/2,H/2,"#ffe066",18,"center");}
+    if(S.eventFlash){ctx.fillStyle="#071019ed";ctx.fillRect(0,H-42,W,35);hudText(S.eventFlash.text,W/2,H-24,S.eventFlash.color||"#ffffff",15,"center");}
+    if(S.countdown>0){const label=S.countdownLabel||"GET READY";ctx.fillStyle="#07120bf2";ctx.fillRect(W/2-126,H/2-68,252,124);hudText(String(Math.ceil(S.countdown/60)),W/2,H/2-18,"#ffe066",58,"center");hudText(label,W/2,H/2+35,"#ffffff",label.length>16?15:18,"center");}
+    if(S.paused&&!S.over){ctx.fillStyle="#07120bd9";ctx.fillRect(W/2-145,H/2-55,290,110);hudText("PAUSED",W/2,H/2-14,"#ffe066",30,"center");hudText("PRESS P OR RESUME",W/2,H/2+25,"#ffffff",15,"center");}
+    if(S.splash){ctx.fillStyle=S.won?"#092b1eea":"#351015ea";ctx.fillRect(12,H/2-48,W-24,96);hudText(S.splash,W/2,H/2-(mode==="match"?13:0),S.won?"#7dff9e":"#ff9b94",S.splash.length>24?16:21,"center");if(mode==="match")hudText(`${S.score[0]} – ${S.score[1]}`,W/2,H/2+25,"#ffffff",20,"center");}
+    ctx.restore();
   }
   function draw() {
     for (let i = 0; i < 8; i++) { pc.fillStyle = i % 2 ? "#2f9e44" : "#40c057"; pc.fillRect(0, i * Math.ceil(px.height / 8), px.width, Math.ceil(px.height / 8)); }
@@ -4341,6 +4457,7 @@ function arena2D(mode, opts, done) {
     }
     ctx.clearRect(0, 0, W, H);
     ctx.drawImage(px, 0, 0, px.width, px.height, 0, 0, W, H);
+    drawReadableHUD();
   }
   // setInterval keeps ticking even when rAF is throttled (e.g. embedded/background views)
   syncDecisionButtons();
@@ -6604,6 +6721,7 @@ function render() {
 
   // account-wide notification preference and tutorial status
   $("setting-academy-popups").checked = academyPopupsEnabled();
+  $("setting-2d-movement").value = movement2DMode();
   $("btn-tutorial").textContent = G.tutorialComplete ? "📖 Replay Tutorial" : "📖 Start Tutorial";
 
   // retire button availability
@@ -6707,12 +6825,21 @@ function accountSettings() {
   return acc && acc.settings ? acc.settings : { academyPopups:true };
 }
 function academyPopupsEnabled() { return accountSettings().academyPopups !== false; }
+function movement2DMode() { return accountSettings().movement2D === "drag" ? "drag" : "wasd"; }
 function setAcademyPopups(on) {
   const accs = loadAccounts(), acc = SESSION && accs[SESSION];
   if (!acc) return;
   acc.settings = acc.settings || {};
   acc.settings.academyPopups = !!on;
   if (!on && G) G.pendingAcademyNotices = [];
+  saveAccounts(accs);
+  if (G) saveGame();
+}
+function setMovement2DMode(mode) {
+  const accs = loadAccounts(), acc = SESSION && accs[SESSION];
+  if (!acc) return;
+  acc.settings = acc.settings || {};
+  acc.settings.movement2D = mode === "drag" ? "drag" : "wasd";
   saveAccounts(accs);
   if (G) saveGame();
 }
@@ -6982,7 +7109,7 @@ async function registerAccount() {
   const accs = loadAccounts();
   const key = user.toLowerCase();
   if (accs[key]) { err.textContent = "That username is taken (on this browser)."; return; }
-  accs[key] = { username: user, passHash: await hashPass(user, pass), saves: {}, settings:{ academyPopups:true }, retiredTrophies: 0, created: Date.now() };
+  accs[key] = { username: user, passHash: await hashPass(user, pass), saves: {}, settings:{ academyPopups:true, movement2D:"wasd" }, retiredTrophies: 0, created: Date.now() };
   importLegacySave(accs[key]);
   saveAccounts(accs);
   SESSION = key;
@@ -7345,6 +7472,10 @@ document.querySelectorAll(".agent-quick").forEach(b => b.onclick = () => askAgen
 $("btn-save").onclick = () => { saveGame(); flashModal("Saved 💾", "<p>Your career is safe in this browser.</p>"); };
 $("btn-tutorial").onclick = () => showTutorial(0);
 $("setting-academy-popups").onchange = e => setAcademyPopups(e.target.checked);
+$("setting-2d-movement").onchange = e => {
+  setMovement2DMode(e.target.value);
+  flashModal("🎮 2D controls updated", `<p style="line-height:1.65">Movement is now set to <b>${e.target.value === "drag" ? "Drag on the pitch" : "WASD / arrow controls"}</b>. The change applies the next time a 2D match begins.</p>`);
+};
 $("btn-retire-now").onclick = () => {
   showModal(`<h2>Retire now?</h2><p style="margin:14px 0">This ends ${G.player.name}'s career permanently.</p>
     <div class="btn-row"><button class="btn danger" onclick="retire(false)">Yes, retire</button>

@@ -1,4 +1,4 @@
-const CACHE_NAME = "pitch-legend-v3";
+const CACHE_NAME = "pitch-legend-v5";
 const APP_SHELL = [
   "./",
   "./index.html",
