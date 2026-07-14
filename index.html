@@ -402,8 +402,13 @@
   .pwa-action:hover { border-color:var(--green-bright);background:#183021; }
   #network-status { display:inline-flex;align-items:center;min-height:30px;padding:6px 10px;border-radius:999px;background:#11261aeb;border:1px solid #2ea44f77;color:#8cffaa;font-size:11px;font-weight:800;box-shadow:0 5px 18px #0007; }
   #network-status.offline { color:#ffd978;background:#302510eb;border-color:#d49a1f99; }
+  #update-banner { position:fixed;left:50%;top:max(10px,env(safe-area-inset-top));z-index:75;transform:translateX(-50%);width:min(680px,calc(100vw - 20px));display:flex;align-items:center;gap:12px;padding:11px 12px 11px 15px;border:1px solid #f0bd42;border-radius:13px;background:linear-gradient(135deg,#2d2410f5,#151c22fa);box-shadow:0 12px 34px #000b,0 0 22px #e3b34128;color:#fff5ce;backdrop-filter:blur(12px); }
+  #update-banner .update-copy { flex:1;min-width:0;font-size:13px;line-height:1.4; }
+  #update-banner .update-copy b { display:block;color:#ffe28b;font-size:14px; }
+  #update-banner .update-actions { display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end; }
+  #update-banner .btn { padding:8px 12px;font-size:11px;white-space:nowrap; }
   .trophy.offline-trophy { border-color:#68737f;color:#b8c0c8;background:#151b22; }
-  @media(max-width:560px) { #pwa-actions { left:8px;right:8px;bottom:max(8px,env(safe-area-inset-bottom)); } .pwa-action { flex:1;padding:8px 7px; } #network-status { order:-1; } }
+  @media(max-width:560px) { #pwa-actions { left:8px;right:8px;bottom:max(8px,env(safe-area-inset-bottom)); } .pwa-action { flex:1;padding:8px 7px; } #network-status { order:-1; } #update-banner { align-items:flex-start;flex-direction:column; } #update-banner .update-actions { width:100%; } #update-banner .update-actions .btn { flex:1; } }
 
   #retire-screen { text-align: center; padding-top: 30px; }
   .legacy-title { font-size: 34px; color: var(--gold); margin: 10px 0; }
@@ -424,11 +429,69 @@
   <button class="pwa-action" id="btn-install-app" type="button">⬇ INSTALL APP</button>
   <button class="pwa-action" id="btn-fullscreen" type="button">⛶ FULL SCREEN</button>
 </div>
+<div id="update-banner" class="hidden" role="status" aria-live="assertive">
+  <div style="font-size:25px" aria-hidden="true">🆕</div>
+  <div class="update-copy"><b id="update-title">A NEW VERSION IS AVAILABLE</b><span id="update-message">Update Pitch Legend to get the latest improvements.</span></div>
+  <div class="update-actions">
+    <button class="btn gold" id="btn-update-now" type="button">UPDATE NOW</button>
+    <button class="btn secondary" id="btn-update-later" type="button">LATER</button>
+  </div>
+</div>
 <script>
+  const APP_VERSION = "2026.07.14.1";
+  window.PITCH_LEGEND_VERSION = APP_VERSION;
   // This tiny independent fallback guarantees the loading curtain never traps the player.
   const finishAppLoading = () => document.getElementById("app-loader")?.classList.add("loader-done");
   window.addEventListener("load", () => setTimeout(finishAppLoading, 650), { once:true });
   setTimeout(finishAppLoading, 4000);
+
+  const versionParts = value => String(value || "0").split(/[^0-9]+/).filter(Boolean).map(Number);
+  const isNewerVersion = (latest, current) => {
+    const a = versionParts(latest), b = versionParts(current), length = Math.max(a.length, b.length);
+    for (let i = 0; i < length; i++) {
+      if ((a[i] || 0) > (b[i] || 0)) return true;
+      if ((a[i] || 0) < (b[i] || 0)) return false;
+    }
+    return false;
+  };
+  const showVersionAlert = info => {
+    try { if (sessionStorage.getItem("plDismissedVersion") === info.version) return; } catch {}
+    document.getElementById("update-title").textContent = `VERSION ${info.version} IS AVAILABLE`;
+    document.getElementById("update-message").textContent = info.message || "Update Pitch Legend to get the latest improvements.";
+    document.getElementById("update-banner").classList.remove("hidden");
+  };
+  window.checkForGameUpdate = async () => {
+    if (location.protocol === "file:" || !navigator.onLine) return false;
+    try {
+      const response = await fetch(`./version.json?check=${Date.now()}`, { cache:"no-store" });
+      if (!response.ok) return false;
+      const latest = await response.json();
+      if (isNewerVersion(latest.version, APP_VERSION)) { showVersionAlert(latest); return true; }
+    } catch {}
+    return false;
+  };
+  document.getElementById("btn-update-later").onclick = () => {
+    const version = document.getElementById("update-title").textContent.match(/[0-9][0-9.]+/)?.[0] || "dismissed";
+    try { sessionStorage.setItem("plDismissedVersion", version); } catch {}
+    document.getElementById("update-banner").classList.add("hidden");
+  };
+  document.getElementById("btn-update-now").onclick = async () => {
+    const button = document.getElementById("btn-update-now");
+    button.disabled = true; button.textContent = "UPDATING…";
+    try {
+      if ("serviceWorker" in navigator) {
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (registration) await registration.update();
+      }
+    } catch {}
+    location.replace(`./index.html?updated=${Date.now()}`);
+  };
+  window.addEventListener("load", () => {
+    setTimeout(window.checkForGameUpdate, 1400);
+    setInterval(window.checkForGameUpdate, 30 * 60 * 1000);
+  }, { once:true });
+  window.addEventListener("online", window.checkForGameUpdate);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) window.checkForGameUpdate(); });
 </script>
 <div class="container">
 

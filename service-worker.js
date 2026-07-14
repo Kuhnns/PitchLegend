@@ -1,7 +1,8 @@
-const CACHE_NAME = "pitch-legend-v2";
+const CACHE_NAME = "pitch-legend-v3";
 const APP_SHELL = [
   "./",
   "./index.html",
+  "./version.json",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
@@ -28,6 +29,20 @@ self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
+
+  // The version file must always try the network first, otherwise an old cached
+  // value could hide a newly released update.
+  if (url.pathname.endsWith("/version.json")) {
+    event.respondWith(
+      fetch(event.request, { cache: "no-store" })
+        .then(response => {
+          if (response.ok) caches.open(CACHE_NAME).then(cache => cache.put("./version.json", response.clone()));
+          return response;
+        })
+        .catch(() => caches.match("./version.json"))
+    );
+    return;
+  }
 
   if (event.request.mode === "navigate") {
     event.respondWith(
