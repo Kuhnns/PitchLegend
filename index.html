@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pitch Legend — Soccer Career Simulator</title>
-<meta name="theme-color" content="#0d3d1e">
+<title>Pitch Legend — Player & Manager Career</title>
+<meta name="theme-color" content="#07192b">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Pitch Legend">
@@ -390,6 +390,199 @@
   @media(max-width:700px){ .agent-tools{grid-template-columns:1fr}.league-summary{grid-template-columns:1fr}.agent-hero{grid-template-columns:48px 1fr}.agent-face{width:44px;height:44px;font-size:24px}.story-cast{grid-template-columns:1fr} }
   @media(max-width:560px){ .setting-row.movement-setting{align-items:stretch;flex-direction:column}.setting-row select{width:100%;min-width:0} }
 
+  /* ---------- Career mode gateway ---------- */
+  #mode-screen { text-align:center;padding-top:clamp(24px,7vh,72px); }
+  .career-mode-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;max-width:850px;margin:26px auto 0; }
+  .career-mode-card { position:relative;overflow:hidden;min-height:305px;padding:28px;border:1px solid var(--border);border-radius:20px;background:linear-gradient(155deg,#1b2530,#111820 68%);text-align:left;cursor:pointer;color:var(--text);box-shadow:0 18px 44px #0005;transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease; }
+  .career-mode-card::after { content:"";position:absolute;inset:auto -45px -70px auto;width:190px;height:190px;border-radius:50%;background:var(--mode-glow,#2ea44f);opacity:.12;filter:blur(5px); }
+  .career-mode-card:hover,.career-mode-card:focus-visible { transform:translateY(-5px);border-color:var(--mode-glow,#2ea44f);box-shadow:0 22px 55px #0008,0 0 28px color-mix(in srgb,var(--mode-glow,#2ea44f) 25%,transparent);outline:none; }
+  .career-mode-card.manager { --mode-glow:#e3b341;background:linear-gradient(155deg,#292414,#171a1d 68%); }
+  .career-mode-icon { font-size:62px;line-height:1;margin-bottom:18px;filter:drop-shadow(0 8px 14px #0008); }
+  .career-mode-card h2 { font-size:25px;margin-bottom:9px; }
+  .career-mode-card p { color:#b7c0ca;line-height:1.6;font-size:14px;max-width:320px; }
+  .career-mode-features { display:flex;flex-wrap:wrap;gap:6px;margin-top:20px; }
+  .career-mode-features span { padding:5px 8px;border:1px solid #ffffff1f;border-radius:999px;background:#ffffff0b;color:#d9e3ec;font-size:10.5px;font-weight:800; }
+  .mode-account { min-height:32px;margin-top:18px;color:var(--muted);font-size:13px; }
+  @media(max-width:680px){.career-mode-grid{grid-template-columns:1fr}.career-mode-card{min-height:245px}.career-mode-icon{font-size:50px}}
+
+  /* ---------- Manager Career ---------- */
+  #manager-menu-screen,#manager-setup-screen { padding-top:28px; }
+  #manager-game-screen { width:min(1420px,calc(100vw - 24px));margin-left:50%;transform:translateX(-50%); }
+  .mgr-setup-grid { display:grid;grid-template-columns:minmax(280px,420px) 1fr;gap:18px;align-items:start; }
+  .mgr-form-card,.mgr-club-picker { background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:22px; }
+  .mgr-form-card label { display:block;color:var(--muted);font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;margin:12px 0 5px; }
+  .mgr-form-card input,.mgr-form-card select,.mgr-control { width:100%;padding:10px 11px;border:1px solid var(--border);border-radius:8px;background:#101720;color:var(--text);outline:none; }
+  .mgr-form-card input:focus,.mgr-form-card select:focus,.mgr-control:focus { border-color:var(--gold); }
+  .mgr-two { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+  .mgr-club-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;max-height:510px;overflow:auto;padding-right:3px; }
+  .mgr-club-card { border:1px solid var(--border);border-radius:11px;background:var(--panel2);padding:12px;cursor:pointer;color:var(--text);text-align:left; }
+  .mgr-club-card:hover,.mgr-club-card.selected { border-color:var(--gold);background:#2a2517; }
+  .mgr-club-card b { display:block;margin-bottom:4px; }
+  .mgr-strength { display:inline-block;padding:2px 7px;border-radius:99px;background:#0d131a;border:1px solid #ffffff1f;color:var(--gold);font-size:10px;font-weight:900; }
+  .mgr-app { display:grid;grid-template-columns:225px minmax(0,1fr);gap:14px;align-items:start; }
+  .mgr-sidebar { position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto;border:1px solid var(--border);border-radius:15px;background:linear-gradient(180deg,#17221d,#11171d);padding:14px;box-shadow:0 12px 32px #0005; }
+  .mgr-club-brand { padding:10px 8px 16px;border-bottom:1px solid var(--border);margin-bottom:10px; }
+  .mgr-club-brand .crest { width:52px;height:52px;display:grid;place-items:center;border-radius:15px;background:linear-gradient(145deg,var(--mgr-club,#2ea44f),#111);font-size:26px;border:1px solid #ffffff38;box-shadow:0 8px 18px #0007;margin-bottom:9px; }
+  .mgr-nav { display:grid;gap:4px; }
+  .mgr-nav button { display:flex;align-items:center;gap:9px;width:100%;padding:10px;border:1px solid transparent;border-radius:8px;background:transparent;color:#aab5bf;text-align:left;font-weight:700;cursor:pointer;font-size:12.5px; }
+  .mgr-nav button:hover,.mgr-nav button.active { color:#fff;background:#ffffff0c;border-color:#ffffff12; }
+  .mgr-nav button.active { border-left:3px solid var(--gold);background:#e3b34112; }
+  .mgr-main { min-width:0; }
+  .mgr-topbar { display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;padding:13px 16px;margin-bottom:12px;border:1px solid var(--border);border-radius:13px;background:var(--panel); }
+  .mgr-topbar h2 { font-size:18px; }
+  .mgr-kpis { display:grid;grid-template-columns:repeat(4,minmax(110px,1fr));gap:9px;margin-bottom:12px; }
+  .mgr-kpi { padding:13px;border:1px solid var(--border);border-radius:11px;background:linear-gradient(145deg,var(--panel2),#121820); }
+  .mgr-kpi span { display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px; }
+  .mgr-kpi b { font-size:20px; }
+  .mgr-grid-2 { display:grid;grid-template-columns:1.2fr .8fr;gap:12px; }
+  .mgr-card { padding:17px;border:1px solid var(--border);border-radius:12px;background:var(--panel);margin-bottom:12px;min-width:0; }
+  .mgr-card h3 { font-size:15px;margin-bottom:12px;display:flex;justify-content:space-between;gap:8px;align-items:center; }
+  .mgr-card h3 small { color:var(--muted);font-size:10px;font-weight:500; }
+  .mgr-list-row { display:grid;grid-template-columns:minmax(130px,1.5fr) repeat(5,minmax(48px,.5fr)) auto;gap:7px;align-items:center;padding:8px 7px;border-bottom:1px solid #ffffff0b;font-size:12px; }
+  .mgr-list-row.header { color:var(--muted);font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.5px; }
+  .mgr-list-row.injured { opacity:.62;background:#f8514908; }
+  .mgr-player-name { min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:750; }
+  .mgr-pos { display:inline-grid;place-items:center;min-width:32px;padding:2px 5px;border-radius:5px;background:#223044;color:#9bd2ff;font-size:9px;font-weight:900; }
+  .mgr-rating { font-weight:900;color:var(--gold); }
+  .mgr-action { padding:6px 8px!important;font-size:10px!important;white-space:nowrap; }
+  .mgr-table-wrap { overflow:auto; }
+  .mgr-fixture { display:grid;grid-template-columns:60px 1fr auto 1fr 80px;gap:8px;align-items:center;padding:10px 7px;border-bottom:1px solid #ffffff0b;font-size:12px; }
+  .mgr-fixture .home { text-align:right; }.mgr-fixture .away { text-align:left; }.mgr-fixture.me { background:#2ea44f0d;border-left:3px solid var(--green); }
+  .mgr-score { min-width:52px;text-align:center;font-size:16px;font-weight:900; }
+  .mgr-mail { padding:11px 12px;border-left:3px solid #536273;border-bottom:1px solid #ffffff0b;background:#ffffff03;margin-bottom:6px; }
+  .mgr-mail.good { border-left-color:var(--green-bright); }.mgr-mail.bad { border-left-color:var(--red); }.mgr-mail.gold { border-left-color:var(--gold); }
+  .mgr-mail time { color:var(--muted);font-size:10px;display:block;margin-bottom:3px; }
+  .mgr-progress { height:7px;border-radius:99px;background:#080c10;overflow:hidden;margin-top:6px; }.mgr-progress i { display:block;height:100%;background:linear-gradient(90deg,var(--red),var(--gold),var(--green-bright)); }
+  .mgr-tactic-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px; }
+  .mgr-tactic-grid label { color:var(--muted);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.6px; }
+  .mgr-tactic-grid select { margin-top:5px; }
+  .mgr-pitch { position:relative;min-height:390px;border:2px solid #ffffff50;border-radius:10px;background:repeating-linear-gradient(0deg,#176f38 0,#176f38 42px,#1b7a3e 42px,#1b7a3e 84px);overflow:hidden; }
+  .mgr-pitch::before { content:"";position:absolute;left:50%;top:0;bottom:0;border-left:1px solid #ffffff5c; }.mgr-pitch::after { content:"";position:absolute;left:50%;top:50%;width:80px;height:80px;margin:-40px;border:1px solid #ffffff5c;border-radius:50%; }
+  .mgr-player-dot { position:absolute;z-index:2;transform:translate(-50%,-50%);min-width:54px;padding:5px 6px;border-radius:8px;background:#0d1720e8;border:1px solid #ffffff42;text-align:center;font-size:9px;font-weight:900;box-shadow:0 3px 9px #0008; }
+  .mgr-player-dot i { display:block;width:20px;height:20px;border-radius:50%;background:var(--mgr-club,#2ea44f);margin:0 auto 3px;border:2px solid #fff; }
+  .mgr-market-row { display:grid;grid-template-columns:minmax(150px,1.5fr) repeat(5,minmax(58px,.6fr)) auto;gap:7px;align-items:center;padding:9px 7px;border-bottom:1px solid #ffffff0b;font-size:12px; }
+  .mgr-fit-good{color:#63e68a}.mgr-fit-mid{color:var(--gold)}.mgr-fit-bad{color:#ff7770}
+  .mgr-match-centre { text-align:center;background:radial-gradient(circle at 50% 12%,#1c5935,#111820 62%); }
+  .mgr-match-score { display:grid;grid-template-columns:1fr auto 1fr;gap:15px;align-items:center;margin:15px 0; }.mgr-match-score strong { font-size:42px;color:#fff; }.mgr-match-score b { font-size:15px; }
+  .mgr-clock { color:var(--gold);font-weight:900;letter-spacing:1px; }
+  .mgr-momentum { display:flex;height:10px;border-radius:99px;overflow:hidden;background:#334;margin:10px 0; }.mgr-momentum i:first-child{background:var(--green-bright)}.mgr-momentum i:last-child{background:var(--red)}
+  .mgr-commentary { min-height:145px;max-height:210px;overflow:auto;text-align:left;padding:10px;border:1px solid var(--border);border-radius:9px;background:#080d12;font-size:12px;line-height:1.65; }
+  .mgr-commentary .goal { color:#ffe07a;font-weight:800; }.mgr-commentary .card { color:#ff8d86; }
+  .mgr-toast { position:fixed;right:18px;top:18px;z-index:100;padding:12px 15px;border:1px solid var(--green);border-radius:10px;background:#13251af5;box-shadow:0 10px 30px #0009;animation:rise-fade .25s ease;color:#eaffef;font-size:13px;font-weight:700; }
+  @media(max-width:980px){.mgr-setup-grid,.mgr-grid-2{grid-template-columns:1fr}.mgr-kpis{grid-template-columns:repeat(2,1fr)}.mgr-app{grid-template-columns:1fr}.mgr-sidebar{position:static;max-height:none}.mgr-club-brand{display:none}.mgr-nav{display:flex;overflow:auto;padding-bottom:3px}.mgr-nav button{flex:0 0 auto;width:auto}.mgr-list-row{grid-template-columns:minmax(145px,1.5fr) repeat(3,minmax(48px,.5fr)) auto}.mgr-list-row>*:nth-child(4),.mgr-list-row>*:nth-child(5){display:none}}
+  @media(max-width:620px){#manager-game-screen{width:calc(100vw - 12px)}.mgr-club-grid{grid-template-columns:1fr}.mgr-two,.mgr-tactic-grid{grid-template-columns:1fr}.mgr-kpis{grid-template-columns:1fr 1fr}.mgr-kpi b{font-size:16px}.mgr-fixture{grid-template-columns:42px 1fr auto 1fr}.mgr-fixture>*:last-child{display:none}.mgr-market-row{grid-template-columns:minmax(140px,1fr) 55px 65px auto}.mgr-market-row>*:nth-child(3),.mgr-market-row>*:nth-child(5),.mgr-market-row>*:nth-child(6){display:none}.mgr-match-score strong{font-size:32px}.mgr-sidebar{padding:8px}.mgr-main{padding-bottom:78px}}
+
+  /* ---------- Presentation style gateway ---------- */
+  #style-screen { min-height:calc(100dvh - 40px);display:grid;place-items:center;padding:clamp(18px,4vh,44px) 0; }
+  .style-shell { width:min(980px,100%);text-align:center; }
+  .style-kicker { display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border:1px solid var(--border);border-radius:999px;background:var(--panel);color:var(--muted);font-size:10px;font-weight:900;letter-spacing:1.4px;text-transform:uppercase; }
+  .style-title { margin:16px 0 5px;font-size:clamp(32px,6vw,56px);font-weight:950;letter-spacing:-1.5px;line-height:1; }
+  .style-title span { color:var(--green-bright); }
+  .style-sub { color:var(--muted);font-size:14px;line-height:1.55; }
+  .ui-style-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:28px auto 14px;text-align:left; }
+  .ui-style-card { position:relative;min-width:0;padding:14px;border:2px solid var(--border);border-radius:20px;background:var(--panel);color:var(--text);cursor:pointer;box-shadow:0 20px 50px #0005;transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease;overflow:hidden; }
+  .ui-style-card:hover,.ui-style-card:focus-visible { transform:translateY(-5px);border-color:var(--green-bright);box-shadow:0 24px 60px #0008,0 0 28px #2ea44f24;outline:none; }
+  #style-screen:not(.hidden) .ui-style-card.selected::after { content:"CURRENT";position:absolute;right:12px;top:12px;z-index:4;padding:5px 8px;border-radius:999px;background:var(--green-bright);color:#07140d;font:900 9px/1 system-ui;letter-spacing:1px; }
+  .ui-preview { position:relative;height:230px;border-radius:13px;overflow:hidden;margin-bottom:15px; }
+  .style-card-copy { padding:2px 5px 6px; }
+  .style-card-copy h2 { display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:22px;margin-bottom:6px; }
+  .style-card-copy h2 small { color:var(--green-bright);font-size:10px;letter-spacing:1px; }
+  .style-card-copy p { color:var(--muted);font-size:12.5px;line-height:1.55; }
+  .style-tags { display:flex;flex-wrap:wrap;gap:6px;margin-top:11px; }
+  .style-tags span { padding:4px 7px;border:1px solid var(--border);border-radius:999px;color:var(--muted);font-size:9px;font-weight:900;letter-spacing:.6px; }
+  .modern-preview { padding:13px;background:linear-gradient(145deg,#dff8f4,#eef4fb 48%,#dce7f6);font-family:system-ui,sans-serif;color:#102a3a; }
+  .modern-preview::before { content:"";position:absolute;width:190px;height:190px;border-radius:50%;right:-65px;top:-80px;background:#2dd5a5;opacity:.32; }
+  .mp-head { position:relative;display:flex;align-items:center;justify-content:space-between;padding:3px 2px 12px;font-size:10px;font-weight:900;letter-spacing:1px; }
+  .mp-head b { display:grid;place-items:center;width:29px;height:29px;border-radius:9px;background:#102c45;color:#fff;box-shadow:0 5px 12px #17375333; }
+  .mp-head i { display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:#fff;color:#0aa47b;font-style:normal;box-shadow:0 4px 12px #2344; }
+  .mp-hero { position:relative;padding:18px;border-radius:17px;background:linear-gradient(135deg,#0f3552,#17647a);color:#fff;box-shadow:0 12px 28px #0c385644; }
+  .mp-hero>span { color:#8fe9d0;font-size:8px;font-weight:900;letter-spacing:1.5px; }
+  .mp-score { display:flex;align-items:center;justify-content:space-between;margin:12px 0 15px;font-size:19px;font-weight:950; }
+  .mp-score b { color:#80f0cd;font-size:11px; }
+  .mp-play { display:block;padding:8px;border-radius:9px;background:#2dd5a5;color:#07382c;text-align:center;font-size:9px;font-weight:950;letter-spacing:1px; }
+  .mp-nav { display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px; }
+  .mp-nav span { padding:10px 3px;border-radius:10px;background:#fff;text-align:center;font-size:8px;font-weight:900;box-shadow:0 5px 13px #18334c18; }
+  .retro-preview { padding:10px;background:#173f21;color:#fffbd2;font-family:"Courier New",monospace;image-rendering:pixelated;border:4px solid #071208;box-shadow:inset 0 0 0 3px #88b94f; }
+  .rp-score { display:flex;justify-content:space-between;padding:8px 9px;background:#09110b;border:3px solid #d7df74;color:#fff29c;font-size:10px;font-weight:900;box-shadow:4px 4px 0 #050805; }
+  .rp-field { position:relative;height:125px;margin:13px 0 10px;border:3px solid #d9ebad;background:repeating-linear-gradient(90deg,#23733d 0,#23733d 34px,#2d8147 34px,#2d8147 68px); }
+  .rp-field::before { content:"";position:absolute;left:50%;top:0;bottom:0;border-left:2px solid #d9ebad; }
+  .rp-field::after { content:"";position:absolute;left:50%;top:50%;width:43px;height:43px;transform:translate(-50%,-50%);border:2px solid #d9ebad;border-radius:50%; }
+  .rp-player { position:absolute;width:10px;height:13px;background:#f3d548;border:2px solid #17130a;box-shadow:2px 2px 0 #071208;z-index:2; }
+  .rp-player.red { background:#ea5d4f; }.rp-player.p1{left:20%;top:58%}.rp-player.p2{left:43%;top:26%}.rp-player.p3{left:66%;top:62%}.rp-player.p4{left:79%;top:25%}.rp-player.ball{left:54%;top:48%;width:7px;height:7px;border-radius:50%;background:#fff;}
+  .rp-menu { display:grid;grid-template-columns:repeat(3,1fr);gap:6px; }
+  .rp-menu span { padding:7px 2px;border:2px solid #f3dc73;background:#101b12;color:#f9edaa;text-align:center;font-size:8px;font-weight:900;box-shadow:2px 2px 0 #050805; }
+  .style-footnote { color:var(--muted);font-size:11.5px;line-height:1.5; }
+  @media(max-width:720px){#style-screen{min-height:auto;padding-top:16px}.ui-style-grid{grid-template-columns:1fr;max-width:520px}.ui-preview{height:205px}.style-title{font-size:34px}.style-sub{font-size:12.5px}}
+
+  /* Clean Modern — polished mobile-football dashboard */
+  body[data-ui-style="modern"] {
+    --bg:#07192b;--panel:#102941;--panel2:#173853;--border:#285574;--green:#14b987;--green-bright:#39d7aa;--gold:#ffd166;--red:#ff6b6b;--blue:#58aaff;--text:#f3f8fb;--muted:#9cb3c4;
+    background:radial-gradient(900px 500px at 88% -80px,#1c7d7c55,transparent 62%),radial-gradient(700px 420px at -10% 20%,#1b65a855,transparent 68%),linear-gradient(160deg,#061422,#09243a 55%,#071827);background-attachment:fixed;
+  }
+  body[data-ui-style="modern"] .logo { letter-spacing:-1px;font-weight:950; }
+  body[data-ui-style="modern"] .setup-card,body[data-ui-style="modern"] .panel,body[data-ui-style="modern"] .topbar,body[data-ui-style="modern"] .player-card,body[data-ui-style="modern"] .mgr-card,body[data-ui-style="modern"] .mgr-form-card,body[data-ui-style="modern"] .mgr-club-picker,body[data-ui-style="modern"] .mgr-topbar { border-color:#2b5876;border-radius:18px;box-shadow:0 16px 38px #020b1366; }
+  body[data-ui-style="modern"] .setup-card,body[data-ui-style="modern"] .panel,body[data-ui-style="modern"] .topbar,body[data-ui-style="modern"] .mgr-card,body[data-ui-style="modern"] .mgr-form-card,body[data-ui-style="modern"] .mgr-club-picker,body[data-ui-style="modern"] .mgr-topbar { background:linear-gradient(145deg,#12304b,#0d2439); }
+  body[data-ui-style="modern"] .player-card { background:linear-gradient(155deg,#1b5470,#102941 52%,#0a2033); }
+  body[data-ui-style="modern"] .btn { border-radius:12px;background:linear-gradient(135deg,#16b98a,#25d4a3);box-shadow:0 7px 18px #063d3055; }
+  body[data-ui-style="modern"] .btn:hover { background:linear-gradient(135deg,#20c995,#3ae1b3); }
+  body[data-ui-style="modern"] .btn.secondary { background:#183b57;border-color:#346582;box-shadow:none; }
+  body[data-ui-style="modern"] .btn.gold { background:linear-gradient(135deg,#ffd166,#f6b83f);color:#21303a; }
+  body[data-ui-style="modern"] .btn.danger { background:#351f2b;border:1px solid #ff6b6b;color:#ff8c8c;box-shadow:none; }
+  body[data-ui-style="modern"] .btn.danger:hover { background:#4a2530;border-color:#ff9292; }
+  body[data-ui-style="modern"] .tab-btn { border-radius:11px;background:#102a42; }
+  body[data-ui-style="modern"] .tab-btn.active { background:linear-gradient(135deg,#146a6a,#147456);border-color:#39d7aa;box-shadow:0 6px 16px #031f1a55; }
+  body[data-ui-style="modern"] .action-card,body[data-ui-style="modern"] .stat-box,body[data-ui-style="modern"] .offer-card,body[data-ui-style="modern"] .league-summary>div,body[data-ui-style="modern"] .setting-row,body[data-ui-style="modern"] .mgr-club-card,body[data-ui-style="modern"] .mgr-kpi { background:linear-gradient(145deg,#183b57,#122f48);border-color:#2c5a77;border-radius:14px; }
+  body[data-ui-style="modern"] .setup-card input,body[data-ui-style="modern"] .setup-card select,body[data-ui-style="modern"] .mgr-form-card input,body[data-ui-style="modern"] .mgr-form-card select,body[data-ui-style="modern"] .mgr-control,body[data-ui-style="modern"] .setting-row select,body[data-ui-style="modern"] .season-mode-box select,body[data-ui-style="modern"] .agent-tools select,body[data-ui-style="modern"] .agent-tools input { background:#0b2236;border-color:#2c5a77;color:var(--text);border-radius:11px; }
+  body[data-ui-style="modern"] .career-mode-card { border-radius:22px;background:linear-gradient(150deg,#184965,#102941 62%,#0a1e31); }
+  body[data-ui-style="modern"] .career-mode-card.manager { background:linear-gradient(150deg,#675327,#2d3d45 52%,#102638); }
+  body[data-ui-style="modern"] .mgr-sidebar { border-radius:18px;background:linear-gradient(180deg,#123a4e,#0c2338); }
+  body[data-ui-style="modern"] .mgr-nav button { border-radius:11px; }
+  body[data-ui-style="modern"] .mgr-nav button.active { background:#2bd5a21a;border-left-color:#39d7aa; }
+  body[data-ui-style="modern"] .modal { border-radius:20px;background:linear-gradient(145deg,#12304b,#0b2033);box-shadow:0 24px 70px #000a; }
+  body[data-ui-style="modern"] .agent-bubble { background:#173d4e;border-color:#2f6475;border-radius:14px 14px 14px 4px; }
+  body[data-ui-style="modern"] .rating-breakdown,body[data-ui-style="modern"] .mgr-commentary { background:#081b2b;border-color:#285574; }
+  body[data-ui-style="modern"] td { border-bottom-color:#24465c; }
+  body[data-ui-style="modern"] tr.me td { background:#17634c55; }
+  body[data-ui-style="modern"] #app-loader { background:radial-gradient(circle at 50% 28%,#1c7d7c 0,#0b2941 39%,#061422 82%); }
+
+  /* Retro Pixel — chunky 16-bit career presentation */
+  body[data-ui-style="retro"] {
+    --bg:#081008;--panel:#152015;--panel2:#1b2b1a;--border:#789443;--green:#519b43;--green-bright:#a8df55;--gold:#f2d267;--red:#ef6559;--blue:#68aee8;--text:#fff7c9;--muted:#b9c98b;
+    background:repeating-linear-gradient(0deg,#0a160b 0,#0a160b 4px,#0c190d 4px,#0c190d 8px);font-family:"Courier New",ui-monospace,monospace;
+  }
+  body[data-ui-style="retro"] h1,body[data-ui-style="retro"] h2,body[data-ui-style="retro"] h3,body[data-ui-style="retro"] button,body[data-ui-style="retro"] input,body[data-ui-style="retro"] select { font-family:"Courier New",ui-monospace,monospace; }
+  body[data-ui-style="retro"] .logo { color:#fff4a8;text-shadow:3px 3px 0 #244f28,-1px -1px 0 #000;font-weight:950;letter-spacing:1px; }
+  body[data-ui-style="retro"] .setup-card,body[data-ui-style="retro"] .panel,body[data-ui-style="retro"] .topbar,body[data-ui-style="retro"] .player-card,body[data-ui-style="retro"] .mgr-card,body[data-ui-style="retro"] .mgr-form-card,body[data-ui-style="retro"] .mgr-club-picker,body[data-ui-style="retro"] .mgr-topbar,body[data-ui-style="retro"] .modal { background:#142114;border:3px solid #789443;border-radius:2px;box-shadow:6px 6px 0 #030603; }
+  body[data-ui-style="retro"] .player-card { background:linear-gradient(180deg,#1e3d22,#111d12); }
+  body[data-ui-style="retro"] .btn { border:2px solid #e8e1a1;border-radius:2px;background:#347c39;color:#fff9c4;box-shadow:3px 3px 0 #030603;text-transform:uppercase;letter-spacing:.3px; }
+  body[data-ui-style="retro"] .btn:hover { background:#4c9a48; }
+  body[data-ui-style="retro"] .btn:active { transform:translate(2px,2px);box-shadow:1px 1px 0 #030603; }
+  body[data-ui-style="retro"] .btn.secondary { background:#1b2c1b;border-color:#8ca45a; }
+  body[data-ui-style="retro"] .btn.gold { background:#d2a940;border-color:#fff0a1;color:#171304; }
+  body[data-ui-style="retro"] .btn.danger { background:#4a211c;border-color:#f58a72;color:#ffd0b4; }
+  body[data-ui-style="retro"] .btn.danger:hover { background:#6b2b22; }
+  body[data-ui-style="retro"] .tab-btn { border:2px solid #5d7438;border-radius:2px;background:#111c12;box-shadow:2px 2px 0 #030603;text-transform:uppercase; }
+  body[data-ui-style="retro"] .tab-btn.active { background:#325f32;border-color:#dce37f;color:#fff7bb; }
+  body[data-ui-style="retro"] .action-card,body[data-ui-style="retro"] .stat-box,body[data-ui-style="retro"] .offer-card,body[data-ui-style="retro"] .league-summary>div,body[data-ui-style="retro"] .setting-row,body[data-ui-style="retro"] .mgr-club-card,body[data-ui-style="retro"] .mgr-kpi { background:#1b2b1a;border:2px solid #60783d;border-radius:1px;box-shadow:3px 3px 0 #050805; }
+  body[data-ui-style="retro"] .setup-card input,body[data-ui-style="retro"] .setup-card select,body[data-ui-style="retro"] .mgr-form-card input,body[data-ui-style="retro"] .mgr-form-card select,body[data-ui-style="retro"] .mgr-control,body[data-ui-style="retro"] .setting-row select,body[data-ui-style="retro"] .season-mode-box select,body[data-ui-style="retro"] .agent-tools select,body[data-ui-style="retro"] .agent-tools input { background:#0d170e;border:2px solid #789443;border-radius:0;color:#fff7c9; }
+  body[data-ui-style="retro"] .career-mode-card { border:3px solid #789443;border-radius:2px;background:#172a18;box-shadow:7px 7px 0 #030603; }
+  body[data-ui-style="retro"] .career-mode-card.manager { background:#2b2916; }
+  body[data-ui-style="retro"] .career-mode-card::after { border-radius:0;filter:none;opacity:.08; }
+  body[data-ui-style="retro"] .career-mode-features span,body[data-ui-style="retro"] .style-tags span { border-radius:0;border-width:2px; }
+  body[data-ui-style="retro"] .mgr-sidebar { border:3px solid #789443;border-radius:2px;background:#101b11;box-shadow:5px 5px 0 #030603; }
+  body[data-ui-style="retro"] .mgr-nav button { border-radius:0; }
+  body[data-ui-style="retro"] .mgr-nav button.active { background:#315532;border-left-color:#f2d267; }
+  body[data-ui-style="retro"] .agent-bubble { background:#243a21;border:2px solid #789443;border-radius:0;box-shadow:3px 3px 0 #030603; }
+  body[data-ui-style="retro"] .rating-breakdown,body[data-ui-style="retro"] .mgr-commentary { background:#091009;border:2px solid #60783d;border-radius:0; }
+  body[data-ui-style="retro"] .meter .bar,body[data-ui-style="retro"] .role-meter,body[data-ui-style="retro"] .mgr-progress { border-radius:0;border:1px solid #789443; }
+  body[data-ui-style="retro"] td { border-bottom-color:#43582f; }
+  body[data-ui-style="retro"] tr.me td { background:#315532; }
+  body[data-ui-style="retro"] #app-loader { background:repeating-linear-gradient(0deg,#0a160b 0,#0a160b 5px,#102112 5px,#102112 10px); }
+  body[data-ui-style="retro"] .loader-icon { border-radius:2px;border:4px solid #dbe57e;box-shadow:7px 7px 0 #030603;image-rendering:pixelated; }
+  body[data-ui-style="retro"] .loader-track { border-radius:0;border:2px solid #dbe57e; }
+  body[data-ui-style="retro"] .pwa-action,body[data-ui-style="retro"] #network-status { border-radius:1px;font-family:"Courier New",monospace; }
+  body[data-ui-style="retro"] .ui-style-card { border-radius:3px;box-shadow:6px 6px 0 #030603; }
+
   /* ---------- Installable app shell ---------- */
   #app-loader { position:fixed;inset:0;z-index:10000;display:grid;place-items:center;background:radial-gradient(circle at 50% 28%,#1c6339 0,#10261b 34%,#090e13 78%);transition:opacity .42s ease,visibility .42s ease; }
   #app-loader.loader-done { opacity:0;visibility:hidden;pointer-events:none; }
@@ -425,7 +618,6 @@
     <img class="loader-icon" src="./icons/icon-192.png" alt="Pitch Legend">
     <div class="loader-title">PITCH <span>LEGEND</span></div>
     <div class="loader-track"><i></i></div>
-    <div class="fade-muted" style="font-size:12px;letter-spacing:1px">PREPARING THE MATCHDAY</div>
   </div>
 </div>
 <div id="pwa-actions" aria-label="App controls">
@@ -442,7 +634,7 @@
   </div>
 </div>
 <script>
-  const APP_VERSION = "2026.07.14.3";
+  const APP_VERSION = "2026.07.14.6";
   window.PITCH_LEGEND_VERSION = APP_VERSION;
   // This tiny independent fallback guarantees the loading curtain never traps the player.
   const finishAppLoading = () => document.getElementById("app-loader")?.classList.add("loader-done");
@@ -499,6 +691,56 @@
 </script>
 <div class="container">
 
+  <!-- ============ PRESENTATION STYLE ============ -->
+  <div id="style-screen" class="hidden">
+    <div class="style-shell">
+      <div class="style-kicker">⚽ Presentation setup</div>
+      <h1 class="style-title">CHOOSE YOUR <span>GAME STYLE</span></h1>
+      <p class="style-sub">Pick the interface you want to use. This changes presentation only—your saves, difficulty and gameplay stay the same.</p>
+      <div class="ui-style-grid">
+        <button class="ui-style-card" type="button" data-ui-pick="modern" aria-label="Use Clean Modern interface">
+          <div class="ui-preview modern-preview" aria-hidden="true">
+            <div class="mp-head"><b>PL</b><span>CAREER HUB</span><i>12</i></div>
+            <div class="mp-hero"><span>NEXT MATCH</span><div class="mp-score"><strong>RIV</strong><b>20:00 · VS</b><strong>ATH</strong></div><span class="mp-play">PLAY MATCH</span></div>
+            <div class="mp-nav"><span>👤 SQUAD</span><span>🏆 LEAGUE</span><span>⚙ TACTICS</span></div>
+          </div>
+          <div class="style-card-copy"><h2>Clean Modern <small>SMOOTH UI</small></h2><p>A polished mobile-football dashboard with rounded cards, strong contrast and fast navigation.</p><div class="style-tags"><span>DEEP BLUE</span><span>ROUNDED</span><span>MINIMAL</span></div></div>
+        </button>
+        <button class="ui-style-card" type="button" data-ui-pick="retro" aria-label="Use Retro Pixel interface">
+          <div class="ui-preview retro-preview" aria-hidden="true">
+            <div class="rp-score"><span>PL UNITED</span><span>1 - 0</span><span>LEGENDS</span></div>
+            <div class="rp-field"><i class="rp-player p1"></i><i class="rp-player red p2"></i><i class="rp-player p3"></i><i class="rp-player red p4"></i><i class="rp-player ball"></i></div>
+            <div class="rp-menu"><span>SQUAD</span><span>PLAY</span><span>LEAGUE</span></div>
+          </div>
+          <div class="style-card-copy"><h2>Retro Pixel <small>16-BIT UI</small></h2><p>A chunky arcade presentation with pixel typography, hard edges and classic football-game colors.</p><div class="style-tags"><span>PIXEL</span><span>ARCADE</span><span>CLASSIC</span></div></div>
+        </button>
+      </div>
+      <p class="style-footnote">Your choice is saved on this device. You can reopen this screen from Career Types or Settings.</p>
+    </div>
+  </div>
+
+  <!-- ============ CAREER MODE GATEWAY ============ -->
+  <div id="mode-screen" class="hidden">
+    <h1 class="logo">⚽ PITCH <span>LEGEND</span></h1>
+    <p class="tagline" style="margin-bottom:0">Choose your path through the football world.</p>
+    <div class="career-mode-grid">
+      <button class="career-mode-card" id="btn-mode-player" type="button">
+        <div class="career-mode-icon">🏃⚽</div>
+        <h2>Player Career</h2>
+        <p>Control one footballer from school and the lower divisions to legendary finals, transfers and international glory.</p>
+        <div class="career-mode-features"><span>2D MATCHES</span><span>SKILL TREE</span><span>TRANSFERS</span><span>CAREER STORY</span></div>
+      </button>
+      <button class="career-mode-card manager" id="btn-mode-manager" type="button">
+        <div class="career-mode-icon">🧥📋</div>
+        <h2>Manager Career</h2>
+        <p>Run the entire club: select your squad, build tactics, recruit players, manage finances and survive the boardroom.</p>
+        <div class="career-mode-features"><span>TACTICS</span><span>TRANSFERS</span><span>LIVE MATCHES</span><span>MULTI-SEASON</span></div>
+      </button>
+    </div>
+    <div class="mode-account" id="mode-account"></div>
+    <button class="btn secondary" id="btn-change-ui" type="button" style="margin-top:3px;padding:8px 13px;font-size:11px">🎨 Change Interface Style</button>
+  </div>
+
   <!-- ============ AUTH ============ -->
   <div id="auth-screen" class="hidden" style="text-align:center;padding-top:40px">
     <h1 class="logo">⚽ PITCH <span>LEGEND</span></h1>
@@ -513,6 +755,7 @@
         <button class="btn" id="btn-login" style="flex:1">Log In</button>
         <button class="btn secondary" id="btn-register" style="flex:1">Create Account</button>
       </div>
+      <button class="btn secondary" id="btn-auth-back" style="width:100%;margin-top:9px">← Career Types</button>
       <small style="display:block;margin-top:14px;color:var(--muted);line-height:1.5">Accounts are stored in this browser. Your trophy totals are shared to the global leaderboard.</small>
     </div>
   </div>
@@ -535,8 +778,83 @@
       </div>
       <div class="btn-row" style="margin-top:10px">
         <button class="btn secondary" id="btn-support" style="flex:1">☕ Support the Dev</button>
+        <button class="btn secondary" id="btn-player-mode-back" style="flex:1">⇄ Career Types</button>
       </div>
       <small style="display:block;margin-top:8px;color:var(--muted)">Pitch Legend is free. If you're enjoying it, a tip keeps it growing 💚</small>
+    </div>
+  </div>
+
+  <!-- ============ MANAGER SAVE MENU ============ -->
+  <div id="manager-menu-screen" class="hidden" style="text-align:center">
+    <h1 class="logo" style="font-size:38px">🧥 MANAGER <span>CAREER</span></h1>
+    <p class="tagline">Build a club, shape a football identity and survive the pressure.</p>
+    <div class="setup-card" style="max-width:690px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;gap:10px">
+        <div style="text-align:left"><b id="mgr-menu-user" style="font-size:18px">—</b><br><span class="fade-muted" style="font-size:12px">Local autosaves with rolling backups</span></div>
+        <button class="btn secondary" id="btn-manager-mode-back" style="padding:8px 12px;font-size:12px">⇄ Career Types</button>
+      </div>
+      <label>Your manager careers (max 5)</label>
+      <div id="mgr-save-list" style="margin-top:9px"></div>
+      <div class="btn-row">
+        <button class="btn gold" id="btn-new-manager" style="flex:1">+ New Manager Career</button>
+        <button class="btn secondary" id="btn-manager-logout" style="flex:1">Log Out</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MANAGER CREATION ============ -->
+  <div id="manager-setup-screen" class="hidden">
+    <h1 class="logo" style="text-align:center;font-size:34px">CREATE YOUR <span>MANAGER</span></h1>
+    <p class="tagline" style="text-align:center">Your background opens doors. Your decisions decide how long they stay open.</p>
+    <div class="mgr-setup-grid">
+      <div class="mgr-form-card">
+        <h2 style="font-size:19px">Manager profile</h2>
+        <label>Name</label><input id="mgr-name" maxlength="26" placeholder="e.g. Jordan Reyes">
+        <div class="mgr-two">
+          <div><label>Nationality</label><select id="mgr-nationality"><option>England</option><option>Spain</option><option>Germany</option><option>Italy</option><option>France</option><option selected>Mexico</option><option>USA</option><option>Brazil</option><option>Argentina</option><option>Portugal</option><option>Netherlands</option><option>Nigeria</option><option>Japan</option></select></div>
+          <div><label>Age</label><input id="mgr-age" type="number" min="25" max="75" value="38"></div>
+        </div>
+        <div class="mgr-two">
+          <div><label>Appearance</label><select id="mgr-avatar"><option>🧑🏻‍💼</option><option>🧑🏽‍💼</option><option>🧑🏿‍💼</option><option>👩🏻‍💼</option><option>👩🏽‍💼</option><option>👩🏿‍💼</option><option>🧔🏻</option><option>🧔🏽</option><option>🧔🏿</option></select></div>
+          <div><label>Difficulty</label><select id="mgr-difficulty"><option value="easy">Easy</option><option value="normal" selected>Normal</option><option value="hard">Hard</option></select></div>
+        </div>
+        <label>Playing background</label><select id="mgr-background"><option value="amateur">Amateur player</option><option value="pro">Former professional</option><option value="international">Former international</option><option value="analyst">Data analyst</option></select>
+        <label>Coaching qualification</label><select id="mgr-license"><option value="national">National C Licence</option><option value="continental">Continental B Licence</option><option value="elite">Elite Pro Licence</option></select>
+        <label>Tactical philosophy</label><select id="mgr-philosophy"><option value="balanced">Balanced football</option><option value="possession">Patient possession</option><option value="press">High pressing</option><option value="counter">Fast counterattacks</option><option value="direct">Direct and physical</option></select>
+        <div class="mgr-two"><div><label>Preferred formation</label><select id="mgr-formation"><option>4-3-3</option><option>4-2-3-1</option><option>4-4-2</option><option>3-5-2</option><option>5-3-2</option></select></div><div><label>Personality</label><select id="mgr-personality"><option value="calm">Calm</option><option value="motivator">Motivator</option><option value="demanding">Demanding</option><option value="tactician">Tactician</option></select></div></div>
+      </div>
+      <div class="mgr-club-picker">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><div><h2 style="font-size:19px">Choose country, division & club</h2><span class="fade-muted" style="font-size:12px">Start in any division. Lower leagues offer smaller budgets, lower wages and a longer road to the top.</span></div><select id="mgr-country" class="mgr-control" style="width:auto;min-width:245px"></select></div>
+        <div id="mgr-league-note" class="league-summary"></div>
+        <div id="mgr-club-grid" class="mgr-club-grid"></div>
+        <div id="mgr-selected-club" style="margin-top:12px"></div>
+        <div class="btn-row"><button class="btn gold" id="btn-start-manager" style="flex:1">Sign Contract & Start</button><button class="btn secondary" id="btn-manager-setup-back">← Saves</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MANAGER GAME ============ -->
+  <div id="manager-game-screen" class="hidden">
+    <div class="mgr-app">
+      <aside class="mgr-sidebar">
+        <div class="mgr-club-brand" id="mgr-club-brand"></div>
+        <nav class="mgr-nav" id="mgr-nav">
+          <button class="active" data-mgr-view="home">🏠 Home</button>
+          <button data-mgr-view="inbox">📨 Inbox</button>
+          <button data-mgr-view="squad">👥 Squad</button>
+          <button data-mgr-view="tactics">📋 Tactics</button>
+          <button data-mgr-view="training">🏋️ Training</button>
+          <button data-mgr-view="schedule">📅 Schedule</button>
+          <button data-mgr-view="competitions">🏆 Competitions</button>
+          <button data-mgr-view="transfers">🔎 Transfers</button>
+          <button data-mgr-view="club">🏟️ Club</button>
+          <button data-mgr-view="profile">🧥 Profile</button>
+        </nav>
+      </aside>
+      <main class="mgr-main">
+        <div class="mgr-topbar"><div><h2 id="mgr-view-title">Manager Home</h2><span id="mgr-date" class="fade-muted" style="font-size:11px"></span></div><div style="display:flex;gap:7px"><button class="btn secondary mgr-action" id="btn-mgr-save">💾 Save</button><button class="btn secondary mgr-action" id="btn-mgr-exit">Exit</button></div></div>
+        <div id="mgr-view"></div>
+      </main>
     </div>
   </div>
 
@@ -829,6 +1147,13 @@
             <select id="setting-2d-movement" aria-label="2D movement controls">
               <option value="drag">☝️ Drag on the pitch</option>
               <option value="wasd">⌨️ WASD / arrows</option>
+            </select>
+          </div>
+          <div class="setting-row movement-setting" style="margin-bottom:12px">
+            <div><b>🎨 Interface style</b><br><span class="fade-muted" style="font-size:12.5px">Switch the entire career presentation without changing your save or gameplay.</span></div>
+            <select id="setting-ui-style" aria-label="Interface style">
+              <option value="modern">✨ Clean Modern</option>
+              <option value="retro">🟩 Retro Pixel</option>
             </select>
           </div>
           <div class="btn-row" style="margin:0 0 12px">
@@ -6722,6 +7047,7 @@ function render() {
   // account-wide notification preference and tutorial status
   $("setting-academy-popups").checked = academyPopupsEnabled();
   $("setting-2d-movement").value = movement2DMode();
+  $("setting-ui-style").value = currentUIStyle();
   $("btn-tutorial").textContent = G.tutorialComplete ? "📖 Replay Tutorial" : "📖 Start Tutorial";
 
   // retire button availability
@@ -6929,8 +7255,21 @@ const BOARD_READ = "https://textdb.online/" + BOARD_KEY;
 const BOARD_WRITE = "https://textdb.online/update";
 let SESSION = null; // lowercase username of logged-in account
 
-const SCREENS = ["auth-screen", "menu-screen", "board-screen", "setup-screen", "game-screen", "retire-screen"];
+const SCREENS = ["style-screen", "mode-screen", "auth-screen", "menu-screen", "board-screen", "setup-screen", "game-screen", "retire-screen", "manager-menu-screen", "manager-setup-screen", "manager-game-screen"];
 function showScreen(id) { SCREENS.forEach(s => $(s).classList.toggle("hidden", s !== id)); }
+
+const UI_STYLE_KEY = "plUIStyle_v1";
+function currentUIStyle(){try{return localStorage.getItem(UI_STYLE_KEY)==="retro"?"retro":"modern";}catch{return"modern";}}
+function applyUIStyle(style,save=true){
+  const chosen=style==="retro"?"retro":"modern";document.body.dataset.uiStyle=chosen;document.documentElement.dataset.uiStyle=chosen;
+  const meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.content=chosen==="retro"?"#081008":"#07192b";
+  document.querySelectorAll("[data-ui-pick]").forEach(card=>card.classList.toggle("selected",card.dataset.uiPick===chosen));
+  if($("setting-ui-style"))$("setting-ui-style").value=chosen;
+  if(save)try{localStorage.setItem(UI_STYLE_KEY,chosen);}catch{}
+  return chosen;
+}
+function showStylePicker(){applyUIStyle(currentUIStyle(),false);showScreen("style-screen");}
+function chooseUIStyle(style){applyUIStyle(style,true);showCareerMode();}
 
 let deferredInstallPrompt = null;
 const isOfflinePlay = () => !navigator.onLine;
@@ -7109,13 +7448,13 @@ async function registerAccount() {
   const accs = loadAccounts();
   const key = user.toLowerCase();
   if (accs[key]) { err.textContent = "That username is taken (on this browser)."; return; }
-  accs[key] = { username: user, passHash: await hashPass(user, pass), saves: {}, settings:{ academyPopups:true, movement2D:"wasd" }, retiredTrophies: 0, created: Date.now() };
+  accs[key] = { username: user, passHash: await hashPass(user, pass), saves: {}, managerSaves:{}, managerBackups:{}, settings:{ academyPopups:true, movement2D:"wasd" }, retiredTrophies: 0, created: Date.now() };
   importLegacySave(accs[key]);
   saveAccounts(accs);
   SESSION = key;
   localStorage.setItem(SES_KEY, key);
   submitScore();
-  showMenu();
+  routeAfterAuth();
 }
 
 async function loginAccount() {
@@ -7131,7 +7470,7 @@ async function loginAccount() {
   SESSION = key;
   localStorage.setItem(SES_KEY, key);
   submitScore();
-  showMenu();
+  routeAfterAuth();
 }
 
 function importLegacySave(acc) { // adopt a pre-account save into this account
@@ -7151,7 +7490,7 @@ function logout() {
   localStorage.removeItem(SES_KEY);
   $("auth-pass").value = "";
   $("auth-error").textContent = "";
-  showScreen("auth-screen");
+  showCareerMode();
 }
 
 function showMenu() {
@@ -7408,6 +7747,10 @@ $("btn-login").onclick = loginAccount;
 $("btn-register").onclick = registerAccount;
 $("auth-pass").addEventListener("keydown", e => { if (e.key === "Enter") loginAccount(); });
 $("btn-logout").onclick = logout;
+$("btn-auth-back").onclick = showCareerMode;
+$("btn-mode-player").onclick = () => openCareerMode("player");
+$("btn-mode-manager").onclick = () => openCareerMode("manager");
+$("btn-player-mode-back").onclick = showCareerMode;
 $("btn-newcareer").onclick = () => showScreen("setup-screen");
 $("btn-support").onclick = () => {
   if (SUPPORT_URL.includes("YOUR_USERNAME_HERE")) {
@@ -7476,6 +7819,10 @@ $("setting-2d-movement").onchange = e => {
   setMovement2DMode(e.target.value);
   flashModal("🎮 2D controls updated", `<p style="line-height:1.65">Movement is now set to <b>${e.target.value === "drag" ? "Drag on the pitch" : "WASD / arrow controls"}</b>. The change applies the next time a 2D match begins.</p>`);
 };
+$("setting-ui-style").onchange = e => {
+  const chosen=applyUIStyle(e.target.value,true);
+  flashModal("🎨 Interface updated", `<p style="line-height:1.65">Pitch Legend is now using the <b>${chosen==="retro"?"Retro Pixel":"Clean Modern"}</b> presentation. Your career save and gameplay were not changed.</p>`);
+};
 $("btn-retire-now").onclick = () => {
   showModal(`<h2>Retire now?</h2><p style="margin:14px 0">This ends ${G.player.name}'s career permanently.</p>
     <div class="btn-row"><button class="btn danger" onclick="retire(false)">Yes, retire</button>
@@ -7497,6 +7844,275 @@ $("btn-character").onclick = () => openCustomizer(G.player.avatar, { shop: true,
 
 $("btn-newgame").onclick = () => { saveGame(); showMenu(); };
 $("btn-restart").onclick = () => showMenu();
+
+// ============================== MANAGER CAREER ==============================
+// A separate, deterministic club-management game that shares the account shell
+// without changing Player Career saves or leaderboard scoring.
+const MANAGER_LEAGUES = [
+  {id:"mgr-eng",country:"England",flag:"🏴",league:"Crown Premier Division",quality:9.4,top:92,bottom:59,budget:1.28,clubs:["Northbridge City","London Crown","Mersey Athletic","Tyne Borough","Midlands Forge","South Coast Rovers","Westford United","Kingsport FC","Oakshire Town","Eastgate Albion","Redvale Wanderers","Harbor County"]},
+  {id:"mgr-esp",country:"Spain",flag:"🇪🇸",league:"Liga Estrella",quality:9.0,top:91,bottom:57,budget:1.12,clubs:["Madrid Sol","Barcelona Mariners","Valencia Fuego","Sevilla Dorada","Bilbao Norte","Villarosa CF","San Sebastián Azul","Betis Verde","Girona Montaña","Vigo Atlántico","Pamplona Rojos","Granada Sierra"]},
+  {id:"mgr-ger",country:"Germany",flag:"🇩🇪",league:"Bundesliga Elite",quality:8.8,top:90,bottom:56,budget:1.05,clubs:["München Adler","Dortmund Stahl","Leverkusen Werk","Leipzig Dynamo","Frankfurt Main","Stuttgart Kronen","Wolfsburg Motor","Freiburg Wald","Bremen Hafen","Mainz Karneval","Berlin Eisern","Köln Dom"]},
+  {id:"mgr-ita",country:"Italy",flag:"🇮🇹",league:"Serie Nazionale",quality:8.7,top:90,bottom:56,budget:1.02,clubs:["Milano Serpenti","Torino Vecchia","Napoli Vesuvio","Roma Lupi","Bergamo Nerazzurri","Firenze Viola","Lazio Aquile","Bologna Torri","Genova Porto","Verona Scala","Parma Crociati","Udine Friuli"]},
+  {id:"mgr-fra",country:"France",flag:"🇫🇷",league:"Ligue République",quality:8.0,top:87,bottom:53,budget:.88,clubs:["Paris Étoile","Marseille Phare","Monaco Riviera","Lyon Rhône","Lille Flandres","Nice Azur","Lens Miners","Rennes Bretagne","Strasbourg Rhin","Nantes Océan","Toulouse Violet","Auxerre Bourgogne"]},
+  {id:"mgr-mex",country:"Mexico",flag:"🇲🇽",league:"Liga Nacional MX",quality:6.2,top:73,bottom:43,budget:.48,clubs:["Ciudad Águila","Monterra Norte","Tigres del Valle","Cruz Capital","Toluca Volcán","Pachuca Mineros","Guadalajara Azul","Universidad Dorada","León Esmeralda","Laguna Santos","Atlas Rojo","Puebla Ángeles"]},
+  {id:"mgr-eng2",parentId:"mgr-eng",country:"England",flag:"🏴",league:"Crown Championship",quality:7.2,top:76,bottom:45,budget:.52,clubs:["Leicester Foxes","Southport Saints","Ipswich Harriers","Sheffield Steel","Middlesborough Bridge","Coventry Sky","Norwich Canaries","West Bromwich","Blackburn Mill","Bristol Harbor","Watford Grove","Swansea Bay"]},
+  {id:"mgr-esp2",parentId:"mgr-esp",country:"Spain",flag:"🇪🇸",league:"Liga Estrella 2",quality:6.8,top:74,bottom:44,budget:.46,clubs:["Leganés Pepineros","Palmas Arena","Valladolid Castilla","Almería Costa","Granada Alhambra","Cádiz Bahía","Coruña Bravos","Zaragoza León","Gijón Sporting","Eibar Armeros","Málaga Mar","Tenerife Teide"]},
+  {id:"mgr-ger2",parentId:"mgr-ger",country:"Germany",flag:"🇩🇪",league:"Bundesliga National",quality:6.9,top:75,bottom:45,budget:.48,clubs:["Köln Geißbock","Kiel Förde","Bochum Ruhr","Gelsenkirchen Knappen","Hamburg Hafen","Hannover Rot","Düsseldorf Rhein","Nürnberg Burg","Kaiserslautern Rot","Karlsruhe Fächer","Dresden Elbe","Magdeburg Blau"]},
+  {id:"mgr-ita2",parentId:"mgr-ita",country:"Italy",flag:"🇮🇹",league:"Serie Nazionale B",quality:6.7,top:73,bottom:43,budget:.44,clubs:["Empoli Azzurri","Monza Corona","Venezia Laguna","Palermo Aquile","Spezia Golfo","Bari Galletti","Sampierdarena","Catanzaro Sud","Cesena Cavallucci","Modena Geminiani","Pisa Torre","Cremona Violini"]},
+  {id:"mgr-fra2",parentId:"mgr-fra",country:"France",flag:"🇫🇷",league:"Ligue République 2",quality:6.1,top:70,bottom:41,budget:.39,clubs:["Saint-Étienne Loire","Metz Lorraine","Montpellier Soleil","Troyes Champagne","Guingamp Armor","Bastia Corse","Caen Normandie","Amiens Somme","Grenoble Alpes","Rodez Aveyron","Laval Mayenne","Annecy Lac"]},
+  {id:"mgr-mex2",parentId:"mgr-mex",country:"Mexico",flag:"🇲🇽",league:"Liga Ascenso MX",quality:4.8,top:62,bottom:35,budget:.25,clubs:["Atlante Azul","Morelia Monarcas","Celaya Toros","Tapatío Joven","Oaxaca Alebrijes","Leones Negros","Tepatitlán Altos","Cancún Caribe","Mineros Zacatecas","Correcaminos Norte","Tlaxcala Coyotes","La Paz Perlas"]}
+];
+MANAGER_LEAGUES.push(
+  {id:"mgr-eng3",parentId:"mgr-eng2",division:3,country:"England",flag:"🏴",league:"Crown League One",quality:5.8,top:66,bottom:38,budget:.30,clubs:["Portsmouth Anchor","Derby Foundry","Bolton Phoenix","Reading Scholars","Oxford Spires","Wigan Rail","Barnsley Oak","Lincoln Cathedral","Exeter Moors","Peterborough Fens","Rotherham Forge","Shrewsbury Severn"]},
+  {id:"mgr-eng4",parentId:"mgr-eng3",division:4,country:"England",flag:"🏴",league:"Crown League Two",quality:4.6,top:56,bottom:31,budget:.19,clubs:["Chesterfield Crooked Spire","Crewe Junction","Carlisle Border","Walsall Saddlers","Newport Dragon","Tranmere Wirral","Barrow Dockers","Grimsby Mariners","Colchester Keep","Fleetwood Coast","Harrogate Springs","Gillingham Medway"]},
+  {id:"mgr-esp3",parentId:"mgr-esp2",division:3,country:"Spain",flag:"🇪🇸",league:"Liga Estrella Federación",quality:5.5,top:64,bottom:37,budget:.27,clubs:["Murcia Pimentón","Córdoba Califas","Castellón Orella","Leonesa Reino","Hércules Levante","Sabadell Vallès","Mérida Romano","Badajoz Frontera","Logroño Rioja","Salamanca Tormes","Ourense Termal","Ceuta Estrecho"]},
+  {id:"mgr-esp4",parentId:"mgr-esp3",division:4,country:"Spain",flag:"🇪🇸",league:"Liga Estrella Regional",quality:4.3,top:54,bottom:29,budget:.17,clubs:["Toledo Imperial","Segovia Acueducto","Jaén Olivares","Lorca Sol","Avilés Acero","Manresa Cardener","Écija Torres","Alzira Ribera","Aranda Duero","Teruel Mudéjar","Linares Mineros","Melilla Mar"]},
+  {id:"mgr-ger3",parentId:"mgr-ger2",division:3,country:"Germany",flag:"🇩🇪",league:"Bundesliga 3",quality:5.7,top:65,bottom:38,budget:.29,clubs:["Mannheim Quadrate","Saarbrücken Blau","Aachen Kaiser","Rostock Hanse","Essen Kohle","Osnabrück Lila","Bielefeld Teuto","Ingolstadt Motor","Regensburg Donau","Wiesbaden Taunus","Ulm Spatzen","Cottbus Lausitz"]},
+  {id:"mgr-ger4",parentId:"mgr-ger3",division:4,country:"Germany",flag:"🇩🇪",league:"Regionalliga National",quality:4.5,top:55,bottom:30,budget:.18,clubs:["Oldenburg Marsch","Lübeck Holsten","Jena Saale","Chemnitz Werk","Kassel Löwen","Offenbach Main","Trier Porta","Aalen Kocher","Meppen Ems","Bayreuth Festspiel","Erfurt Krämer","Halle Salz"]},
+  {id:"mgr-ita3",parentId:"mgr-ita2",division:3,country:"Italy",flag:"🇮🇹",league:"Serie Nazionale C",quality:5.4,top:63,bottom:36,budget:.26,clubs:["Padova Santo","Vicenza Palladio","Trieste Bora","Perugia Grifoni","Arezzo Chimera","Pescara Adriatico","Foggia Tavoliere","Catania Etna","Avellino Irpini","Taranto Ionio","Novara Cupola","Rimini Riviera"]},
+  {id:"mgr-ita4",parentId:"mgr-ita3",division:4,country:"Italy",flag:"🇮🇹",league:"Serie Nazionale D",quality:4.2,top:53,bottom:28,budget:.16,clubs:["Siena Palio","Lucca Mura","Prato Tessili","Ravenna Mosaico","Forlì Mercurio","Ancona Conero","Chieti Marrucini","Matera Sassi","Siracusa Aretusa","Trapani Sale","Olbia Gallura","Varese Laghi"]},
+  {id:"mgr-fra3",parentId:"mgr-fra2",division:3,country:"France",flag:"🇫🇷",league:"Championnat National",quality:4.9,top:60,bottom:34,budget:.22,clubs:["Rouen Normands","Nancy Lorraine","Dijon Moutarde","Nîmes Crocodiles","Orléans Loire","Le Mans Sarthe","Valenciennes Hainaut","Sochaux Lions","Boulogne Opale","Versailles Royal","Niort Sèvre","Martigues Étang"]},
+  {id:"mgr-fra4",parentId:"mgr-fra3",division:4,country:"France",flag:"🇫🇷",league:"National Régional",quality:3.9,top:50,bottom:27,budget:.14,clubs:["Calais Dentelle","Chartres Cathédrale","Angoulême Remparts","Bourges Berry","Épinal Vosges","Fréjus Estérel","Hyères Palmiers","Mâcon Saône","Poitiers Clain","Saumur Loire","Vannes Morbihan","Colmar Alsace"]},
+  {id:"mgr-mex3",parentId:"mgr-mex2",division:3,country:"Mexico",flag:"🇲🇽",league:"Liga Premier MX",quality:3.6,top:52,bottom:29,budget:.12,clubs:["Durango Alacranes","Tampico Jaiba","Irapuato Freseros","Zacatepec Cañeros","Chihuahua Dorados","Colima Volcanes","Acapulco Mar","Hermosillo Sol","Mérida Mayas","Orizaba Montaña","Reynosa Frontera","Tuxtla Selva"]},
+  {id:"mgr-mex4",parentId:"mgr-mex3",division:4,country:"Mexico",flag:"🇲🇽",league:"Liga TDP MX",quality:2.8,top:44,bottom:23,budget:.07,clubs:["Ensenada Vino","Mazatlán Puerto","Culiacán Tomateros","Obregón Yaquis","Saltillo Sarape","Torreón Desierto","Querétaro Sierra","Cuernavaca Primavera","Tapachula Café","Campeche Piratas","Veracruz Faro","Oaxaca Monte"]}
+);
+const MGR_FIRST = ["Adrian","Mateo","Luca","Noah","Elias","Daniel","Oscar","Rafael","Hugo","Leon","Milan","Jonas","Amir","Kai","Nico","Santiago","Thiago","Gabriel","Iker","Emilio","Diego","Julian","Marco","Samuel","Yann","Tariq","Bruno","Felix","André","Victor","Leo","Jamal"];
+const MGR_LAST = ["Santos","Reyes","Navarro","Fischer","Bennett","Okafor","Silva","Rossi","Moreau","Klein","Tanaka","Vega","Costa","Walker","Duarte","Berg","Diallo","Romero","Petrov","Müller","López","Martin","Anders","Torres","Mendes","Kovač","Williams","Herrera","Schmidt","Vidal","Laurent","Nakamura"];
+const MGR_STYLES = ["possession","press","counter","direct","balanced"];
+const MGR_COLORS = ["#2f81f7","#e5534b","#2ea44f","#a371f7","#d29922","#db6d28","#1f9d8a","#c95178","#7f8c3a","#476582","#9a4d35","#6f52d9"];
+const MGR_VIEW_TITLES = {home:"Manager Home",inbox:"Inbox & News",squad:"First Team Squad",tactics:"Tactics & Lineup",training:"Training & Medical",schedule:"Fixtures & Results",competitions:"Competitions",transfers:"Recruitment Centre",club:"Club & Finances",profile:"Manager Profile"};
+let MG = null, MGR_MATCH = null, MGR_VIEW = "home", PENDING_MODE = null, MGR_SELECTED_CLUB = null;
+
+function mgrEsc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function mgrHash(str){let h=2166136261;for(const ch of String(str)){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;}
+function mgrRand(state=MG){state.seed=(Math.imul(state.seed||1,1664525)+1013904223)>>>0;return state.seed/4294967296;}
+function mgrRange(a,b,state=MG){return a+mgrRand(state)*(b-a);}
+function mgrInt(a,b,state=MG){return Math.floor(mgrRange(a,b+1,state));}
+function mgrPick(arr,state=MG){return arr[Math.floor(mgrRand(state)*arr.length)];}
+function mgrLeague(id){return MANAGER_LEAGUES.find(l=>l.id===id)||MANAGER_LEAGUES[0];}
+function mgrDivision(leagueOrId){
+  let league=typeof leagueOrId==="string"?mgrLeague(leagueOrId):leagueOrId,division=1;const seen=new Set();
+  while(league?.parentId&&!seen.has(league.id)){seen.add(league.id);division++;league=MANAGER_LEAGUES.find(l=>l.id===league.parentId);}
+  return division;
+}
+function mgrClub(){return MG&&MG.clubs.find(c=>c.id===MG.userClubId);}
+function mgrClubBy(id){return MG&&MG.clubs.find(c=>c.id===id);}
+function mgrDifficulty(){return {easy:{match:4,board:.7,transfer:1.18,growth:1.25,injury:.7},normal:{match:0,board:1,transfer:1,growth:1,injury:1},hard:{match:-3,board:1.3,transfer:.82,growth:.82,injury:1.25}}[MG?.manager?.difficulty||"normal"];}
+function mgrFmt(n){return money(n);}
+function mgrOverall(p){return Math.round(p.pos==="GK"?p.gk*.62+p.mental*.22+p.physical*.16:p.technical*.42+p.mental*.29+p.physical*.29);}
+function mgrValue(ability,age,leagueQ){const ageFx=age<23?1.28:age>30?Math.max(.35,1-(age-30)*.12):1;return Math.round(Math.pow(Math.max(20,ability),3)*11*ageFx*(leagueQ/8));}
+function mgrWeeklyWages(club=mgrClub()){return Math.round((club?.squad||[]).reduce((s,p)=>s+p.wage,0));}
+function mgrObjective(clubs,userId){const rank=[...clubs].sort((a,b)=>b.strength-a.strength).findIndex(c=>c.id===userId)+1,league=MANAGER_LEAGUES.find(l=>clubs[0]?.id.startsWith(l.id+"-"));if(league?.parentId){const next=mgrLeague(league.parentId);return rank<=3?{type:"promotion",label:`Win promotion to Division ${mgrDivision(next)}`,target:2}:rank<=7?{type:"top6",label:"Finish in the top six",target:6}:{type:"survive",label:"Avoid relegation",target:10};}return rank<=2?{type:"title",label:"Challenge for the title",target:2}:rank<=4?{type:"top4",label:"Qualify for continental football",target:4}:rank<=8?{type:"top8",label:"Finish in the top eight",target:8}:{type:"survive",label:"Avoid relegation",target:10};}
+
+function mgrCreatePlayer(club,pos,index,state,league){
+  const lowerFloor=Math.max(20,league.bottom-5),age=mgrInt(17,34,state),base=clamp(Math.round(club.strength+mgrRange(-11,9,state)+(age<21?-4:0)),lowerFloor,94);
+  const technical=clamp(Math.round(base+mgrRange(-7,7,state)),18,96),mental=clamp(Math.round(base+mgrRange(-8,8,state)+(age-24)*.35),18,96),physical=clamp(Math.round(base+mgrRange(-8,8,state)-(Math.max(0,age-30)*1.8)),18,96),gk=pos==="GK"?clamp(Math.round(base+mgrRange(-4,7,state)),18,96):mgrInt(5,22,state);
+  const ability=Math.round(pos==="GK"?gk*.62+mental*.22+physical*.16:technical*.42+mental*.29+physical*.29),potential=clamp(Math.max(ability,ability+mgrInt(age<22?5:0,age<22?18:6,state)),ability,97);
+  return {id:`mp-${state.seed}-${index}`,name:`${mgrPick(MGR_FIRST,state)} ${mgrPick(MGR_LAST,state)}`,nationality:mgrPick(MANAGER_LEAGUES,state).country,age,height:mgrInt(pos==="GK"?184:169,pos==="GK"?201:195,state),foot:mgrRand(state)<.22?"Left":"Right",pos,positions:[pos],technical,mental,physical,gk,ability,potential,fitness:mgrInt(82,100,state),sharpness:mgrInt(62,90,state),morale:mgrInt(58,84,state),form:6.5,contract:mgrInt(1,4,state),wage:Math.round((650+ability*ability*2)*(league.quality/6)),value:mgrValue(ability,age,league.quality),status:index<11?"First Team":"Squad Player",selected:false,injury:0,yellow:0,apps:0,goals:0,assists:0,rating:0};
+}
+function mgrCreateClub(name,index,league,state){
+  const t=index/(league.clubs.length-1),strength=clamp(Math.round(league.top+(league.bottom-league.top)*t+mgrRange(-2,2,state)),Math.max(20,league.bottom-2),95),id=`${league.id}-${index}`;
+  const club={id,name,short:name.split(" ").map(x=>x[0]).join("").slice(0,3).toUpperCase(),strength,reputation:clamp(strength+mgrInt(-4,5,state),30,96),style:MGR_STYLES[index%MGR_STYLES.length],color:MGR_COLORS[index%MGR_COLORS.length],stadium:`${name.split(" ")[0]} Arena`,capacity:Math.round((12000+strength*720)/1000)*1000,balance:Math.round((7e6+strength*850000)*league.budget),transferBudget:Math.round((2e6+Math.pow(strength,2)*5400)*league.budget),wageBudget:Math.round((70000+strength*3900)*league.budget),facilities:{training:clamp(Math.round(strength/20),1,5),youth:clamp(Math.round((strength+mgrInt(-10,10,state))/20),1,5)},staff:{coach:clamp(Math.round(strength/22),1,5),scout:clamp(Math.round(strength/24),1,5),physio:clamp(Math.round(strength/25),1,5)},squad:[],p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0};
+  const positions=["GK","GK","DEF","DEF","DEF","DEF","DEF","DEF","DEF","MID","MID","MID","MID","MID","MID","MID","MID","FWD","FWD","FWD","FWD","FWD"];
+  club.squad=positions.map((pos,i)=>mgrCreatePlayer(club,pos,i,state,league));
+  return club;
+}
+function mgrFormationNeeds(form){return {"4-3-3":{GK:1,DEF:4,MID:3,FWD:3},"4-2-3-1":{GK:1,DEF:4,MID:5,FWD:1},"4-4-2":{GK:1,DEF:4,MID:4,FWD:2},"3-5-2":{GK:1,DEF:3,MID:5,FWD:2},"5-3-2":{GK:1,DEF:5,MID:3,FWD:2}}[form]||{GK:1,DEF:4,MID:3,FWD:3};}
+function mgrAutoPick(club=mgrClub()){
+  if(!club)return;club.squad.forEach(p=>p.selected=false);const needs=mgrFormationNeeds(MG?.tactics?.formation||"4-3-3");
+  for(const [pos,n] of Object.entries(needs))club.squad.filter(p=>p.pos===pos&&p.injury<=0).sort((a,b)=>mgrOverall(b)-mgrOverall(a)).slice(0,n).forEach(p=>p.selected=true);
+  if(club.squad.filter(p=>p.selected).length<11)club.squad.filter(p=>!p.selected&&p.injury<=0).sort((a,b)=>mgrOverall(b)-mgrOverall(a)).slice(0,11-club.squad.filter(p=>p.selected).length).forEach(p=>p.selected=true);
+  MG.captainId=(club.squad.filter(p=>p.selected).sort((a,b)=>b.mental-a.mental)[0]||{}).id||MG.captainId;
+}
+function mgrSchedule(teamIds){
+  const ids=[...teamIds],n=ids.length,half=[];for(let r=0;r<n-1;r++){for(let i=0;i<n/2;i++){const a=ids[i],b=ids[n-1-i],flip=(r+i)%2===1;half.push({round:r+1,home:flip?b:a,away:flip?a:b,played:false,hg:null,ag:null});}ids.splice(1,0,ids.pop());}
+  return half.concat(half.map(f=>({round:f.round+n-1,home:f.away,away:f.home,played:false,hg:null,ag:null})));
+}
+function mgrNewState(profile,leagueId,clubIndex){
+  const league=mgrLeague(leagueId),state={mode:"manager",version:2,slotId:`m${Date.now()}`,seed:mgrHash(`${profile.name}-${Date.now()}-${leagueId}`)||7,manager:profile,leagueId,season:1,year:2026,week:1,view:"home",clubs:[],schedule:[],userClubId:`${leagueId}-${clubIndex}`,board:{confidence:58},tactics:{formation:profile.formation,mentality:"balanced",pressing:"standard",passing:profile.philosophy==="direct"?"direct":profile.philosophy==="possession"?"short":"mixed",tempo:"normal",width:"balanced",line:"standard",counter:profile.philosophy==="counter",familiarity:52},training:{focus:"balanced",intensity:"normal",rest:"balanced"},inbox:[],history:[],transactions:[],scouted:{},shortlist:[],trophies:[],stats:{played:0,wins:0,draws:0,losses:0},saveCount:0,created:Date.now()};
+  state.clubs=league.clubs.map((name,i)=>mgrCreateClub(name,i,league,state));state.schedule=mgrSchedule(state.clubs.map(c=>c.id));state.objective=mgrObjective(state.clubs,state.userClubId);MG=state;mgrAutoPick(mgrClub());
+  mgrMail("Welcome to the dugout",`The board of ${mgrClub().name} expects you to ${state.objective.label.toLowerCase()}. The transfer window is open.`,"gold");
+  mgrMail("Pre-season squad report",`Your staff rate the squad at ${mgrTeamPower(mgrClub(),false).toFixed(1)}. Review the lineup, tactics and training before opening day.`);
+  return state;
+}
+
+function mgrMigrate(g){
+  if(!g||g.mode!=="manager")return g;const oldVersion=g.version||1;g.version=2;g.view=g.view||"home";g.inbox=g.inbox||[];g.history=g.history||[];g.transactions=g.transactions||[];g.scouted=g.scouted||{};g.shortlist=g.shortlist||[];g.trophies=g.trophies||[];g.stats=g.stats||{played:0,wins:0,draws:0,losses:0};g.board=g.board||{confidence:55};g.training=g.training||{focus:"balanced",intensity:"normal",rest:"balanced"};g.tactics=g.tactics||{formation:"4-3-3",mentality:"balanced",pressing:"standard",passing:"mixed",tempo:"normal",width:"balanced",line:"standard",counter:false,familiarity:50};g.objective=g.objective||mgrObjective(g.clubs,g.userClubId);const league=mgrLeague(g.leagueId);g.clubs.forEach(c=>{c.facilities=c.facilities||{training:2,youth:2};c.staff=c.staff||{coach:2,scout:2,physio:2};c.squad.forEach(p=>{if(p.injury===undefined)p.injury=0;if(p.form===undefined)p.form=6.5;if(p.selected===undefined)p.selected=false;if(oldVersion<2)p.wage=Math.round((650+mgrOverall(p)*mgrOverall(p)*2)*(league.quality/6));});});return g;
+}
+function mgrSave(manual=false){
+  if(!MG||!SESSION)return;const accs=loadAccounts(),acc=accs[SESSION];if(!acc)return;acc.managerSaves=acc.managerSaves||{};acc.managerBackups=acc.managerBackups||{};MG.saveCount=(MG.saveCount||0)+1;
+  if(MG.saveCount%5===0&&acc.managerSaves[MG.slotId])acc.managerBackups[MG.slotId]=acc.managerSaves[MG.slotId];acc.managerSaves[MG.slotId]=MG;saveAccounts(accs);if(manual)mgrToast("Manager career saved 💾");
+}
+function mgrMail(title,body,kind=""){if(!MG)return;MG.inbox.unshift({id:`mail-${MG.seed}-${MG.inbox.length}`,season:MG.season,week:MG.week,title,body,kind});MG.inbox=MG.inbox.slice(0,80);}
+function mgrTransaction(label,amount){MG.transactions.unshift({season:MG.season,week:MG.week,label,amount});MG.transactions=MG.transactions.slice(0,60);}
+function mgrToast(text){const old=document.querySelector(".mgr-toast");if(old)old.remove();const el=document.createElement("div");el.className="mgr-toast";el.textContent=text;document.body.appendChild(el);setTimeout(()=>el.remove(),2100);}
+
+function showCareerMode(){
+  const acc=currentAccount();$("mode-account").innerHTML=acc?`Signed in as <b style="color:var(--text)">${mgrEsc(acc.username)}</b> · <button class="btn danger" id="btn-mode-logout" style="padding:5px 9px;font-size:10px;margin-left:6px">Log Out</button>`:`Choose a career type. You will sign in or create a free local account next.`;showScreen("mode-screen");
+  if(acc&&$("btn-mode-logout"))$("btn-mode-logout").onclick=logout;
+}
+function openCareerMode(mode){if(!currentAccount()){PENDING_MODE=mode;showScreen("auth-screen");return;}PENDING_MODE=null;if(mode==="manager")showManagerMenu();else showMenu();}
+function routeAfterAuth(){const mode=PENDING_MODE;PENDING_MODE=null;if(mode)openCareerMode(mode);else showCareerMode();}
+
+function showManagerMenu(){
+  const acc=currentAccount();if(!acc){PENDING_MODE="manager";showScreen("auth-screen");return;}acc.managerSaves=acc.managerSaves||{};saveAccounts({...loadAccounts(),[SESSION]:acc});$("mgr-menu-user").textContent=acc.username;
+  const ids=Object.keys(acc.managerSaves);$("mgr-save-list").innerHTML=ids.length?ids.map(id=>{const s=acc.managerSaves[id],c=(s.clubs||[]).find(x=>x.id===s.userClubId),league=mgrLeague(s.leagueId);return `<div class="transfer-row"><span style="font-size:28px">${s.manager.avatar||"🧥"}</span><div class="tr-club" style="text-align:left">${mgrEsc(s.manager.name)} — ${mgrEsc(c?.name||"Unemployed")}<span class="tr-req">Season ${s.season} · Week ${s.week} · Division ${mgrDivision(league)} · ${mgrEsc(league.league)} · Confidence ${Math.round(s.board?.confidence||0)}%</span></div><div style="display:flex;gap:6px"><button class="btn" data-mgr-load="${id}" style="padding:7px 12px;font-size:12px">Play</button><button class="btn danger" data-mgr-delete="${id}" style="padding:7px 9px;font-size:12px">✕</button></div></div>`;}).join(""):`<p class="fade-muted" style="margin:16px 0">No manager saves yet. Your first boardroom is waiting.</p>`;
+  $("btn-new-manager").style.display=ids.length>=5?"none":"";document.querySelectorAll("[data-mgr-load]").forEach(b=>b.onclick=()=>mgrLoad(b.dataset.mgrLoad));document.querySelectorAll("[data-mgr-delete]").forEach(b=>b.onclick=()=>mgrDelete(b.dataset.mgrDelete));showScreen("manager-menu-screen");
+}
+function mgrLoad(id){const acc=currentAccount();if(!acc?.managerSaves?.[id])return;MG=mgrMigrate(JSON.parse(JSON.stringify(acc.managerSaves[id])));MG.slotId=id;MGR_VIEW=MG.view||"home";showScreen("manager-game-screen");renderManager();}
+function mgrDelete(id){const acc=currentAccount(),s=acc?.managerSaves?.[id];if(!s)return;showModal(`<h2>Delete ${mgrEsc(s.manager.name)}'s manager career?</h2><p style="margin:13px 0">This club world and every season in it will be permanently removed.</p><div class="btn-row"><button class="btn danger" id="mgr-delete-yes">Delete career</button><button class="btn secondary" onclick="closeModal()">Cancel</button></div>`);$("mgr-delete-yes").onclick=()=>{const all=loadAccounts();delete all[SESSION].managerSaves[id];if(all[SESSION].managerBackups)delete all[SESSION].managerBackups[id];saveAccounts(all);closeModal();showManagerMenu();};}
+function mgrOpenSetup(){MGR_SELECTED_CLUB=0;mgrFillCountrySelect();mgrRenderClubChoices();showScreen("manager-setup-screen");}
+function mgrFillCountrySelect(){
+  const sel=$("mgr-country"),countries=[...new Set(MANAGER_LEAGUES.map(l=>l.country))];
+  sel.innerHTML=countries.map(country=>{const leagues=MANAGER_LEAGUES.filter(l=>l.country===country).sort((a,b)=>mgrDivision(a)-mgrDivision(b));return `<optgroup label="${leagues[0].flag} ${mgrEsc(country)}">${leagues.map(l=>`<option value="${l.id}">Division ${mgrDivision(l)} — ${mgrEsc(l.league)}</option>`).join("")}</optgroup>`;}).join("");
+  const nation=$("mgr-nationality").value,home=MANAGER_LEAGUES.find(l=>l.country===nation&&mgrDivision(l)===1);if(home)sel.value=home.id;
+}
+function mgrRenderClubChoices(){
+  const league=mgrLeague($("mgr-country").value),division=mgrDivision(league),next=league.parentId?mgrLeague(league.parentId):null,profileRep=({amateur:28,pro:43,international:60,analyst:36}[$("mgr-background").value]||30)+({national:0,continental:8,elite:16}[$("mgr-license").value]||0);MGR_SELECTED_CLUB=clamp(MGR_SELECTED_CLUB??0,0,league.clubs.length-1);
+  $("mgr-league-note").innerHTML=`<div><b>${league.quality.toFixed(1)}/10</b><br><span class="fade-muted">League difficulty</span></div><div><b>Division ${division}</b><br><span class="fade-muted">${league.clubs.length} clubs</span></div><div><b>${league.parentId?"Top 2 up":"Top 4"}</b><br><span class="fade-muted">${league.parentId?`To Division ${mgrDivision(next)}`:"Continental places"}</span></div>`;
+  $("mgr-club-grid").innerHTML=league.clubs.map((name,i)=>{const strength=Math.round(league.top+(league.bottom-league.top)*(i/(league.clubs.length-1))),fit=profileRep>=strength-30?"Good fit":profileRep>=strength-42?"Ambitious":"Major gamble";return `<button class="mgr-club-card ${i===MGR_SELECTED_CLUB?"selected":""}" data-mgr-club="${i}"><b>${mgrEsc(name)}</b><span class="mgr-strength">${Math.round(strength/10)}/10 strength</span><small class="${fit==="Good fit"?"mgr-fit-good":fit==="Ambitious"?"mgr-fit-mid":"mgr-fit-bad"}" style="display:block;margin-top:6px">${fit}</small></button>`;}).join("");
+  const strength=Math.round(league.top+(league.bottom-league.top)*(MGR_SELECTED_CLUB/(league.clubs.length-1))),budget=Math.round((2e6+strength*strength*5400)*league.budget),objective=league.parentId?(MGR_SELECTED_CLUB<3?`Win promotion to Division ${mgrDivision(next)}`:MGR_SELECTED_CLUB<7?"Finish in the top six":"Avoid relegation"):(MGR_SELECTED_CLUB<2?"Challenge for the title":MGR_SELECTED_CLUB<5?"Reach the top four":MGR_SELECTED_CLUB<9?"Finish in the top eight":"Avoid relegation");
+  $("mgr-selected-club").innerHTML=`<div class="agent-bubble"><b>${mgrEsc(league.clubs[MGR_SELECTED_CLUB])}</b> · ${league.flag} ${mgrEsc(league.country)} · Division ${division} · ${mgrEsc(league.league)}<br><span class="fade-muted">Board vision:</span> ${objective} · <span class="fade-muted">Estimated transfer budget:</span> ${mgrFmt(budget)}</div>`;
+  document.querySelectorAll("[data-mgr-club]").forEach(b=>b.onclick=()=>{MGR_SELECTED_CLUB=Number(b.dataset.mgrClub);mgrRenderClubChoices();});
+}
+function mgrStartCareer(){
+  const name=$("mgr-name").value.trim()||"Jordan Reyes",profile={name,nationality:$("mgr-nationality").value,age:clamp(Number($("mgr-age").value)||38,25,75),avatar:$("mgr-avatar").value,background:$("mgr-background").value,license:$("mgr-license").value,philosophy:$("mgr-philosophy").value,formation:$("mgr-formation").value,personality:$("mgr-personality").value,difficulty:$("mgr-difficulty").value,reputation:({amateur:28,pro:43,international:60,analyst:36}[$("mgr-background").value]||30)+({national:0,continental:8,elite:16}[$("mgr-license").value]||0),xp:0};
+  MG=mgrNewState(profile,$("mgr-country").value,MGR_SELECTED_CLUB||0);MGR_VIEW="home";showScreen("manager-game-screen");mgrSave();renderManager();
+}
+
+function mgrSelected(){return (mgrClub()?.squad||[]).filter(p=>p.selected&&p.injury<=0);}
+function mgrTeamPower(club,userTactics=true){
+  if(!club)return 0;let squad=club.id===MG?.userClubId?club.squad.filter(p=>p.selected&&p.injury<=0):[...club.squad].filter(p=>p.injury<=0).sort((a,b)=>mgrOverall(b)-mgrOverall(a)).slice(0,11);if(squad.length<11)squad=[...club.squad].filter(p=>p.injury<=0).sort((a,b)=>mgrOverall(b)-mgrOverall(a)).slice(0,11);
+  const avg=squad.reduce((s,p)=>s+mgrOverall(p)*(.75+p.fitness/400+p.morale/700),0)/Math.max(1,squad.length);let power=avg;
+  if(club.id===MG?.userClubId&&userTactics){power+=(MG.tactics.familiarity-50)*.055+mgrDifficulty().match;const posCounts=squad.reduce((o,p)=>(o[p.pos]=(o[p.pos]||0)+1,o),{}),needs=mgrFormationNeeds(MG.tactics.formation);for(const k in needs)power-=Math.abs((posCounts[k]||0)-needs[k])*1.25;if(MG.tactics.mentality==="attacking")power+=.8;if(MG.tactics.mentality==="defensive")power-=.4;}
+  return clamp(power,25,99);
+}
+function mgrTacticStyle(){if(MG.tactics.pressing==="intense")return"press";if(MG.tactics.passing==="short")return"possession";if(MG.tactics.counter)return"counter";if(MG.tactics.passing==="direct")return"direct";return"balanced";}
+function mgrMatchup(style,opp){const beats={press:"possession",possession:"direct",direct:"press",counter:"balanced",balanced:"counter"};return beats[style]===opp?2:beats[opp]===style?-2:0;}
+function mgrTable(){return [...MG.clubs].sort((a,b)=>b.pts-a.pts||((b.gf-b.ga)-(a.gf-a.ga))||b.gf-a.gf||b.strength-a.strength);}
+function mgrRank(){return mgrTable().findIndex(c=>c.id===MG.userClubId)+1;}
+function mgrCurrentFixture(){return MG.schedule.find(f=>f.round===MG.week&&(f.home===MG.userClubId||f.away===MG.userClubId));}
+function mgrOpponent(f=mgrCurrentFixture()){if(!f)return null;return mgrClubBy(f.home===MG.userClubId?f.away:f.home);}
+function mgrWindowOpen(){return MG.week<=4||(MG.week>=12&&MG.week<=15);}
+function mgrDateText(){const rounds=(MG.clubs.length-1)*2,month=8+Math.floor((MG.week-1)/4),names=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];return `Season ${MG.season} · ${names[month%12]} ${MG.year+Math.floor(month/12)} · Matchweek ${Math.min(MG.week,rounds)}/${rounds}`;}
+function mgrFormDots(c){const recent=MG.history.filter(h=>h.clubId===c.id).slice(0,5);return recent.length?recent.map(x=>`<span style="color:${x.r==="W"?"var(--green-bright)":x.r==="D"?"var(--gold)":"var(--red)"}">●</span>`).join(" "):"—";}
+
+function renderManager(){
+  if(!MG)return;const club=mgrClub(),league=mgrLeague(MG.leagueId);MG.view=MGR_VIEW;document.documentElement.style.setProperty("--mgr-club",club?.color||"#2ea44f");$("mgr-club-brand").innerHTML=`<div class="crest">${league.flag}</div><b>${mgrEsc(club?.name||"Unemployed")}</b><div class="fade-muted" style="font-size:10px;margin-top:3px">Division ${mgrDivision(league)} · ${mgrEsc(league.league)}</div>`;$("mgr-view-title").textContent=MGR_VIEW_TITLES[MGR_VIEW]||"Manager Career";$("mgr-date").textContent=mgrDateText();document.querySelectorAll("[data-mgr-view]").forEach(b=>b.classList.toggle("active",b.dataset.mgrView===MGR_VIEW));
+  const renderers={home:mgrRenderHome,inbox:mgrRenderInbox,squad:mgrRenderSquad,tactics:mgrRenderTactics,training:mgrRenderTraining,schedule:mgrRenderSchedule,competitions:mgrRenderCompetitions,transfers:mgrRenderTransfers,club:mgrRenderClub,profile:mgrRenderProfile};(renderers[MGR_VIEW]||mgrRenderHome)();mgrSave();
+}
+function mgrKpis(){const c=mgrClub();return `<div class="mgr-kpis"><div class="mgr-kpi"><span>League position</span><b>${mgrRank()}<small style="font-size:11px;color:var(--muted)"> / ${MG.clubs.length}</small></b></div><div class="mgr-kpi"><span>Board confidence</span><b style="color:${MG.board.confidence>=65?"var(--green-bright)":MG.board.confidence<35?"var(--red)":"var(--gold)"}">${Math.round(MG.board.confidence)}%</b></div><div class="mgr-kpi"><span>Transfer budget</span><b>${mgrFmt(c.transferBudget)}</b></div><div class="mgr-kpi"><span>Club balance</span><b>${mgrFmt(c.balance)}</b></div></div>`;}
+function mgrRenderHome(){
+  const c=mgrClub(),f=mgrCurrentFixture(),opp=mgrOpponent(f),home=f?.home===MG.userClubId,lineup=mgrSelected().length,rounds=(MG.clubs.length-1)*2,seasonDone=MG.week>rounds;
+  $("mgr-view").innerHTML=`${mgrKpis()}<div class="mgr-grid-2"><section><div class="mgr-card"><h3>Next match <small>${seasonDone?"Season complete":home?"HOME":"AWAY"}</small></h3>${seasonDone?`<div style="text-align:center;padding:22px"><div style="font-size:40px">🏁</div><h2 style="margin:8px">League season complete</h2><p class="fade-muted">Review the table, board verdict, promotions and relegations.</p><button class="btn gold" id="mgr-season-review" style="margin-top:14px">Review Season</button></div>`:`<div class="scoreline" style="margin:10px 0"><div class="team">${home?mgrEsc(c.name):mgrEsc(opp.name)}<br><small class="fade-muted">${home?`Power ${mgrTeamPower(c).toFixed(1)}`:`Strength ${opp.strength}`}</small></div><div class="score" style="font-size:24px">VS</div><div class="team">${home?mgrEsc(opp.name):mgrEsc(c.name)}<br><small class="fade-muted">${home?`Strength ${opp.strength}`:`Power ${mgrTeamPower(c).toFixed(1)}`}</small></div></div><div class="agent-bubble">📋 <b>${lineup}/11 starters ready</b> · Tactical familiarity ${Math.round(MG.tactics.familiarity)}% · ${MG.training.intensity} training load</div><div class="btn-row"><button class="btn gold" id="mgr-matchday" ${lineup!==11?"disabled":""}>▶ Enter Match Centre</button><button class="btn secondary" id="mgr-home-tactics">Adjust Tactics</button></div>${lineup!==11?`<p style="color:var(--red);font-size:11px;margin-top:8px">Select exactly 11 fit starters before playing.</p>`:""}`}</div><div class="mgr-card"><h3>Board expectations <small>${MG.objective.label}</small></h3><p style="font-size:13px;line-height:1.65">The board expects you to <b>${MG.objective.label.toLowerCase()}</b>. Current position: <b>${mgrRank()}</b>. Your job security reflects results, finances and dressing-room morale.</p><div class="mgr-progress"><i style="width:${clamp(MG.board.confidence,0,100)}%"></i></div></div></section><aside><div class="mgr-card"><h3>Squad pulse</h3>${[[`${lineup}/11`,"Starting XI"],[`${Math.round(c.squad.reduce((s,p)=>s+p.fitness,0)/c.squad.length)}%`,"Average fitness"],[`${Math.round(c.squad.reduce((s,p)=>s+p.morale,0)/c.squad.length)}%`,"Morale"],[`${c.squad.filter(p=>p.injury>0).length}`,"Injured"]].map(([v,l])=>`<div class="money-line" style="margin-top:5px;padding-top:7px"><span>${l}</span><b>${v}</b></div>`).join("")}</div><div class="mgr-card"><h3>Latest inbox</h3>${MG.inbox.slice(0,4).map(m=>`<div class="mgr-mail ${m.kind}"><b>${mgrEsc(m.title)}</b><div class="fade-muted" style="font-size:11px;margin-top:3px">${mgrEsc(m.body).slice(0,120)}</div></div>`).join("")}</div></aside></div>`;
+  if($("mgr-matchday"))$("mgr-matchday").onclick=mgrOpenMatch;if($("mgr-home-tactics"))$("mgr-home-tactics").onclick=()=>{MGR_VIEW="tactics";renderManager();};if($("mgr-season-review"))$("mgr-season-review").onclick=mgrFinishSeason;
+}
+function mgrRenderInbox(){$("mgr-view").innerHTML=`<div class="mgr-card"><h3>Club inbox <small>${MG.inbox.length} messages</small></h3>${MG.inbox.length?MG.inbox.map(m=>`<article class="mgr-mail ${m.kind}"><time>Season ${m.season} · Week ${m.week}</time><b>${mgrEsc(m.title)}</b><p style="margin-top:4px;line-height:1.55;color:#c9d3dc">${mgrEsc(m.body)}</p></article>`).join(""):`<p class="fade-muted">Your inbox is clear.</p>`}</div>`;}
+function mgrRenderSquad(){
+  const c=mgrClub(),players=[...c.squad].sort((a,b)=>({GK:0,DEF:1,MID:2,FWD:3}[a.pos]-{GK:0,DEF:1,MID:2,FWD:3}[b.pos]||mgrOverall(b)-mgrOverall(a)));
+  $("mgr-view").innerHTML=`${mgrKpis()}<div class="mgr-card"><h3>First team <small>${mgrSelected().length}/11 selected · weekly payroll ${mgrFmt(mgrWeeklyWages())}</small></h3><div class="mgr-table-wrap"><div class="mgr-list-row header"><span>Player</span><span>Pos</span><span>OVR</span><span>Fit</span><span>Morale</span><span>Contract</span><span>Actions</span></div>${players.map(p=>`<div class="mgr-list-row ${p.injury?"injured":""}"><span class="mgr-player-name">${p.selected?"● ":"○ "}${mgrEsc(p.name)}${p.id===MG.captainId?" ©":""}<small class="fade-muted" style="display:block">${p.age} · ${p.foot}${p.injury?` · 🚑 ${p.injury}w`:""}</small></span><span><i class="mgr-pos">${p.pos}</i></span><span class="mgr-rating">${mgrOverall(p)}</span><span>${Math.round(p.fitness)}%</span><span>${Math.round(p.morale)}%</span><span>${p.contract}y</span><span style="display:flex;gap:4px"><button class="btn ${p.selected?"danger":"secondary"} mgr-action" data-mgr-start="${p.id}" ${p.injury?"disabled":""}>${p.selected?"Bench":"Start"}</button><button class="btn secondary mgr-action" data-mgr-player="${p.id}">View</button></span></div>`).join("")}</div><div class="btn-row"><button class="btn gold" id="mgr-best-xi">✨ Pick Best XI</button><button class="btn secondary" id="mgr-go-tactics">Formation View</button></div></div>`;
+  document.querySelectorAll("[data-mgr-start]").forEach(b=>b.onclick=()=>mgrToggleStarter(b.dataset.mgrStart));document.querySelectorAll("[data-mgr-player]").forEach(b=>b.onclick=()=>mgrPlayerCard(b.dataset.mgrPlayer));$("mgr-best-xi").onclick=()=>{mgrAutoPick();mgrToast("Best available XI selected");renderManager();};$("mgr-go-tactics").onclick=()=>{MGR_VIEW="tactics";renderManager();};
+}
+function mgrToggleStarter(id){const c=mgrClub(),p=c.squad.find(x=>x.id===id);if(!p||p.injury)return;if(p.selected){p.selected=false;}else{const selected=c.squad.filter(x=>x.selected);if(selected.length>=11){const same=selected.filter(x=>x.pos===p.pos&&x.id!==MG.captainId).sort((a,b)=>mgrOverall(a)-mgrOverall(b))[0]||selected.filter(x=>x.id!==MG.captainId).sort((a,b)=>mgrOverall(a)-mgrOverall(b))[0];if(same)same.selected=false;}p.selected=true;}mgrSave();renderManager();}
+function mgrPlayerCard(id){const p=mgrClub().squad.find(x=>x.id===id);if(!p)return;showModal(`<div class="mg-wrap"><div style="font-size:42px">${p.pos==="GK"?"🧤":"👤"}</div><h2>${mgrEsc(p.name)}</h2><p class="fade-muted">${p.nationality} · ${p.age} years · ${p.height}cm · ${p.foot} foot · ${p.pos}</p><div class="league-summary"><div><b>${Math.round(p.technical)}</b><br><span>Technical</span></div><div><b>${Math.round(p.mental)}</b><br><span>Mental</span></div><div><b>${Math.round(p.physical)}</b><br><span>Physical</span></div></div><div class="league-summary"><div><b>${mgrOverall(p)}</b><br><span>Current ability</span></div><div><b>${p.potential}</b><br><span>Coach potential</span></div><div><b>${mgrFmt(p.value)}</b><br><span>Value</span></div></div><p style="line-height:1.6">${p.contract} years remaining · ${mgrFmt(p.wage)}/week · ${p.status}<br>Season: ${p.apps} apps · ${p.goals} goals · ${p.assists} assists</p><div class="btn-row"><button class="btn secondary" id="mgr-captain-player">Make Captain</button><button class="btn gold" id="mgr-renew-player">Negotiate Contract</button><button class="btn danger" id="mgr-sell-player">Offer to Clubs</button><button class="btn" onclick="closeModal()">Close</button></div></div>`);$("mgr-captain-player").onclick=()=>{MG.captainId=p.id;mgrMail("New club captain",`${p.name} has been trusted with the armband.`,"gold");mgrSave();closeModal();renderManager();};$("mgr-renew-player").onclick=()=>mgrRenewPlayer(p.id);$("mgr-sell-player").onclick=()=>mgrOfferPlayer(p.id);}
+function mgrFormationDots(){const selected=mgrSelected(),layout={"4-3-3":[[50,88],[18,70],[40,70],[60,70],[82,70],[24,48],[50,51],[76,48],[20,22],[50,18],[80,22]],"4-2-3-1":[[50,88],[18,70],[40,70],[60,70],[82,70],[35,52],[65,52],[20,33],[50,35],[80,33],[50,15]],"4-4-2":[[50,88],[18,70],[40,70],[60,70],[82,70],[18,44],[40,48],[60,48],[82,44],[36,18],[64,18]],"3-5-2":[[50,88],[27,69],[50,72],[73,69],[12,44],[34,48],[50,42],[66,48],[88,44],[37,18],[63,18]],"5-3-2":[[50,88],[12,69],[31,72],[50,74],[69,72],[88,69],[28,45],[50,49],[72,45],[37,18],[63,18]]}[MG.tactics.formation]||[];const order=[...selected].sort((a,b)=>({GK:0,DEF:1,MID:2,FWD:3}[a.pos]-{GK:0,DEF:1,MID:2,FWD:3}[b.pos]));return order.map((p,i)=>`<div class="mgr-player-dot" style="left:${layout[i]?.[0]||50}%;top:${layout[i]?.[1]||50}%"><i></i>${mgrEsc(p.name.split(" ").pop())}<br><span style="color:var(--gold)">${mgrOverall(p)}</span></div>`).join("");}
+function mgrRenderTactics(){
+  const t=MG.tactics;$("mgr-view").innerHTML=`<div class="mgr-grid-2"><section><div class="mgr-card"><h3>Match shape <small>${mgrSelected().length}/11 selected</small></h3><div class="mgr-pitch">${mgrFormationDots()}</div><div class="btn-row"><button class="btn gold" id="mgr-tactic-best">Pick Best XI</button><button class="btn secondary" id="mgr-tactic-squad">Edit Squad</button></div></div></section><aside><div class="mgr-card"><h3>Team instructions <small>Familiarity ${Math.round(t.familiarity)}%</small></h3><div class="mgr-tactic-grid">${[["formation","Formation",["4-3-3","4-2-3-1","4-4-2","3-5-2","5-3-2"]],["mentality","Mentality",["defensive","cautious","balanced","positive","attacking"]],["pressing","Pressing",["low","standard","intense"]],["passing","Passing",["short","mixed","direct"]],["tempo","Tempo",["slow","normal","fast"]],["width","Width",["narrow","balanced","wide"]],["line","Defensive line",["deep","standard","high"]]].map(([key,label,vals])=>`<label>${label}<select class="mgr-control" data-mgr-tactic="${key}">${vals.map(v=>`<option ${t[key]===v?"selected":""}>${v[0].toUpperCase()+v.slice(1)}</option>`).join("")}</select></label>`).join("")}<label style="display:flex;align-items:center;gap:8px;margin-top:18px"><input type="checkbox" id="mgr-counter" ${t.counter?"checked":""} style="width:20px;height:20px"> Counterattack</label></div><div class="agent-bubble" style="margin-top:14px">Your current identity is <b>${mgrTacticStyle()}</b>. Tactical matchups, player suitability and familiarity all influence the match engine—there is no unbeatable formation.</div></div></aside></div>`;
+  document.querySelectorAll("[data-mgr-tactic]").forEach(s=>s.onchange=()=>{const old=t[s.dataset.mgrTactic];t[s.dataset.mgrTactic]=s.value.toLowerCase();if(old!==t[s.dataset.mgrTactic])t.familiarity=clamp(t.familiarity-5,0,100);if(s.dataset.mgrTactic==="formation")mgrAutoPick();mgrSave();renderManager();});$("mgr-counter").onchange=e=>{t.counter=e.target.checked;t.familiarity=clamp(t.familiarity-2,0,100);mgrSave();};$("mgr-tactic-best").onclick=()=>{mgrAutoPick();renderManager();};$("mgr-tactic-squad").onclick=()=>{MGR_VIEW="squad";renderManager();};
+}
+function mgrRenderTraining(){const c=mgrClub(),inj=c.squad.filter(p=>p.injury>0);$("mgr-view").innerHTML=`<div class="mgr-grid-2"><section><div class="mgr-card"><h3>Weekly training plan <small>Coach level ${c.staff.coach}/5</small></h3><div class="mgr-tactic-grid"><label>Primary focus<select class="mgr-control" id="mgr-training-focus">${["balanced","attacking","defending","fitness","technical","youth"].map(v=>`<option ${MG.training.focus===v?"selected":""}>${v[0].toUpperCase()+v.slice(1)}</option>`).join("")}</select></label><label>Intensity<select class="mgr-control" id="mgr-training-intensity">${["light","normal","high"].map(v=>`<option ${MG.training.intensity===v?"selected":""}>${v[0].toUpperCase()+v.slice(1)}</option>`).join("")}</select></label><label>Recovery plan<select class="mgr-control" id="mgr-training-rest">${["rest","balanced","extra sessions"].map(v=>`<option ${MG.training.rest===v?"selected":""}>${v[0].toUpperCase()+v.slice(1)}</option>`).join("")}</select></label></div><p class="fade-muted" style="font-size:12px;line-height:1.65;margin-top:14px">High intensity improves sharpness and development but costs fitness and raises injury risk. Better coaches multiply growth; physios shorten recovery.</p></div><div class="mgr-card"><h3>Development watch</h3>${[...c.squad].filter(p=>p.age<=23).sort((a,b)=>b.potential-b.ability).slice(0,8).map(p=>`<div class="money-line" style="margin-top:3px;padding-top:6px"><span>${mgrEsc(p.name)} <small class="mgr-pos">${p.pos}</small></span><b>${mgrOverall(p)} → ${p.potential}</b></div>`).join("")||`<p class="fade-muted">No young prospects in the senior squad.</p>`}</div></section><aside><div class="mgr-card"><h3>Medical centre <small>Physio ${c.staff.physio}/5</small></h3>${inj.length?inj.map(p=>`<div class="mgr-mail bad"><b>🚑 ${mgrEsc(p.name)}</b><p>${p.injury} week${p.injury===1?"":"s"} remaining</p></div>`).join(""):`<p class="mgr-fit-good">✓ No current injuries</p>`}</div><div class="mgr-card"><h3>Staff impact</h3><p style="font-size:12px;line-height:1.7">Coach: development ×${(1+c.staff.coach*.08).toFixed(2)}<br>Scout: report accuracy +${c.staff.scout*6}%<br>Physio: injury recovery +${c.staff.physio*8}%</p></div></aside></div>`;$("mgr-training-focus").onchange=e=>{MG.training.focus=e.target.value.toLowerCase();mgrSave();};$("mgr-training-intensity").onchange=e=>{MG.training.intensity=e.target.value.toLowerCase();mgrSave();};$("mgr-training-rest").onchange=e=>{MG.training.rest=e.target.value.toLowerCase();mgrSave();};}
+function mgrRenderSchedule(){const games=MG.schedule.filter(f=>f.home===MG.userClubId||f.away===MG.userClubId);$("mgr-view").innerHTML=`<div class="mgr-card"><h3>${mgrEsc(mgrLeague(MG.leagueId).league)} fixtures <small>${games.filter(x=>x.played).length}/${games.length} played</small></h3>${games.map(f=>{const home=mgrClubBy(f.home),away=mgrClubBy(f.away);return `<div class="mgr-fixture me"><span>MW ${f.round}</span><span class="home">${mgrEsc(home.name)}</span><span class="mgr-score">${f.played?`${f.hg}–${f.ag}`:"vs"}</span><span class="away">${mgrEsc(away.name)}</span><span>${f.round===MG.week&&!f.played?"NEXT":f.played?"FT":""}</span></div>`;}).join("")}</div>`;}
+function mgrRenderCompetitions(){const table=mgrTable(),league=mgrLeague(MG.leagueId),promotionTier=!!league.parentId,qualCount=promotionTier?2:4,next=promotionTier?mgrLeague(league.parentId):null;$("mgr-view").innerHTML=`<div class="mgr-card"><h3>${league.flag} Division ${mgrDivision(league)} · ${mgrEsc(league.league)} <small>${promotionTier?`Top 2 promoted to Division ${mgrDivision(next)}`:"Top 4 continental"} · bottom 2 relegated</small></h3><div class="mgr-table-wrap"><table><thead><tr><th>#</th><th>Club</th><th class="num">P</th><th class="num">W</th><th class="num">D</th><th class="num">L</th><th class="num">GD</th><th class="num">Pts</th><th>Form</th></tr></thead><tbody>${table.map((c,i)=>`<tr class="${c.id===MG.userClubId?"me":""}" style="border-left:3px solid ${i<qualCount?"#6f52d9":i>=table.length-2?"var(--red)":"transparent"}"><td>${i+1}</td><td><b>${mgrEsc(c.name)}</b></td><td class="num">${c.p}</td><td class="num">${c.w}</td><td class="num">${c.d}</td><td class="num">${c.l}</td><td class="num">${c.gf-c.ga}</td><td class="num"><b>${c.pts}</b></td><td>${mgrFormDots(c)}</td></tr>`).join("")}</tbody></table></div></div><div class="mgr-card"><h3>Competition rules</h3><div class="league-summary"><div><b>🏆 1st</b><br><span>League champion</span></div><div><b>${promotionTier?"⬆ Top 2":"🌍 Top 4"}</b><br><span>${promotionTier?`Promotion to Division ${mgrDivision(next)}`:"Continental qualification"}</span></div><div><b>⬇ Bottom 2</b><br><span>Relegated and replaced</span></div></div></div>`;}
+function mgrMarketPlayers(){const pos=MG.marketPosition||"ALL";return MG.clubs.filter(c=>c.id!==MG.userClubId).flatMap(c=>c.squad.map(p=>({p,c}))).filter(x=>!x.p.selected&&(pos==="ALL"||x.p.pos===pos)).sort((a,b)=>mgrOverall(b.p)-mgrOverall(a.p)).slice(0,28);}
+function mgrRenderTransfers(){const c=mgrClub(),open=mgrWindowOpen();$("mgr-view").innerHTML=`${mgrKpis()}<div class="mgr-card"><h3>Recruitment market <small>${open?"🟢 Transfer window open":"🔴 Registration closed until week 12"}</small></h3><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px"><select class="mgr-control" id="mgr-market-pos" style="width:auto"><option>ALL</option><option>GK</option><option>DEF</option><option>MID</option><option>FWD</option></select><span class="fade-muted" style="font-size:11px">Scouting reveals exact ability, potential, personality risk and valuation.</span></div><div class="mgr-table-wrap"><div class="mgr-market-row mgr-list-row header"><span>Player</span><span>Pos</span><span>Ability</span><span>Age</span><span>Value</span><span>Club</span><span>Action</span></div>${mgrMarketPlayers().map(({p,c:source})=>{const known=!!MG.scouted[p.id],spread=Math.max(2,10-source.staff.scout-MG?.manager?.reputation/20);return `<div class="mgr-market-row"><span class="mgr-player-name">${mgrEsc(p.name)}<small class="fade-muted" style="display:block">${p.nationality} · ${p.foot} foot</small></span><span class="mgr-pos">${p.pos}</span><span class="mgr-rating">${known?mgrOverall(p):`${Math.max(20,Math.round(mgrOverall(p)-spread))}–${Math.min(99,Math.round(mgrOverall(p)+spread))}`}</span><span>${p.age}</span><span>${known?mgrFmt(p.value):"Est. "+mgrFmt(p.value*.9)}</span><span>${mgrEsc(source.name)}</span><span style="display:flex;gap:4px"><button class="btn secondary mgr-action" data-mgr-scout="${p.id}">${known?"Report":"Scout"}</button><button class="btn gold mgr-action" data-mgr-bid="${p.id}" ${!open?"disabled":""}>Bid</button></span></div>`;}).join("")}</div></div>`;$("mgr-market-pos").value=MG.marketPosition||"ALL";$("mgr-market-pos").onchange=e=>{MG.marketPosition=e.target.value;renderManager();};document.querySelectorAll("[data-mgr-scout]").forEach(b=>b.onclick=()=>mgrScout(b.dataset.mgrScout));document.querySelectorAll("[data-mgr-bid]").forEach(b=>b.onclick=()=>mgrOpenBid(b.dataset.mgrBid));}
+function mgrRenderClub(){const c=mgrClub(),wages=mgrWeeklyWages(c),profit=c.balance-(MG.startBalance||c.balance);$("mgr-view").innerHTML=`${mgrKpis()}<div class="mgr-grid-2"><section><div class="mgr-card"><h3>Boardroom <small>Objective: ${MG.objective.label}</small></h3><p style="line-height:1.65;font-size:13px">Supporter and board confidence: <b>${Math.round(MG.board.confidence)}%</b>. The board evaluates league position, financial control, youth opportunities and the promised playing style.</p><div class="mgr-progress"><i style="width:${clamp(MG.board.confidence,0,100)}%"></i></div><div class="league-summary"><div><b>${c.capacity.toLocaleString()}</b><br><span>Stadium capacity</span></div><div><b>${c.reputation}</b><br><span>Club reputation</span></div><div><b>${mgrFmt(wages)}</b><br><span>Weekly payroll</span></div></div></div><div class="mgr-card"><h3>Recent transactions</h3>${MG.transactions.slice(0,12).map(x=>`<div class="money-line" style="padding-top:6px;margin-top:5px"><span>S${x.season} W${x.week} · ${mgrEsc(x.label)}</span><b style="color:${x.amount>=0?"var(--green-bright)":"var(--red)"}">${x.amount>=0?"+":""}${mgrFmt(x.amount)}</b></div>`).join("")||`<p class="fade-muted">No transactions yet.</p>`}</div></section><aside><div class="mgr-card"><h3>Facilities</h3>${[["training","Training complex",c.facilities.training],["youth","Youth academy",c.facilities.youth]].map(([key,label,lvl])=>`<div class="mgr-mail"><b>${label} · ${lvl}/5</b><p class="fade-muted" style="font-size:11px">${key==="training"?"Player development and tactical learning":"Quality of annual youth prospects"}</p><button class="btn gold mgr-action" data-mgr-facility="${key}" ${lvl>=5?"disabled":""}>Upgrade ${mgrFmt((lvl+1)*1500000)}</button></div>`).join("")}</div><div class="mgr-card"><h3>Backroom staff</h3>${[["coach","Coaching team",c.staff.coach],["scout","Scouting network",c.staff.scout],["physio","Medical staff",c.staff.physio]].map(([key,label,lvl])=>`<div class="money-line" style="margin-top:5px;padding-top:7px"><span>${label} ${lvl}/5</span><button class="btn secondary mgr-action" data-mgr-staff="${key}" ${lvl>=5?"disabled":""}>Hire ${mgrFmt((lvl+1)*550000)}</button></div>`).join("")}</div></aside></div>`;document.querySelectorAll("[data-mgr-facility]").forEach(b=>b.onclick=()=>mgrUpgradeFacility(b.dataset.mgrFacility));document.querySelectorAll("[data-mgr-staff]").forEach(b=>b.onclick=()=>mgrUpgradeStaff(b.dataset.mgrStaff));}
+function mgrRenderProfile(){const m=MG.manager,rate=MG.stats.played?Math.round(MG.stats.wins/MG.stats.played*100):0;$("mgr-view").innerHTML=`<div class="mgr-grid-2"><section><div class="mgr-card" style="text-align:center"><div style="font-size:74px">${m.avatar}</div><h2>${mgrEsc(m.name)}</h2><p class="fade-muted">${m.nationality} · Age ${m.age} · ${m.license} licence</p><div class="league-summary"><div><b>${Math.round(m.reputation)}</b><br><span>Reputation</span></div><div><b>${MG.trophies.length}</b><br><span>Trophies</span></div><div><b>${rate}%</b><br><span>Win rate</span></div></div><p style="line-height:1.7">Background: <b>${m.background}</b><br>Philosophy: <b>${m.philosophy}</b> · Personality: <b>${m.personality}</b><br>Preferred shape: <b>${m.formation}</b></p></div><div class="mgr-card"><h3>Career record</h3><div class="league-summary"><div><b>${MG.stats.played}</b><br><span>Matches</span></div><div><b>${MG.stats.wins}</b><br><span>Wins</span></div><div><b>${MG.stats.losses}</b><br><span>Losses</span></div></div>${MG.trophies.length?MG.trophies.map(t=>`<span class="trophy">🏆 ${mgrEsc(t)}</span>`).join(" "):`<p class="fade-muted">No trophies yet.</p>`}</div></section><aside><div class="mgr-card"><h3>Career actions</h3><button class="btn gold" id="mgr-profile-save" style="width:100%;margin-bottom:8px">💾 Manual Save</button><button class="btn danger" id="mgr-resign" style="width:100%">Resign From Club</button><p class="fade-muted" style="font-size:11px;line-height:1.55;margin-top:10px">Resigning opens the job market. Your reputation and recent results decide which clubs will interview you.</p></div></aside></div>`;$("mgr-profile-save").onclick=()=>mgrSave(true);$("mgr-resign").onclick=()=>mgrJobMarket("resigned");}
+
+function mgrFindExternalPlayer(id){for(const c of MG.clubs){const p=c.squad.find(x=>x.id===id);if(p)return{p,c};}return null;}
+function mgrScout(id){const found=mgrFindExternalPlayer(id);if(!found)return;const cost=Math.round(18000*(6-mgrClub().staff.scout));if(mgrClub().balance<cost){mgrToast("The club cannot fund this assignment");return;}mgrClub().balance-=cost;MG.scouted[id]=true;mgrTransaction(`Scout report: ${found.p.name}`,-cost);mgrMail("Scout report complete",`${found.p.name} is rated ${mgrOverall(found.p)} with ${found.p.potential} potential. ${found.p.age<23?"Development upside remains.":found.p.age>30?"Age-related decline is a risk.":"He is close to his peak years."}`);mgrSave();renderManager();}
+function mgrOpenBid(id){const found=mgrFindExternalPlayer(id);if(!found||found.c.id===MG.userClubId)return;const p=found.p,known=MG.scouted[id],fee=Math.round(p.value*(known?1.08:1.2)/50000)*50000,demand=Math.round(p.wage*1.22/100)*100;showModal(`<h2>Transfer negotiation</h2><p style="margin:8px 0 14px"><b>${mgrEsc(p.name)}</b> · ${p.pos} · ${known?`OVR ${mgrOverall(p)} · POT ${p.potential}`:"Limited scouting knowledge"}<br><span class="fade-muted">Selling club: ${mgrEsc(found.c.name)} · Estimated value ${mgrFmt(p.value)}</span></p><label>Transfer fee</label><input id="mgr-bid-fee" class="mgr-control" type="number" min="0" step="50000" value="${fee}"><label style="display:block;margin-top:10px">Weekly wage offer</label><input id="mgr-bid-wage" class="mgr-control" type="number" min="100" step="100" value="${demand}"><label style="display:block;margin-top:10px">Squad role</label><select id="mgr-bid-role" class="mgr-control"><option>Star Player</option><option>First Team</option><option>Rotation</option></select><div class="btn-row"><button class="btn gold" id="mgr-submit-bid">Submit Package</button><button class="btn secondary" onclick="closeModal()">Cancel</button></div>`);$("mgr-submit-bid").onclick=()=>mgrSubmitBid(id);}
+function mgrSubmitBid(id){
+  const found=mgrFindExternalPlayer(id);if(!found)return;const p=found.p,c=mgrClub(),fee=Math.max(0,Number($("mgr-bid-fee").value)||0),wage=Math.max(100,Number($("mgr-bid-wage").value)||0),role=$("mgr-bid-role").value;if(fee>c.transferBudget||fee>c.balance){mgrToast("The fee exceeds your available budget");return;}if(mgrWeeklyWages(c)+wage>c.wageBudget){mgrToast("The wage package breaks the payroll limit");return;}
+  const clubNeed=p.value*(1.02+(found.c.reputation-c.reputation)*.008)*(p.contract<=1?.85:1.12),clubAccept=fee>=clubNeed*mgrRange(.93,1.08),playerNeed=p.wage*(1.08+Math.max(0,found.c.reputation-c.reputation)*.009),roleFx=role==="Star Player"?1.15:role==="First Team"?1.05:.93,playerAccept=wage*roleFx>=playerNeed&&mgrRand()<clamp(.68+(c.reputation-found.c.reputation)*.012+mgrDifficulty().transfer*.15,.18,.96);
+  if(!clubAccept){mgrMail("Transfer bid rejected",`${found.c.name} rejected ${mgrFmt(fee)} for ${p.name}. They value him closer to ${mgrFmt(clubNeed)}.`,"bad");closeModal();mgrSave();renderManager();return;}if(!playerAccept){mgrMail("Player rejects contract",`${p.name}'s agent rejected ${mgrFmt(wage)}/week. Sporting ambition, club reputation and the promised role were decisive.`,"bad");closeModal();mgrSave();renderManager();return;}
+  found.c.squad=found.c.squad.filter(x=>x.id!==p.id);p.wage=Math.round(wage);p.contract=4;p.status=role;p.selected=false;c.squad.push(p);c.balance-=fee;c.transferBudget-=fee;mgrTransaction(`Signed ${p.name} from ${found.c.name}`,-fee);mgrMail("Transfer completed",`${p.name} has passed his medical and signed a four-year contract for ${mgrFmt(fee)}.`,"good");MG.manager.reputation=clamp(MG.manager.reputation+.5,0,100);closeModal();mgrSave();MGR_VIEW="squad";renderManager();
+}
+function mgrOfferPlayer(id){const c=mgrClub(),p=c.squad.find(x=>x.id===id);if(!p||c.squad.length<=17){mgrToast("You need at least 18 senior players");return;}const fee=Math.round(p.value*mgrRange(.72,1.02)/50000)*50000,buyer=mgrPick(MG.clubs.filter(x=>x.id!==c.id));showModal(`<h2>Offer received</h2><p style="margin:12px 0;line-height:1.6">${mgrEsc(buyer.name)} offers <b>${mgrFmt(fee)}</b> for ${mgrEsc(p.name)}. Selling creates budget space, but the squad loses an OVR ${mgrOverall(p)} player.</p><div class="btn-row"><button class="btn gold" id="mgr-accept-sale">Accept Offer</button><button class="btn secondary" onclick="closeModal()">Reject</button></div>`);$("mgr-accept-sale").onclick=()=>{c.squad=c.squad.filter(x=>x.id!==id);p.selected=false;buyer.squad.push(p);c.balance+=fee;c.transferBudget+=Math.round(fee*.8);mgrTransaction(`Sold ${p.name} to ${buyer.name}`,fee);mgrMail("Player sold",`${p.name} has joined ${buyer.name} for ${mgrFmt(fee)}.`,"gold");mgrAutoPick();closeModal();mgrSave();renderManager();};}
+function mgrRenewPlayer(id){const c=mgrClub(),p=c.squad.find(x=>x.id===id);if(!p)return;const demand=Math.round(p.wage*(1.08+Math.max(0,mgrOverall(p)-65)*.008)/100)*100;showModal(`<h2>Contract talks</h2><p style="margin:10px 0 14px"><b>${mgrEsc(p.name)}</b> currently earns ${mgrFmt(p.wage)}/week with ${p.contract} year${p.contract===1?"":"s"} remaining. His agent expects roughly ${mgrFmt(demand)}.</p><label>Weekly wage</label><input id="mgr-renew-wage" class="mgr-control" type="number" step="100" value="${demand}"><label style="display:block;margin-top:9px">Contract length</label><select id="mgr-renew-years" class="mgr-control"><option value="1">1 year</option><option value="2">2 years</option><option value="3" selected>3 years</option><option value="4">4 years</option><option value="5">5 years</option></select><label style="display:block;margin-top:9px">Promised role</label><select id="mgr-renew-role" class="mgr-control"><option>Star Player</option><option selected>First Team</option><option>Rotation</option></select><div class="btn-row"><button class="btn gold" id="mgr-renew-submit">Make Offer</button><button class="btn secondary" onclick="closeModal()">Cancel</button></div>`);$("mgr-renew-submit").onclick=()=>{const wage=Math.max(100,Number($("mgr-renew-wage").value)||0),years=clamp(Number($("mgr-renew-years").value)||1,1,5),role=$("mgr-renew-role").value,otherWages=mgrWeeklyWages(c)-p.wage;if(otherWages+wage>c.wageBudget){mgrToast("The new wage exceeds the payroll limit");return;}const roleFx=role==="Star Player"?1.12:role==="First Team"?1.03:.94;if(wage*roleFx<demand*mgrRange(.94,1.06)){mgrMail("Contract offer rejected",`${p.name}'s agent rejected the proposed ${mgrFmt(wage)}/week package.`,"bad");closeModal();mgrSave();return;}p.wage=Math.round(wage);p.contract=years;p.status=role;mgrMail("Contract extension signed",`${p.name} has signed a ${years}-year contract worth ${mgrFmt(wage)}/week.`,"good");closeModal();mgrSave();renderManager();};}
+function mgrUpgradeFacility(key){const c=mgrClub(),lvl=c.facilities[key],cost=(lvl+1)*1500000;if(lvl>=5||c.balance<cost){mgrToast(lvl>=5?"Facility already elite":"Insufficient club funds");return;}c.balance-=cost;c.facilities[key]++;mgrTransaction(`${key} facilities upgrade`,-cost);mgrMail("Facility work approved",`${key[0].toUpperCase()+key.slice(1)} facilities are now level ${c.facilities[key]}/5.`,"good");mgrSave();renderManager();}
+function mgrUpgradeStaff(key){const c=mgrClub(),lvl=c.staff[key],cost=(lvl+1)*550000;if(lvl>=5||c.balance<cost){mgrToast(lvl>=5?"Department already elite":"Insufficient club funds");return;}c.balance-=cost;c.staff[key]++;mgrTransaction(`${key} department hire`,-cost);mgrMail("Staff appointment",`The ${key} department has improved to level ${c.staff[key]}/5.`,"good");mgrSave();renderManager();}
+
+function mgrGoalModel(home,away){
+  let hp=mgrTeamPower(home,home.id===MG.userClubId),ap=mgrTeamPower(away,away.id===MG.userClubId);if(home.id===MG.userClubId)hp+=mgrMatchup(mgrTacticStyle(),away.style);if(away.id===MG.userClubId)ap+=mgrMatchup(mgrTacticStyle(),home.style);hp+=2.2;
+  const mentality=MG.tactics?.mentality||"balanced",userHome=home.id===MG.userClubId,userAway=away.id===MG.userClubId;if(userHome||userAway){const atk=mentality==="attacking"?1.18:mentality==="positive"?1.08:mentality==="defensive"?.78:mentality==="cautious"?.88:1;if(userHome)hp*=atk;else ap*=atk;}
+  return {hp,ap,lh:clamp(1.25+(hp-ap)*.045,0.2,3.6),la:clamp(1.02+(ap-hp)*.043,0.18,3.3)};
+}
+function mgrPoisson(lambda){let goals=0;for(let i=0;i<10;i++)if(mgrRand()<lambda/10)goals++;return goals;}
+function mgrSimPair(home,away){const m=mgrGoalModel(home,away),hg=mgrPoisson(m.lh),ag=mgrPoisson(m.la),hs=mgrInt(Math.max(4,Math.round(m.lh*5)),Math.max(7,Math.round(m.lh*5+7))),as=mgrInt(Math.max(3,Math.round(m.la*5)),Math.max(6,Math.round(m.la*5+7))),poss=clamp(Math.round(50+(m.hp-m.ap)*.55+mgrRange(-6,6)),31,69);return{hg,ag,stats:{shots:[hs,as],on:[Math.min(hs,Math.round(hs*.39+mgrRange(-1,2))),Math.min(as,Math.round(as*.39+mgrRange(-1,2)))],xg:[Math.max(.2,hg*.62+hs*.055).toFixed(2),Math.max(.2,ag*.62+as*.055).toFixed(2)],pos:[poss,100-poss],cards:[mgrInt(0,3),mgrInt(0,3)]},events:[]};}
+function mgrApplyResult(f,res){
+  if(f.played)return;f.played=true;f.hg=res.hg;f.ag=res.ag;const h=mgrClubBy(f.home),a=mgrClubBy(f.away);h.p++;a.p++;h.gf+=res.hg;h.ga+=res.ag;a.gf+=res.ag;a.ga+=res.hg;if(res.hg>res.ag){h.w++;a.l++;h.pts+=3;}else if(res.hg<res.ag){a.w++;h.l++;a.pts+=3;}else{h.d++;a.d++;h.pts++;a.pts++;}const hr=res.hg>res.ag?"W":res.hg===res.ag?"D":"L",ar=res.ag>res.hg?"W":res.hg===res.ag?"D":"L";MG.history.unshift({season:MG.season,week:MG.week,clubId:h.id,r:hr,score:`${res.hg}-${res.ag}`},{season:MG.season,week:MG.week,clubId:a.id,r:ar,score:`${res.ag}-${res.hg}`});
+}
+function mgrDistributeGoals(goals){const players=mgrSelected().filter(p=>p.pos!=="GK");for(let i=0;i<goals;i++){const scorer=mgrPick(players.filter(p=>p.pos==="FWD").concat(players),MG),assist=mgrPick(players.filter(p=>p.id!==scorer.id),MG);if(scorer)scorer.goals++;if(assist&&mgrRand()<.72)assist.assists++;}}
+function mgrTrainingAndRecovery(won,homeGame){
+  const c=mgrClub(),intensity={light:.65,normal:1,high:1.45}[MG.training.intensity]||1,rest=MG.training.rest==="rest"?8:MG.training.rest==="extra sessions"?-3:3,coach=1+c.staff.coach*.08,focus=MG.training.focus;for(const p of c.squad){if(p.injury>0){p.injury=Math.max(0,p.injury-(mgrRand()<c.staff.physio*.09?2:1));p.fitness=clamp(p.fitness+10,0,100);continue;}if(p.selected){p.apps++;p.fitness=clamp(p.fitness-mgrRange(14,24)*intensity+rest,20,100);p.sharpness=clamp(p.sharpness+5,0,100);p.morale=clamp(p.morale+(won?4:-2),0,100);p.form=clamp(p.form+(won?.18:-.12)+mgrRange(-.15,.15),4,9.5);}else{p.fitness=clamp(p.fitness+7+rest,0,100);p.sharpness=clamp(p.sharpness-2,20,100);}const young=Math.max(.08,(29-p.age)*.035),growth=young*coach*intensity*mgrDifficulty().growth;if(mgrRand()<growth*.11&&mgrOverall(p)<p.potential){if(focus==="fitness")p.physical=clamp(p.physical+.35,0,99);else if(focus==="technical"||focus==="attacking")p.technical=clamp(p.technical+.35,0,99);else if(focus==="defending")p.mental=clamp(p.mental+.3,0,99);else{p.technical=clamp(p.technical+.12,0,99);p.mental=clamp(p.mental+.1,0,99);p.physical=clamp(p.physical+.1,0,99);}}const risk=(MG.training.intensity==="high"?.022:MG.training.intensity==="light"?.004:.01)*mgrDifficulty().injury*(1-c.staff.physio*.07)*(p.fitness<55?1.7:1);if(mgrRand()<risk){p.injury=mgrInt(1,6);mgrMail("Injury update",`${p.name} suffered an injury in training and will miss approximately ${p.injury} weeks.`,"bad");}p.ability=mgrOverall(p);p.value=mgrValue(p.ability,p.age,mgrLeague(MG.leagueId).quality);}
+  MG.tactics.familiarity=clamp(MG.tactics.familiarity+(MG.training.focus==="balanced"?4:2),0,100);const wages=mgrWeeklyWages(c);c.balance-=wages;mgrTransaction("Weekly player wages",-wages);if(homeGame){const gate=Math.round(c.capacity*mgrRange(.7,.98)*mgrRange(24,48));c.balance+=gate;mgrTransaction("Gate receipts",gate);}if(c.balance<0)MG.board.confidence=clamp(MG.board.confidence-2,0,100);
+}
+function mgrCompleteRound(result){
+  const f=mgrCurrentFixture();if(!f||f.played)return;mgrApplyResult(f,result);const userHome=f.home===MG.userClubId,userGoals=userHome?result.hg:result.ag,oppGoals=userHome?result.ag:result.hg,won=userGoals>oppGoals,draw=userGoals===oppGoals;for(const other of MG.schedule.filter(x=>x.round===MG.week&&!x.played)){mgrApplyResult(other,mgrSimPair(mgrClubBy(other.home),mgrClubBy(other.away)));}
+  MG.stats.played++;if(won)MG.stats.wins++;else if(draw)MG.stats.draws++;else MG.stats.losses++;mgrDistributeGoals(userGoals);MG.board.confidence=clamp(MG.board.confidence+(won?3.5:draw?.4:-2.8)+(mgrRank()<=MG.objective.target?.5:-.3)*mgrDifficulty().board,0,100);MG.manager.reputation=clamp(MG.manager.reputation+(won?.35:draw?.04:-.12),1,100);mgrTrainingAndRecovery(won,userHome);MG.week++;mgrMail(won?"Three points secured":draw?"Points shared":"Defeat requires a response",`${mgrClub().name} ${userGoals}–${oppGoals} ${mgrOpponent(f)?.name||"opposition"}. You are now ${mgrRank()} in the table.`,won?"good":draw?"":"bad");mgrSave();
+  const fired=MG.board.confidence<12,seasonDone=MG.week>(MG.clubs.length-1)*2;showModal(`<div class="mg-wrap"><div style="font-size:44px">${won?"✅":draw?"🤝":"📉"}</div><h2>FULL TIME</h2><div class="scoreline"><div class="team">${mgrEsc(mgrClubBy(f.home).name)}</div><div class="score">${result.hg} – ${result.ag}</div><div class="team">${mgrEsc(mgrClubBy(f.away).name)}</div></div><div class="league-summary"><div><b>${result.stats?.shots?.[0]??"—"}–${result.stats?.shots?.[1]??"—"}</b><br><span>Shots</span></div><div><b>${result.stats?.pos?.[0]??50}%</b><br><span>Home possession</span></div><div><b>${mgrRank()}</b><br><span>League position</span></div></div><p class="fade-muted">Board confidence: ${Math.round(MG.board.confidence)}% · Tactical familiarity: ${Math.round(MG.tactics.familiarity)}%</p><button class="btn ${seasonDone?"gold":""}" id="mgr-post-continue" style="margin-top:14px">${fired?"Meet the Board":seasonDone?"Review the Season":"Continue"} →</button></div>`);$("mgr-post-continue").onclick=()=>{closeModal();if(fired)mgrJobMarket("fired");else{MGR_VIEW="home";renderManager();}};
+}
+
+function mgrOpenMatch(){
+  const f=mgrCurrentFixture();if(!f)return;if(mgrSelected().length!==11){mgrToast("Select exactly 11 fit starters");return;}const home=mgrClubBy(f.home),away=mgrClubBy(f.away),mine=f.home===MG.userClubId,edge=mgrTeamPower(mgrClub())-mgrOpponent(f).strength;
+  showModal(`<div class="mg-wrap"><div style="font-size:42px">🏟️</div><h2>MATCHDAY</h2><p class="fade-muted">${mgrLeague(MG.leagueId).league} · Matchweek ${MG.week}</p><div class="scoreline"><div class="team">${mgrEsc(home.name)}<br><small>Power ${mgrTeamPower(home,home.id===MG.userClubId).toFixed(1)}</small></div><div class="score" style="font-size:25px">VS</div><div class="team">${mgrEsc(away.name)}<br><small>Power ${mgrTeamPower(away,away.id===MG.userClubId).toFixed(1)}</small></div></div><div class="agent-bubble" style="text-align:left">Analyst preview: <b class="${edge>4?"mgr-fit-good":edge<-4?"mgr-fit-bad":"mgr-fit-mid"}">${edge>5?"You hold the stronger hand":edge<-5?"A difficult matchup":"Fine margins expected"}</b>. ${mgrTacticStyle()} football faces ${mgrOpponent(f).style}. Home advantage and game-state changes remain important.</div><div class="btn-row" style="justify-content:center"><button class="btn gold" id="mgr-watch-match">▶ Watch Live</button><button class="btn" id="mgr-instant-match">⏩ Instant Result</button><button class="btn secondary" onclick="closeModal()">Back</button></div></div>`);$("mgr-watch-match").onclick=mgrStartLiveMatch;$("mgr-instant-match").onclick=mgrInstantMatch;
+}
+function mgrInstantMatch(){const f=mgrCurrentFixture(),res=mgrSimPair(mgrClubBy(f.home),mgrClubBy(f.away));closeModal();mgrCompleteRound(res);}
+function mgrStartLiveMatch(){
+  const f=mgrCurrentFixture(),home=mgrClubBy(f.home),away=mgrClubBy(f.away);MGR_MATCH={fixture:f,home,away,minute:0,hg:0,ag:0,paused:false,speed:1,subs:0,stats:{shots:[0,0],on:[0,0],xg:[0,0],posTicks:[0,0],cards:[0,0]},events:[{minute:0,text:`The teams emerge at ${home.stadium}.`,cls:""}],done:false};
+  showModal(`<div class="mgr-match-centre"><div class="mgr-clock" id="mgr-live-clock">0' · LIVE</div><div class="mgr-match-score"><b>${mgrEsc(home.name)}</b><strong id="mgr-live-score">0 – 0</strong><b>${mgrEsc(away.name)}</b></div><div class="mgr-momentum"><i id="mgr-mom-home" style="width:50%"></i><i id="mgr-mom-away" style="width:50%"></i></div><div class="league-summary"><div><b id="mgr-live-shots">0–0</b><br><span>Shots</span></div><div><b id="mgr-live-pos">50–50</b><br><span>Possession</span></div><div><b id="mgr-live-xg">0.00–0.00</b><br><span>xG</span></div></div><div class="mgr-commentary" id="mgr-live-feed"></div><div class="mgr-tactic-grid" style="margin-top:10px"><label>Mentality<select class="mgr-control" id="mgr-live-mentality">${["defensive","cautious","balanced","positive","attacking"].map(v=>`<option ${MG.tactics.mentality===v?"selected":""}>${v}</option>`).join("")}</select></label><label>Match speed<select class="mgr-control" id="mgr-live-speed"><option value="1">Normal</option><option value="4">Very fast</option></select></label></div><div class="btn-row" style="justify-content:center"><button class="btn secondary" id="mgr-live-pause">⏸ Pause</button><button class="btn" id="mgr-live-sub">🔄 Fresh Legs (0/5)</button><button class="btn gold" id="mgr-live-sim">⏩ Sim to Full Time</button></div></div>`);$("mgr-live-mentality").onchange=e=>{MG.tactics.mentality=e.target.value;mgrLiveEvent(`Tactical change: ${e.target.value} mentality.`,"");};$("mgr-live-speed").onchange=e=>MGR_MATCH.speed=Number(e.target.value);$("mgr-live-pause").onclick=()=>{MGR_MATCH.paused=!MGR_MATCH.paused;$("mgr-live-pause").textContent=MGR_MATCH.paused?"▶ Resume":"⏸ Pause";};$("mgr-live-sub").onclick=mgrLiveSub;$("mgr-live-sim").onclick=mgrLiveSimToEnd;mgrRenderLive();clearInterval(MGR_MATCH.timer);MGR_MATCH.timer=setInterval(()=>{if(!MGR_MATCH||MGR_MATCH.paused||MGR_MATCH.done)return;for(let i=0;i<MGR_MATCH.speed;i++){mgrLiveMinute(false);if(MGR_MATCH.done)break;}mgrRenderLive();},180);
+}
+function mgrLiveEvent(text,cls=""){if(!MGR_MATCH)return;MGR_MATCH.events.unshift({minute:MGR_MATCH.minute,text,cls});MGR_MATCH.events=MGR_MATCH.events.slice(0,16);}
+function mgrLiveMinute(noRender=false){
+  const m=MGR_MATCH;if(!m||m.done)return;m.minute++;const model=mgrGoalModel(m.home,m.away),homeShare=clamp(.5+(model.hp-model.ap)*.008,.3,.7);m.stats.posTicks[mgrRand()<homeShare?0:1]++;if(mgrRand()<.125){const side=mgrRand()<homeShare?0:1,club=side===0?m.home:m.away,opp=side===0?m.away:m.home;m.stats.shots[side]++;const on=mgrRand()<clamp(.38+(side===0?model.hp-model.ap:model.ap-model.hp)*.004,.22,.62);m.stats.xg[side]+=on?mgrRange(.08,.34):mgrRange(.01,.09);if(on)m.stats.on[side]++;const goal=on&&mgrRand()<clamp(.23+(side===0?model.hp-model.ap:model.ap-model.hp)*.004,.10,.46);if(goal){if(side===0)m.hg++;else m.ag++;const scorer=mgrPick(club.squad.filter(p=>p.pos!=="GK"&&p.injury<=0));mgrLiveEvent(`GOAL! ${scorer?.name||club.name} finishes a ${mgrRand()<.3?"rapid counterattack":"well-worked move"}.`,"goal");}else mgrLiveEvent(on?`${club.name} force a strong save.`:`${club.name} shoot wide after pressure from ${opp.name}.`);}
+  if(mgrRand()<.018){const side=mgrRand()<.5?0:1;m.stats.cards[side]++;mgrLiveEvent(`Yellow card for ${side===0?m.home.name:m.away.name} after a late challenge.`,"card");}if(m.minute===45)mgrLiveEvent(`HALF TIME: ${m.home.name} ${m.hg}–${m.ag} ${m.away.name}.`,"goal");if(m.minute>=90){m.done=true;clearInterval(m.timer);mgrRenderLive();setTimeout(mgrFinishLive,450);}else if(!noRender)mgrRenderLive();
+}
+function mgrRenderLive(){const m=MGR_MATCH;if(!m||!$("mgr-live-clock"))return;$("mgr-live-clock").textContent=`${Math.min(90,m.minute)}' · ${m.paused?"PAUSED":"LIVE"}`;$("mgr-live-score").textContent=`${m.hg} – ${m.ag}`;$("mgr-live-shots").textContent=`${m.stats.shots[0]}–${m.stats.shots[1]}`;const total=m.stats.posTicks[0]+m.stats.posTicks[1]||1,hp=Math.round(m.stats.posTicks[0]/total*100);$("mgr-live-pos").textContent=`${hp}–${100-hp}`;$("mgr-live-xg").textContent=`${m.stats.xg[0].toFixed(2)}–${m.stats.xg[1].toFixed(2)}`;const model=mgrGoalModel(m.home,m.away),mom=clamp(Math.round(50+(model.hp-model.ap)*1.2+(m.hg-m.ag)*4),18,82);$("mgr-mom-home").style.width=mom+"%";$("mgr-mom-away").style.width=(100-mom)+"%";$("mgr-live-feed").innerHTML=m.events.map(e=>`<div class="${e.cls}"><b>${e.minute}'</b> ${mgrEsc(e.text)}</div>`).join("");}
+function mgrLiveSub(){const m=MGR_MATCH;if(!m||m.subs>=5)return;const c=mgrClub(),starter=c.squad.filter(p=>p.selected&&p.pos!=="GK").sort((a,b)=>a.fitness-b.fitness)[0],bench=c.squad.filter(p=>!p.selected&&p.injury<=0&&p.pos===starter?.pos).sort((a,b)=>mgrOverall(b)-mgrOverall(a))[0]||c.squad.filter(p=>!p.selected&&p.injury<=0).sort((a,b)=>mgrOverall(b)-mgrOverall(a))[0];if(!starter||!bench){mgrToast("No suitable substitute available");return;}starter.selected=false;bench.selected=true;bench.fitness=clamp(bench.fitness+6,0,100);m.subs++;mgrLiveEvent(`Substitution: ${bench.name} replaces ${starter.name}.`);$("mgr-live-sub").textContent=`🔄 Fresh Legs (${m.subs}/5)`;mgrRenderLive();}
+function mgrLiveSimToEnd(){if(!MGR_MATCH)return;MGR_MATCH.paused=false;while(MGR_MATCH&&!MGR_MATCH.done)mgrLiveMinute(true);}
+function mgrFinishLive(){const m=MGR_MATCH;if(!m)return;const total=m.stats.posTicks[0]+m.stats.posTicks[1]||1,hp=Math.round(m.stats.posTicks[0]/total*100),res={hg:m.hg,ag:m.ag,stats:{shots:m.stats.shots,on:m.stats.on,xg:m.stats.xg.map(x=>x.toFixed(2)),pos:[hp,100-hp],cards:m.stats.cards},events:m.events};clearInterval(m.timer);MGR_MATCH=null;closeModal();mgrCompleteRound(res);}
+
+function mgrFinishSeason(){
+  const table=mgrTable(),pos=mgrRank(),champ=table[0],league=mgrLeague(MG.leagueId),promoted=!!league.parentId&&pos<=2,success=pos<=MG.objective.target,relegated=table.slice(-2);if(champ.id===MG.userClubId){const title=`${league.league} ${MG.year}`;MG.trophies.push(title);MG.manager.reputation=clamp(MG.manager.reputation+6,0,100);mgrClub().balance+=12000000;mgrTransaction("League title prize money",12000000);}else mgrClub().balance+=Math.max(800000,7000000-pos*350000);if(promoted){mgrClub().balance+=6000000;MG.manager.reputation=clamp(MG.manager.reputation+5,0,100);mgrTransaction("Promotion prize and sponsorship boost",6000000);mgrMail("PROMOTION SECURED",`${mgrClub().name} have earned promotion to ${mgrLeague(league.parentId).league}!`,"gold");}MG.board.confidence=clamp(MG.board.confidence+(success?12:-18)*mgrDifficulty().board,0,100);MG.seasonSummary={position:pos,champion:champ.name,relegated:relegated.map(c=>c.id),success,promoted};mgrMail("Board season review",success?`Objective achieved: ${MG.objective.label}. The board approves of your progress.`:`Objective missed: ${MG.objective.label}. Your position is under serious review.`,success?"good":"bad");mgrSave();
+  const userDown=relegated.some(c=>c.id===MG.userClubId),fired=MG.board.confidence<18||userDown,nextDivision=promoted?mgrDivision(mgrLeague(league.parentId)):null;showModal(`${confettiHTML(champ.id===MG.userClubId||promoted?35:10)}<div class="mg-wrap"><div style="font-size:52px">${champ.id===MG.userClubId?"🏆":promoted?"⬆️":success?"✅":"📋"}</div><h2>${promoted?"PROMOTION!":`SEASON ${MG.season} COMPLETE`}</h2><p style="font-size:16px;line-height:1.7;margin:12px 0"><b>${mgrEsc(champ.name)}</b> are champions.<br>${mgrEsc(mgrClub().name)} finish <b>${pos}${pos===1?"st":pos===2?"nd":pos===3?"rd":"th"}</b>.${promoted?`<br><b style="color:var(--gold)">Next stop: Division ${nextDivision} · ${mgrEsc(mgrLeague(league.parentId).league)}</b>`:""}</p><div class="league-summary"><div><b>${MG.stats.wins}</b><br><span>Career wins</span></div><div><b>${Math.round(MG.board.confidence)}%</b><br><span>Board confidence</span></div><div><b>${Math.round(MG.manager.reputation)}</b><br><span>Reputation</span></div></div><p class="${success?"mgr-fit-good":"mgr-fit-bad"}">${success?"✓ Board objective achieved":"✕ Board objective missed"}${userDown?" · Club relegated":""}</p><button class="btn gold" id="mgr-next-season" style="margin-top:14px">${fired?"Enter Job Market":promoted?`Enter Division ${nextDivision}`:"Begin Next Season"} →</button></div>`);$("mgr-next-season").onclick=()=>{closeModal();if(fired)mgrJobMarket(userDown?"relegated":"fired");else mgrStartNextSeason();};
+}
+function mgrStartNextSeason(fromJob=false){
+  const summary=MG.seasonSummary||{};let cfg=mgrLeague(MG.leagueId),down=(summary.relegated||[]).filter(id=>id!==MG.userClubId);if(summary.promoted&&cfg.parentId){const promotedClub=mgrClub(),parent=mgrLeague(cfg.parentId),topClubs=parent.clubs.map((name,i)=>mgrCreateClub(name,i,parent,MG));promotedClub.strength=clamp(Math.max(promotedClub.strength,parent.bottom+2),parent.bottom,86);promotedClub.reputation=clamp(promotedClub.reputation+5,30,92);promotedClub.balance+=8000000;promotedClub.transferBudget+=5000000;promotedClub.wageBudget=Math.round((70000+promotedClub.strength*3900)*parent.budget);topClubs[topClubs.length-1]=promotedClub;MG.leagueId=parent.id;MG.clubs=topClubs;MG.userClubId=promotedClub.id;cfg=parent;down=[];mgrMail(`Division ${mgrDivision(parent)} registration`,`${promotedClub.name} are officially registered for ${parent.league}. The step up will demand a stronger squad.`,"gold");}for(const id of down){const c=mgrClubBy(id);if(!c)continue;const tag=mgrPick(["Phoenix","Railway","Olympic","Riverside","Foundry","Academical"]),place=mgrPick(["Stonebridge","Clearwater","Newhaven","Monteluna","Greenford","Santa Rosa"]);c.name=`${place} ${tag}`;c.short=(place.slice(0,2)+tag[0]).toUpperCase();c.strength=clamp(cfg.bottom+mgrInt(-3,4),Math.max(20,cfg.bottom-2),75);c.reputation=c.strength;c.balance=Math.round(8e6*cfg.budget);c.transferBudget=Math.round(3e6*cfg.budget);c.squad=[];const positions=["GK","GK","DEF","DEF","DEF","DEF","DEF","DEF","DEF","MID","MID","MID","MID","MID","MID","MID","MID","FWD","FWD","FWD","FWD","FWD"];c.squad=positions.map((pos,i)=>mgrCreatePlayer(c,pos,i,MG,cfg));mgrMail("Promotion confirmed",`${c.name} arrive from the division below and will compete in next season's ${cfg.league}.`,"gold");}
+  for(const c of MG.clubs){c.p=c.w=c.d=c.l=c.gf=c.ga=c.pts=0;c.strength=clamp(c.strength+mgrInt(-2,2),35,96);for(const p of c.squad){p.age++;p.contract--;if(p.age<25&&mgrOverall(p)<p.potential){p.technical=clamp(p.technical+mgrRange(0,.7),0,99);p.mental=clamp(p.mental+mgrRange(0,.6),0,99);}if(p.age>31)p.physical=clamp(p.physical-mgrRange(.3,1.2),20,99);p.apps=p.goals=p.assists=0;p.fitness=92;p.morale=65;p.form=6.5;p.yellow=0;}const expired=c.squad.filter(p=>p.contract<=0);if(c.id===MG.userClubId){for(const p of expired)mgrMail("Contract expired",`${p.name} has left after his contract expired.`,"bad");c.squad=c.squad.filter(p=>p.contract>0);}else{for(const p of expired){if(mgrRand()<.72){p.contract=mgrInt(1,3);p.wage=Math.round(p.wage*1.08);}else c.squad=c.squad.filter(x=>x.id!==p.id);}}while(c.squad.length<18)c.squad.push(mgrCreatePlayer(c,mgrPick(["GK","DEF","MID","FWD"]),120+c.squad.length+MG.season,MG,cfg));}
+  for(let i=0;i<4;i++){const source=mgrPick(MG.clubs.filter(c=>c.squad.length>19&&c.id!==MG.userClubId)),target=mgrPick(MG.clubs.filter(c=>c.id!==source.id&&c.id!==MG.userClubId));const candidate=mgrPick(source.squad.filter(p=>!p.selected&&p.age<31));if(candidate&&target){source.squad=source.squad.filter(p=>p.id!==candidate.id);candidate.wage=Math.round(candidate.wage*1.12);candidate.contract=3;target.squad.push(candidate);if(i===0)mgrMail("AI transfer news",`${candidate.name} has moved from ${source.name} to ${target.name} as clubs reshape their squads.`,"gold");}}
+  const uc=mgrClub();if(uc&&uc.squad.length<27&&mgrRand()<.38+uc.facilities.youth*.08){const youth=mgrCreatePlayer(uc,mgrPick(["DEF","MID","FWD"]),99+MG.season,MG,cfg);youth.age=17;youth.potential=clamp(youth.potential+uc.facilities.youth*2,55,97);youth.value=mgrValue(mgrOverall(youth),17,cfg.quality);uc.squad.push(youth);mgrMail("Youth intake standout",`${youth.name}, a ${youth.pos} with estimated ${youth.potential} potential, has joined senior training.`,"good");}
+  MG.season++;MG.year++;MG.manager.age++;MG.week=1;MG.schedule=mgrSchedule(MG.clubs.map(c=>c.id));MG.objective=mgrObjective(MG.clubs,MG.userClubId);MG.seasonSummary=null;MG.board.confidence=clamp(MG.board.confidence+8,25,82);uc.transferBudget+=Math.round(Math.max(1500000,uc.balance*.12));mgrAutoPick();mgrMail("New season begins",`The board target is clear: ${MG.objective.label}. The transfer window is open.`,"gold");MGR_VIEW="home";mgrSave();renderManager();
+}
+function mgrJobMarket(reason){
+  const current=mgrClub(),offers=MG.clubs.filter(c=>c.id!==MG.userClubId&&c.reputation<=MG.manager.reputation+24).sort((a,b)=>Math.abs(a.reputation-MG.manager.reputation)-Math.abs(b.reputation-MG.manager.reputation)).slice(0,4);showModal(`<div class="mg-wrap"><div style="font-size:46px">🧥💼</div><h2>${reason==="resigned"?"YOU HAVE RESIGNED":reason==="relegated"?"THE BOARD MAKES A CHANGE":"YOU HAVE BEEN DISMISSED"}</h2><p class="fade-muted" style="margin:10px 0 15px">Your reputation is ${Math.round(MG.manager.reputation)}. These clubs are prepared to interview you.</p>${offers.map(c=>`<div class="offer-card" style="text-align:left"><b>${mgrEsc(c.name)}</b><span class="strength-chip">${Math.round(c.strength/10)}/10</span><p class="fade-muted" style="font-size:11px;margin:5px 0">${c.style} identity · ${mgrFmt(c.transferBudget)} budget · currently ${mgrTable().findIndex(x=>x.id===c.id)+1}</p><button class="btn gold mgr-action" data-mgr-job="${c.id}">Accept Job</button></div>`).join("")}<button class="btn secondary" id="mgr-job-stay" ${reason!=="resigned"?"disabled":""}>Withdraw resignation</button></div>`);document.querySelectorAll("[data-mgr-job]").forEach(b=>b.onclick=()=>{const old=current?.name;MG.userClubId=b.dataset.mgrJob;MG.board.confidence=55;MG.objective=mgrObjective(MG.clubs,MG.userClubId);mgrAutoPick();mgrMail("New managerial appointment",`${MG.manager.name} has left ${old} to become manager of ${mgrClub().name}.`,"gold");closeModal();if(MG.week>(MG.clubs.length-1)*2)mgrStartNextSeason(true);else{MGR_VIEW="home";mgrSave();renderManager();}});if($("mgr-job-stay"))$("mgr-job-stay").onclick=()=>{closeModal();renderManager();};
+}
+
+// Manager Career navigation and setup controls.
+$("btn-manager-mode-back").onclick=showCareerMode;
+$("btn-manager-logout").onclick=logout;
+$("btn-new-manager").onclick=mgrOpenSetup;
+$("btn-manager-setup-back").onclick=showManagerMenu;
+$("btn-start-manager").onclick=mgrStartCareer;
+$("mgr-country").onchange=()=>{MGR_SELECTED_CLUB=0;mgrRenderClubChoices();};
+$("mgr-background").onchange=mgrRenderClubChoices;
+$("mgr-license").onchange=mgrRenderClubChoices;
+document.querySelectorAll("[data-mgr-view]").forEach(b=>b.onclick=()=>{MGR_VIEW=b.dataset.mgrView;renderManager();});
+$("btn-mgr-save").onclick=()=>mgrSave(true);
+$("btn-mgr-exit").onclick=()=>{if(MGR_MATCH)return;mgrSave();MG=null;showManagerMenu();};
+window.addEventListener("beforeunload",()=>{if(MG)mgrSave();});
+
+document.querySelectorAll("[data-ui-pick]").forEach(card=>card.onclick=()=>chooseUIStyle(card.dataset.uiPick));
+$("btn-change-ui").onclick=showStylePicker;
 
 // ============================== PWA / OFFLINE APP ==============================
 window.addEventListener("beforeinstallprompt", event => {
@@ -7563,10 +8179,10 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
     .catch(() => {}), { once:true });
 }
 
-// boot: restore session or ask for login
+// boot: restore the account, then ask which presentation style to use
 SESSION = localStorage.getItem(SES_KEY);
-if (SESSION && loadAccounts()[SESSION]) showMenu();
-else { SESSION = null; showScreen("auth-screen"); }
+if (!(SESSION && loadAccounts()[SESSION])) SESSION = null;
+showStylePicker();
 </script>
 </body>
 </html>

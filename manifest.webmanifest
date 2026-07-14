@@ -1,14 +1,14 @@
 {
   "id": "./",
-  "name": "Pitch Legend — Soccer Career Simulator",
+  "name": "Pitch Legend — Player & Manager Career",
   "short_name": "Pitch Legend",
-  "description": "Build a football career from academy prospect to world champion.",
+  "description": "Choose Player Career or Manager Career and build your football legacy.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "fullscreen",
   "display_override": ["fullscreen", "standalone", "minimal-ui"],
-  "background_color": "#0d1117",
-  "theme_color": "#0d3d1e",
+  "background_color": "#07192b",
+  "theme_color": "#07192b",
   "orientation": "any",
   "categories": ["games", "sports", "simulation"],
   "icons": [
